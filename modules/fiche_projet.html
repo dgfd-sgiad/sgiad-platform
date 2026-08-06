@@ -280,9 +280,7 @@ var docs=[['Accord de financement','#d5251f',1],['Avis de non objection','#d5251
 document.getElementById('docs').innerHTML=docs.map(function(d){var pdf=d[2]?'<text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+d[1]+'" stroke="none">PDF</text>':'';return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="'+d[1]+'" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/>'+pdf+'</svg><div class="t">'+d[0]+'</div></div>';}).join('')+'<div class="doc plus"><span style="font-size:15px">+</span>Autres documents</div>';
 
 /* ── Remplissage depuis l'API Supabase ── */
-var API=(localStorage.getItem('sgiad_api_host')||location.hostname||'127.0.0.1');
-var PORT=localStorage.getItem('sgiad_api_port')||'5000';
-var BASE='http://'+API+':'+PORT;
+var API=window.location.origin;
 var code=new URLSearchParams(location.search).get('code');
 function $(id){return document.getElementById(id)}
 function fmt(n){n=Math.round(Number(n)||0);return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
@@ -290,7 +288,7 @@ function fdate(s){if(!s)return '—';var d=new Date(s);if(isNaN(d))return s;retu
 function year(s){if(!s)return '—';var d=new Date(s);return isNaN(d)?'—':String(d.getFullYear())}
 function split(s){return String(s||'').split(/\s*;\s*/).filter(function(x){return x.length>2})}
 function ul(a){return '<ul>'+a.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'}
-if(code){fetch(BASE+'/api/accords-financiers/list?t='+Date.now()).then(function(r){return r.json()}).then(function(data){
+if(code){fetch(API+'/api/accords-financiers/list?t='+Date.now()).then(function(r){return r.json()}).then(function(data){
   var list=data.data||data||[];
   var p=list.find(function(x){return (x['Code Projet']||'').trim()===code.trim()});
   if(!p)return;

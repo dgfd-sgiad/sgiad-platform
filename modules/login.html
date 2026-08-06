@@ -158,7 +158,7 @@
 
     <script>
         // Configuration
-        const API_AUTH = `http://${window.location.hostname || '127.0.0.1'}:5000/api/auth`;
+        const API_AUTH = `${window.location.origin}/api/auth`;
         let isLoginMode = true;
 
         const form = document.getElementById('authForm');

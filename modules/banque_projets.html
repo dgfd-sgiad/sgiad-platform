@@ -1032,9 +1032,7 @@
         // ============================================
         // CONFIGURATION
         // ============================================
-        const FLASK_HOST = localStorage.getItem('sgiad_api_host') || window.location.hostname || '127.0.0.1';
-        const FLASK_PORT = localStorage.getItem('sgiad_api_port') || '5000';
-        const FLASK_BASE = `http://${FLASK_HOST}:${FLASK_PORT}`;
+        const FLASK_BASE = window.location.origin;
         const API_BASE = `${FLASK_BASE}/api/accords-financiers`;
         const CODE_FIELD = 'Code Projet';
 

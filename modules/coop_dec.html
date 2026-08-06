@@ -202,7 +202,7 @@
     <button class="btn-fab" onclick="alert('Formulaire de saisie à implémenter selon le même modèle que les Accords.')">+</button>
 
     <script>
-        const API_BASE = `http://${window.location.hostname || '127.0.0.1'}:5000`;
+        const API_BASE = window.location.origin;
         let allAccords = [], allActions = [], allEchanges = [];
         let parametres = {};
 
