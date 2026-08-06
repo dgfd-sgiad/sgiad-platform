@@ -18,7 +18,7 @@ const modules = [
         file: 'modules/coop_dec.html'
     },
     {
-        id: 'suivi_des_projets',
+        id: 'suivi_financier_projets',
         title: 'Suivi Financier des Projets',
         icon: '🎓',
         file: 'modules/suivi.html'
