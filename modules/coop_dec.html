@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIAD - Coopération Décentralisée</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary-blue: #0f4c81; --secondary-green: #27ae60; --bg-light: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-light); margin: 0; }
+        .top-header-tools { background: white; padding: 12px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .filter-input { padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 11px; height: 32px; box-sizing: border-box; }
+        .btn-tool { height: 32px; padding: 0 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 4px; color: white; }
+        .stats-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .stat-card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-blue); }
+        .stat-card div:first-child { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+        .main-tabs { display: flex; gap: 4px; margin-bottom: 15px; border-bottom: 2px solid #eee; overflow-x: auto; padding: 0 20px; }
+        .main-tab-btn { padding: 10px 20px; background: #f8f9fa; color: #666; border: 1px solid #eee; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 600; white-space: nowrap; font-size: 12px; }
+        .main-tab-btn.active { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
+        .main-tab-content { display: none; padding: 0 20px; }
+        .main-tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .data-table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-height: calc(100vh - 250px); overflow-y: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1200px; }
+        .data-table th { background: var(--primary-blue); color: white; padding: 10px; text-align: left; position: sticky; top: 0; white-space: nowrap; z-index: 5; }
+        .data-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        .bg-green { background: #dcfce7; color: #166534; } .bg-blue { background: #dbeafe; color: #1e40af; }
+        .bg-gold { background: #fef3c7; color: #92400e; } .bg-red { background: #fee2e2; color: #991b1b; }
+        .action-btn { border: none; background: none; cursor: pointer; font-size: 14px; margin: 0 3px; }
+        .btn-edit { color: #f59e0b; } .btn-delete { color: #ef4444; }
+        .export-widget { position: fixed; bottom: 80px; right: 20px; z-index: 90; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid var(--secondary-green); max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; display: none; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto; padding: 10px; background: #fcfcfc; border: 1px solid #e9ecef; border-radius: 4px; }
+        .checkbox-grid label { font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-fab { position: fixed; bottom: 20px; right: 20px; background: var(--secondary-green); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100; }
+        .exp-tab-content { display: none; }
+        .exp-tab-content.active { display: block; animation: fadeIn 0.2s; }
+        .exp-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .exp-filter-grid label { font-size: 10px; font-weight: 700; color: #444; display: block; margin-bottom: 3px; }
+        .exp-filter-grid select { width: 100%; padding: 4px 6px; font-size: 11px; border: 1px solid #ced4da; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <aside class="sidebar-benin">
+            <div class="flag-stripes"><div class="stripe green"></div><div class="stripe yellow"></div><div class="stripe red"></div></div>
+            <div class="user-info-vertical"><p>Superviseur DGFD</p><button class="btn-disconnect" onclick="window.location.href='../index.html'">Déconnexion</button></div>
+        </aside>
+
+        <main class="content-area">
+            <header class="top-header-tools">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">Coopération Décentralisée</h1>
+                    <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <input type="text" id="filter-texte" class="filter-input" placeholder=" Rechercher..." style="width:160px;">
+                    <select id="filter-annee" class="filter-input" style="width:90px;"><option value="">Toutes années</option></select>
+                    <select id="filter-commune" class="filter-input" style="width:120px;"><option value="">Toutes communes</option></select>
+                    <select id="filter-pays" class="filter-input" style="width:120px;"><option value="">Tous pays</option></select>
+                    <select id="filter-type" class="filter-input" style="width:120px;"><option value="">Tous types</option></select>
+                    <select id="filter-secteur" class="filter-input" style="width:120px;"><option value="">Tous secteurs</option></select>
+                    <select id="filter-statut" class="filter-input" style="width:110px;"><option value="">Tous statuts</option></select>
+                    <button onclick="resetFilters()" class="btn-tool" style="background:#6c757d;"><i class="fas fa-undo"></i> Reset</button>
+                    <button onclick="toggleExportWidget()" class="btn-tool" style="background:var(--secondary-green);"><i class="fas fa-file-export"></i> Export</button>
+                </div>
+            </header>
+
+            <!-- DASHBOARD -->
+            <div class="stats-dashboard">
+                <div class="stat-card"><div>Total Accords</div><div id="stat-total" style="font-size:20px; font-weight:800;">-</div></div>
+                <div class="stat-card"><div>Montant Total (FCFA)</div><div id="stat-montant" style="font-size:20px; font-weight:800;">-</div></div>
+                <div class="stat-card"><div>Top Pays Partenaire</div><div id="stat-pays" style="font-size:14px; font-weight:800;">-</div></div>
+                <div class="stat-card"><div>Accords Actifs</div><div id="stat-actifs" style="font-size:20px; font-weight:800;">-</div></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">📅 Par Année de Signature</h4>
+                    <div id="chart-annees"></div>
+                </div>
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">🌍 Top 5 Pays Partenaires</h4>
+                    <div id="chart-pays"></div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">🤝 Par Type de Coopération</h4>
+                    <div id="chart-type"></div>
+                </div>
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">️ Par Secteur d'Intervention</h4>
+                    <div id="chart-secteur"></div>
+                </div>
+            </div>
+
+            <div style="background: #eef2f7; padding: 8px 15px; border-radius: 4px; font-size: 12px; color: #444; margin-bottom:10px;">
+                <strong>Résultats :</strong> <span id="count-value" style="color: var(--primary-blue); font-weight: 800;">-</span> accord(s)
+            </div>
+
+            <div class="main-tabs">
+                <button class="main-tab-btn active" onclick="switchMainTab(0)">📋 Accords</button>
+                <button class="main-tab-btn" onclick="switchMainTab(1)"> Actions & Projets</button>
+                <button class="main-tab-btn" onclick="switchMainTab(2)">✈️ Échanges & Visites</button>
+            </div>
+
+            <div id="main-tab-0" class="main-tab-content active">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf.</th><th>Commune Bénin</th><th>Collectivité Partenaire</th><th>Pays</th><th>Type</th><th>Date Sig.</th><th>Secteur</th><th>Montant</th><th>Statut</th><th>Actions</th></tr></thead>
+                        <tbody id="table-body-accords"><tr><td colspan="10" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="main-tab-1" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf. Action</th><th>Réf. Accord</th><th>Commune</th><th>Titre</th><th>Secteur</th><th>Budget</th><th>Statut</th></tr></thead>
+                        <tbody id="table-body-actions"><tr><td colspan="7" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="main-tab-2" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf. Échange</th><th>Réf. Accord</th><th>Type</th><th>Date</th><th>Lieu</th><th>Participants Bénin</th><th>Participants Partenaires</th></tr></thead>
+                        <tbody id="table-body-echanges"><tr><td colspan="7" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- WIDGET EXPORT -->
+    <div id="export-widget" class="export-widget">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:13px; color:var(--secondary-green); font-weight:700;"><i class="fas fa-file-export"></i> Export Personnalisé</h3>
+            <button onclick="toggleExportWidget()" style="background:none; border:none; cursor:pointer; font-size:18px; color:#666;">✕</button>
+        </div>
+        <div class="tabs-nav" id="export-tabs-nav" style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; border-bottom:1px solid #eee; padding-bottom:5px;">
+            <button class="tab-btn active" onclick="switchExportTab(0)">1. Identification</button>
+            <button class="tab-btn" onclick="switchExportTab(1)">2. Partenaires</button>
+            <button class="tab-btn" onclick="switchExportTab(2)">3. Période</button>
+            <button class="tab-btn" onclick="switchExportTab(3)">4. Financement</button>
+            <button class="tab-btn" onclick="switchExportTab(4)">5. Secteurs</button>
+            <button class="tab-btn" onclick="switchExportTab(5)">6. Contacts</button>
+            <button class="tab-btn" onclick="switchExportTab(6)">7. Suivi & Docs</button>
+        </div>
+
+        <div id="exp-tab-0" class="exp-tab-content active">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Année</label><select id="exp-filter-Annee" multiple size="3"><option value="">-- Toutes --</option></select></div>
+                <div><label>Filtrer par Type</label><select id="exp-filter-Type_Cooperation" multiple size="3"><option value="">-- Tous --</option></select></div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-identification"></div></div>
+        </div>
+        <div id="exp-tab-1" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Commune</label><select id="exp-filter-Commune_Benin" multiple size="3"><option value="">-- Toutes --</option></select></div>
+                <div><label>Filtrer par Pays</label><select id="exp-filter-Pays_Partenaire" multiple size="3"><option value="">-- Tous --</option></select></div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-partenaires"></div></div>
+        </div>
+        <div id="exp-tab-2" class="exp-tab-content">
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-periode"></div></div>
+        </div>
+        <div id="exp-tab-3" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Devise</label><select id="exp-filter-Devise" multiple size="3"><option value="">-- Toutes --</option></select></div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-financement"></div></div>
+        </div>
+        <div id="exp-tab-4" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Secteur</label><select id="exp-filter-Secteurs_Intervention" multiple size="3"><option value="">-- Tous --</option></select></div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-secteurs"></div></div>
+        </div>
+        <div id="exp-tab-5" class="exp-tab-content">
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-contacts"></div></div>
+        </div>
+        <div id="exp-tab-6" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Statut</label><select id="exp-filter-Statut" multiple size="3"><option value="">-- Tous --</option></select></div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes :</h5><div class="checkbox-grid" id="exp-cols-suivi"></div></div>
+        </div>
+
+        <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; padding-top:10px;">
+            <button onclick="selectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout cocher</button>
+            <button onclick="deselectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout décocher</button>
+            <button onclick="triggerCustomExport()" style="padding:6px 12px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px;">📥 Télécharger</button>
+        </div>
+    </div>
+
+    <button class="btn-fab" onclick="alert('Formulaire de saisie à implémenter selon le même modèle que les Accords.')">+</button>
+
+    <script>
+        const API_BASE = `http://${window.location.hostname || '127.0.0.1'}:5000`;
+        let allAccords = [], allActions = [], allEchanges = [];
+        let parametres = {};
+
+        const EXPORT_COLUMNS_MAP = {
+            identification: ['Ref_Accord', 'Type_Cooperation', 'Date_Signature'],
+            partenaires: ['Commune_Benin', 'Departement_Benin', 'Collectivite_Partenaire', 'Pays_Partenaire'],
+            periode: ['Date_Debut', 'Date_Fin', 'Duree_Annees', 'Frequence_Reunions', 'Derniere_Reunion', 'Prochaine_Reunion'],
+            financement: ['Montant_Total', 'Devise', 'Contributions_Benin', 'Contributions_Partenaire'],
+            secteurs: ['Secteurs_Intervention', 'Objectifs'],
+            contacts: ['Point_Focal_Benin', 'Contact_Partenaire'],
+            suivi: ['Statut', 'Actions_Realisees', 'Echanges_Effectues', 'Resultats_Obtenus', 'Difficultes', 'Recommandations', 'Observations']
+        };
+
+        const FILTER_PARAM_MAP = {
+            'exp-filter-Type_Cooperation': 'TYPE_COOPERATION',
+            'exp-filter-Statut': 'STATUT_COOP',
+            'exp-filter-Secteurs_Intervention': 'SECTEURS',
+            'exp-filter-Commune_Benin': 'COMMUNES_BENIN',
+            'exp-filter-Pays_Partenaire': 'PAYS'
+        };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([loadParametres(), loadAccords(), loadActions(), loadEchanges()]);
+            initExportInterface();
+            initFilters();
+            updateStats();
+        });
+
+        async function loadParametres() {
+            try {
+                const res = await fetch(`${API_BASE}/api/coop_dec/parametres`);
+                parametres = await res.json();
+            } catch(e) { console.error("Err params:", e); }
+        }
+
+        async function loadAccords() {
+            try {
+                const res = await fetch(`${API_BASE}/api/coop_dec/list?t=` + Date.now());
+                allAccords = await res.json();
+                renderAccords(allAccords);
+                populateFilters();
+                updateStats();
+            } catch(e) { console.error("Err accords:", e); }
+        }
+
+        async function loadActions() {
+            try {
+                const res = await fetch(`${API_BASE}/api/coop_dec/actions`);
+                allActions = await res.json();
+                const tbody = document.getElementById('table-body-actions');
+                tbody.innerHTML = allActions.length ? allActions.map(a => `<tr><td>${a.Ref_Action||''}</td><td>${a.Ref_Accord||''}</td><td>${a.Commune_Benin||''}</td><td>${a.Titre_Action||''}</td><td>${a.Secteur||''}</td><td>${a.Budget||''}</td><td>${a.Statut||''}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err actions:", e); }
+        }
+
+        async function loadEchanges() {
+            try {
+                const res = await fetch(`${API_BASE}/api/coop_dec/echanges`);
+                allEchanges = await res.json();
+                const tbody = document.getElementById('table-body-echanges');
+                tbody.innerHTML = allEchanges.length ? allEchanges.map(e => `<tr><td>${e.Ref_Echange||''}</td><td>${e.Ref_Accord||''}</td><td>${e.Type_Echange||''}</td><td>${e.Date||''}</td><td>${e.Lieu||''}</td><td>${e.Participants_Benin||''}</td><td>${e.Participants_Partenaires||''}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err echanges:", e); }
+        }
+
+        function renderAccords(data) {
+            const tbody = document.getElementById('table-body-accords');
+            document.getElementById('count-value').textContent = data.length;
+            tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;">Aucun accord.</td></tr>'; return; }
+
+            function getValidCurrency(devise) {
+                const mapping = {'FCFA': 'XOF', 'XOF': 'XOF', 'EUR': 'EUR', 'USD': 'USD', 'GBP': 'GBP', 'JPY': 'JPY', 'CNY': 'CNY', 'DTS': 'XDR'};
+                return mapping[devise] || 'XOF';
+            }
+
+            data.forEach(acc => {
+                try {
+                    let badgeClass = 'bg-gold';
+                    const statut = (acc.Statut||'').toLowerCase();
+                    if (statut.includes('actif')) badgeClass = 'bg-green';
+                    else if (statut.includes('expir')) badgeClass = 'bg-red';
+                    else if (statut.includes('suspendu')) badgeClass = 'bg-blue';
+
+                    let montant = '-';
+                    if (acc.Montant_Total) {
+                        try {
+                            const deviseVal = parseFloat(acc.Montant_Total);
+                            if (!isNaN(deviseVal)) {
+                                const currency = getValidCurrency(acc.Devise);
+                                montant = new Intl.NumberFormat('fr-BJ', {style: 'currency', currency: currency, maximumFractionDigits: 0}).format(deviseVal);
+                            }
+                        } catch (e) { montant = acc.Montant_Total + ' ' + (acc.Devise || ''); }
+                    }
+
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${acc.Ref_Accord||'-'}</strong></td>
+                        <td>${acc.Commune_Benin||'-'}</td>
+                        <td><div style="font-weight:600">${acc.Collectivite_Partenaire||'-'}</div></td>
+                        <td>${acc.Pays_Partenaire||'-'}</td>
+                        <td>${acc.Type_Cooperation||'-'}</td>
+                        <td style="white-space:nowrap;">${acc.Date_Signature || '-'}</td>
+                        <td>${acc.Secteurs_Intervention||'-'}</td>
+                        <td style="font-weight:bold;text-align:right">${montant}</td>
+                        <td><span class="badge ${badgeClass}">${acc.Statut||'-'}</span></td>
+                        <td>
+                            <button class="action-btn btn-edit" onclick="alert('Formulaire d\'édition à implémenter')"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn btn-delete" onclick="deleteAccord('${acc.Ref_Accord}')"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
+                } catch (err) { console.error(`Erreur accord ${acc.Ref_Accord}:`, err); }
+            });
+        }
+
+        function updateStats() {
+            const getEl = (id) => document.getElementById(id);
+            const parseNum = (val) => {
+                if (!val && val !== 0) return 0;
+                if (typeof val === 'number') return isNaN(val) ? 0 : val;
+                let str = String(val).replace(/[^0-9.,\-]/g, '').replace(',', '.');
+                return parseFloat(str) || 0;
+            };
+
+            if (!allAccords || allAccords.length === 0) {
+                ['stat-total','stat-montant','stat-actifs','stat-pays'].forEach(id => { if(getEl(id)) getEl(id).textContent = id==='stat-pays'?'-':'0'; });
+                ['chart-annees','chart-pays','chart-type','chart-secteur'].forEach(id => { if(getEl(id)) getEl(id).innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>'; });
+                return;
+            }
+
+            const total = allAccords.length;
+            const montantTotal = allAccords.reduce((sum, a) => {
+                const montant = parseNum(a.Montant_Total);
+                if (!montant) return sum;
+                const devise = (a.Devise || '').toUpperCase();
+                let taux = 1;
+                if (devise === 'USD') taux = 610; else if (devise === 'EUR') taux = 655; else if (devise === 'GBP') taux = 770;
+                return sum + (montant * taux);
+            }, 0);
+            const actifs = allAccords.filter(a => (a.Statut||'').toLowerCase().includes('actif')).length;
+
+            if(getEl('stat-total')) getEl('stat-total').textContent = total.toLocaleString('fr-BJ');
+            if(getEl('stat-montant')) getEl('stat-montant').textContent = new Intl.NumberFormat('fr-BJ', {maximumFractionDigits:0}).format(montantTotal) + ' FCFA';
+            if(getEl('stat-actifs')) getEl('stat-actifs').textContent = actifs.toLocaleString('fr-BJ');
+
+            const pays = {};
+            allAccords.forEach(a => { pays[a.Pays_Partenaire || 'Non défini'] = (pays[a.Pays_Partenaire || 'Non défini'] || 0) + 1; });
+            const topPays = Object.entries(pays).sort((a,b) => b[1]-a[1])[0];
+            if (topPays && getEl('stat-pays')) {
+                const pct = Math.round((topPays[1] / total) * 100);
+                getEl('stat-pays').textContent = `${topPays[0]} (${pct}%)`;
+            }
+
+            // Chart Années
+            const anneesData = {};
+            allAccords.forEach(a => { 
+                const an = a.Date_Signature ? a.Date_Signature.split('-')[0] : 'N/A'; 
+                if (!anneesData[an]) anneesData[an] = { count: 0, montant: 0 };
+                anneesData[an].count++;
+                const montant = parseNum(a.Montant_Total);
+                const devise = (a.Devise || '').toUpperCase();
+                let taux = 1;
+                if (devise === 'USD') taux = 610; else if (devise === 'EUR') taux = 655; else if (devise === 'GBP') taux = 770;
+                anneesData[an].montant += (montant * taux);
+            });
+            const sortedAnnees = Object.keys(anneesData).filter(a => a !== 'N/A' && parseInt(a) >= 2000 && parseInt(a) <= 2030).sort((a, b) => parseInt(b) - parseInt(a));
+            const maxCount = Math.max(...sortedAnnees.map(a => anneesData[a].count), 1);
+            const chartAnnees = getEl('chart-annees');
+            if(chartAnnees) {
+                chartAnnees.innerHTML = '';
+                sortedAnnees.forEach(annee => {
+                    const data = anneesData[annee];
+                    const pct = (data.count / maxCount) * 100;
+                    chartAnnees.innerHTML += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div><div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;"><div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div><div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap;">${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.montant)} F (${data.count})</div></div></div>`;
+                });
+            }
+
+            // Chart Pays
+            const maxPays = Math.max(...Object.values(pays), 1);
+            const chartPays = getEl('chart-pays');
+            if(chartPays) {
+                chartPays.innerHTML = '';
+                Object.entries(pays).sort((a,b)=>b[1]-a[1]).slice(0, 5).forEach(([pays, count]) => {
+                    const pct = (count/maxPays)*100;
+                    chartPays.innerHTML += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><div style="width:90px; font-size:9px; font-weight:600; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${pays}</div><div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;"><div style="width:${pct}%; background:#27ae60; height:100%; border-radius:3px;"></div></div><div style="width:30px; font-size:9px; font-weight:700; text-align:right; color:#333;">${count}</div></div>`;
+                });
+            }
+
+            // Chart Type
+            const types = {};
+            allAccords.forEach(a => { types[a.Type_Cooperation || 'Non défini'] = (types[a.Type_Cooperation || 'Non défini'] || 0) + 1; });
+            const maxType = Math.max(...Object.values(types), 1);
+            const chartType = getEl('chart-type');
+            if(chartType) {
+                chartType.innerHTML = '';
+                Object.entries(types).sort((a,b)=>b[1]-a[1]).forEach(([type, count]) => {
+                    const pct = (count/maxType)*100;
+                    chartType.innerHTML += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><div style="width:90px; font-size:9px; font-weight:600; color:#666;">${type}</div><div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;"><div style="width:${pct}%; background:#3498db; height:100%; border-radius:3px;"></div></div><div style="width:30px; font-size:9px; font-weight:700; text-align:right; color:#333;">${count}</div></div>`;
+                });
+            }
+
+            // Chart Secteur
+            const secteurs = {};
+            allAccords.forEach(a => { secteurs[a.Secteurs_Intervention || 'Non défini'] = (secteurs[a.Secteurs_Intervention || 'Non défini'] || 0) + 1; });
+            const maxSecteur = Math.max(...Object.values(secteurs), 1);
+            const chartSecteur = getEl('chart-secteur');
+            if(chartSecteur) {
+                chartSecteur.innerHTML = '';
+                Object.entries(secteurs).sort((a,b)=>b[1]-a[1]).forEach(([secteur, count]) => {
+                    const pct = (count/maxSecteur)*100;
+                    chartSecteur.innerHTML += `<div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;"><div style="width:90px; font-size:9px; font-weight:600; color:#666;">${secteur}</div><div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;"><div style="width:${pct}%; background:#9b59b6; height:100%; border-radius:3px;"></div></div><div style="width:30px; font-size:9px; font-weight:700; text-align:right; color:#333;">${count}</div></div>`;
+                });
+            }
+        }
+
+        function populateFilters() {
+            const fill = (id, data) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const currentVal = el.value;
+                const firstOpt = el.options[0] ? el.options[0].outerHTML : '<option value="">Tous</option>';
+                el.innerHTML = firstOpt;
+                [...new Set(data)].filter(v => v).sort().forEach(opt => {
+                    const o = document.createElement('option'); o.value = opt; o.textContent = opt; el.appendChild(o);
+                });
+                el.value = currentVal;
+            };
+            fill('#filter-annee', allAccords.map(a => a.Date_Signature ? a.Date_Signature.split('-')[0] : ''));
+            fill('#filter-commune', allAccords.map(a => a.Commune_Benin));
+            fill('#filter-pays', allAccords.map(a => a.Pays_Partenaire));
+            fill('#filter-type', allAccords.map(a => a.Type_Cooperation));
+            fill('#filter-secteur', allAccords.map(a => a.Secteurs_Intervention));
+            fill('#filter-statut', allAccords.map(a => a.Statut));
+        }
+
+        function fillSelect(selector, options) {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            const currentVal = el.value;
+            const firstOpt = el.options[0] ? el.options[0].outerHTML : '<option value="">Tous</option>';
+            el.innerHTML = firstOpt;
+            options.forEach(opt => { const o = document.createElement('option'); o.value = opt; o.textContent = opt; el.appendChild(o); });
+            el.value = currentVal;
+        }
+
+        function initFilters() {
+            ['filter-texte', 'filter-annee', 'filter-commune', 'filter-pays', 'filter-type', 'filter-secteur', 'filter-statut'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.addEventListener('input', applyFilters); el.addEventListener('change', applyFilters); }
+            });
+        }
+
+        function applyFilters() {
+            const texte = document.getElementById('filter-texte')?.value.toLowerCase().trim() || '';
+            const annee = document.getElementById('filter-annee')?.value || '';
+            const commune = document.getElementById('filter-commune')?.value || '';
+            const pays = document.getElementById('filter-pays')?.value || '';
+            const type = document.getElementById('filter-type')?.value || '';
+            const secteur = document.getElementById('filter-secteur')?.value || '';
+            const statut = document.getElementById('filter-statut')?.value || '';
+            
+            const filtered = allAccords.filter(a => {
+                const matchTexte = !texte || (a.Ref_Accord && a.Ref_Accord.toLowerCase().includes(texte)) || (a.Collectivite_Partenaire && a.Collectivite_Partenaire.toLowerCase().includes(texte));
+                const matchAnnee = !annee || (a.Date_Signature && a.Date_Signature.startsWith(annee));
+                const matchCommune = !commune || a.Commune_Benin === commune;
+                const matchPays = !pays || a.Pays_Partenaire === pays;
+                const matchType = !type || a.Type_Cooperation === type;
+                const matchSecteur = !secteur || a.Secteurs_Intervention === secteur;
+                const matchStatut = !statut || a.Statut === statut;
+                return matchTexte && matchAnnee && matchCommune && matchPays && matchType && matchSecteur && matchStatut;
+            });
+            renderAccords(filtered);
+        }
+
+        function resetFilters() {
+            ['filter-texte', 'filter-annee', 'filter-commune', 'filter-pays', 'filter-type', 'filter-secteur', 'filter-statut'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            applyFilters();
+        }
+
+        function switchMainTab(index) {
+            document.querySelectorAll('.main-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`main-tab-${index}`).classList.add('active');
+            document.querySelectorAll('.main-tab-btn')[index].classList.add('active');
+        }
+
+        function switchExportTab(index) {
+            document.querySelectorAll('.exp-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#export-tabs-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`exp-tab-${index}`).classList.add('active');
+            document.querySelectorAll('#export-tabs-nav .tab-btn')[index].classList.add('active');
+        }
+
+        function initExportInterface() {
+            Object.entries(EXPORT_COLUMNS_MAP).forEach(([tabKey, cols]) => {
+                const container = document.getElementById(`exp-cols-${tabKey}`);
+                if(!container) return;
+                container.innerHTML = '';
+                cols.forEach(col => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" value="${col}" checked style="accent-color:var(--secondary-green);"> ${col.replace(/_/g,' ')}`;
+                    container.appendChild(label);
+                });
+            });
+            Object.entries(FILTER_PARAM_MAP).forEach(([selectId, paramName]) => {
+                const values = parametres[paramName] || [];
+                if (values.length > 0) fillSelect(selectId, values);
+            });
+            fillSelect('exp-filter-Annee', [...new Set(allAccords.map(a => a.Date_Signature ? a.Date_Signature.split('-')[0] : ''))].filter(v => v));
+        }
+
+        function toggleExportWidget() { const w = document.getElementById('export-widget'); w.style.display = w.style.display === 'none' ? 'block' : 'none'; }
+        function selectAllExportCols() { document.querySelectorAll('[id^="exp-cols-"] input').forEach(i => i.checked = true); }
+        function deselectAllExportCols() { document.querySelectorAll('[id^="exp-cols-"] input').forEach(i => i.checked = false); }
+
+        async function triggerCustomExport() {
+            const filters = {};
+            document.querySelectorAll('select[id^="exp-filter-"]').forEach(select => {
+                const fieldName = select.id.replace('exp-filter-', '');
+                const values = [];
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].selected && select.options[i].value && select.options[i].value.trim()) values.push(select.options[i].value.trim());
+                }
+                if (values.length > 0) filters[fieldName] = values;
+            });
+            const selected_columns = [];
+            document.querySelectorAll('[id^="exp-cols-"] input[type="checkbox"]:checked').forEach(cb => selected_columns.push(cb.value));
+            if (selected_columns.length === 0) return alert("️ Cochez au moins une colonne.");
+
+            try {
+                const res = await fetch(`${API_BASE}/api/coop_dec/export`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filters, selected_columns })
+                });
+                if (!res.ok) throw new Error(`Erreur: ${res.status}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `Export_CoopDec_${new Date().getTime()}.xlsx`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                toggleExportWidget();
+            } catch (e) { alert('❌ Erreur export: ' + e.message); }
+        }
+
+        async function deleteAccord(ref) {
+            if (confirm("Supprimer cet accord ?")) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/coop_dec/delete/${ref}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error('Erreur');
+                    loadAccords();
+                } catch (err) { alert('Erreur: ' + err.message); }
+            }
+        }
+    </script>
+</body>
+</html>

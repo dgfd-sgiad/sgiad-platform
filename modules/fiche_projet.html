@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche d'identité du projet</title>
+<style>
+:root{--green:#0e7a3a;--yellow:#f2b70b;--red:#d5251f;--ink:#1c1c1c;--line:#d8d8d8}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#eef0f2;color:var(--ink);font-size:11.5px}
+.page{width:210mm;margin:10px auto;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.18)}
+.flagbar{display:flex;height:7px}.flagbar span{flex:1}.flagbar .g{background:var(--green)}.flagbar .y{background:var(--yellow)}.flagbar .r{background:var(--red)}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* En-tête */
+header{padding:10px 14px 2px}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hleft{display:flex;gap:8px;align-items:center}
+.emblem{width:54px;height:54px}
+.hleft .t1{font-weight:700;font-size:11px}
+.tri{display:flex;height:3px;width:140px;margin:2px 0 4px}.tri span{flex:1}
+.hleft .t2{font-size:9.5px;font-weight:600;line-height:1.3}
+.hright{border:2px dashed #bbb;border-radius:8px;padding:6px 8px;color:#999;font-size:8.5px;text-align:center;width:180px}
+.hright .ic{width:52px;height:32px;stroke:#999;margin-top:3px}
+.hcenter{text-align:center;margin:2px 0 8px}
+.hcenter h1{color:var(--green);font-size:23px;letter-spacing:.5px}
+.hcenter h2{font-size:10.5px;letter-spacing:1px}
+.dots{display:flex;justify-content:center;gap:14px;margin-top:6px}.dots i{width:10px;height:10px;border-radius:50%}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:0 14px}
+.kpi{border:1px solid #e2e2e2;border-radius:8px;padding:8px;display:flex;align-items:center;gap:8px}
+.kpi .ic{width:26px;height:26px;flex:none}
+.kpi .t{font-size:8.5px;font-weight:700;text-transform:uppercase}
+.kpi .v{font-size:11px;font-weight:800}.kpi .v small{display:block;font-size:8.5px;color:#555}
+.c-g{color:var(--green)}.c-y{color:#d99a00}.c-r{color:var(--red)}
+/* Panneaux */
+.panel{border:1px solid #e3e3e3;border-radius:6px;margin:8px 14px 0;overflow:hidden}
+.phead{background:var(--green);color:#fff;font-weight:700;font-size:11px;padding:6px 10px;display:flex;align-items:center;gap:7px}
+.phead .ic{width:14px;height:14px}
+.pbody{padding:8px 10px}
+.line{display:flex;gap:8px;padding:5px 2px;border-bottom:1px dashed #ccc}
+.line:last-child{border-bottom:none}
+.line .lab{flex:0 0 44%;font-weight:600;display:flex;gap:6px;align-items:flex-start}
+.line .lab .ic{width:12px;height:12px;flex:none;margin-top:1px;color:var(--green)}
+.line .val{flex:1}.line .val ul{padding-left:14px}
+.val.red{color:var(--red);font-weight:800}
+a.web{color:var(--green);font-weight:700;text-decoration:none}
+/* Finances */
+.finwrap{display:flex;gap:10px;align-items:center}
+.finwrap .lines{flex:1}
+.donutbox{width:170px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.donut{width:130px;height:130px;border-radius:50%;position:relative;background:conic-gradient(var(--green) 0 58.82%,var(--yellow) 58.82% 100%)}
+.donut::after{content:'';position:absolute;inset:23px;background:#fff;border-radius:50%}
+.donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+.donut .ctr b{font-size:15px}.donut .ctr span{font-size:8px}
+.legend{font-size:10px;font-weight:600}.legend i{width:10px;height:10px;display:inline-block;margin-right:5px;border-radius:2px}
+/* Carte */
+.map{width:100%;margin-top:4px}
+/* Timeline */
+.tl{display:flex;justify-content:space-between;position:relative;padding:4px 2px 0}
+.tl::before{content:'';position:absolute;left:40px;right:40px;top:42px;height:2px;background:#bbb}
+.step{width:20%;display:flex;flex-direction:column;align-items:center;gap:5px}
+.step .name{font-size:9.5px;font-weight:700;text-align:center}
+.step .c{width:34px;height:34px;border-radius:50%;background:#fff;border:3px solid var(--green);display:flex;align-items:center;justify-content:center;z-index:1}
+.step .c .ic{width:15px;height:15px}
+.step.orange .c{border-color:#f28c00}.step.orange .ic{color:#f28c00}
+.step.red .c{border-color:var(--red)}.step.red .ic{color:var(--red)}
+.step .date{font-size:9.5px;font-weight:700}
+.durline{position:relative;height:2px;background:#999;margin:14px 40px 6px}
+.durline::before,.durline::after{content:'';position:absolute;top:0;width:2px;height:9px;background:#999}
+.durline::before{left:0}.durline::after{right:0}
+.durlab{position:absolute;left:50%;top:-13px;transform:translateX(-50%);background:#fff;border:1px solid #ccc;border-radius:4px;padding:3px 12px;font-weight:800;font-size:10.5px;white-space:nowrap}
+/* ODD */
+.s7wrap{display:flex;gap:10px}
+.s7wrap .lines{flex:1}
+.odds{display:grid;grid-template-columns:repeat(2,92px);gap:6px;align-content:start}
+.odd{height:88px;color:#fff;padding:6px;display:flex;flex-direction:column}
+.odd .n{font-size:15px;font-weight:800}.odd .t{font-size:7px;font-weight:700;line-height:1.15}
+/* Suivi */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center;padding-bottom:8px;border-bottom:1px solid #e0e0e0}
+.stat .lab{font-size:8.5px;font-weight:700;min-height:22px}
+.gauge{width:86px;height:54px}
+.gauge text{font-size:14px;font-weight:800;fill:#222}
+.big{font-size:22px;font-weight:800;padding-top:12px}
+.dline{border-bottom:1px dashed #bbb;height:20px}
+/* Docs */
+.docs{display:flex;flex-wrap:wrap;gap:10px}
+.doc{display:flex;align-items:center;gap:7px;width:160px}
+.doc svg{width:24px;height:28px;flex:none}
+.doc .t{font-size:9.5px;font-weight:600}
+.doc.plus{border:2px dashed #999;border-radius:8px;padding:8px 10px;width:auto;flex-direction:column;color:#777;font-weight:700;font-size:9px}
+footer{display:flex;align-items:center;justify-content:center;margin:12px 14px 10px;position:relative}
+footer .txt{color:var(--green);font-style:italic;font-size:12px}
+footer .fb{display:flex;width:100px;height:8px;position:absolute;right:0}
+footer .fb span{flex:1}
+/* Boutons (jamais imprimés) */
+.actions-bar{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:99}
+.actions-bar button{border:none;border-radius:6px;padding:9px 13px;font-weight:700;font-size:12px;cursor:pointer;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+@media print{
+  @page{size:A4 portrait;margin:6mm}
+  body{background:#fff}
+  .page{width:100%;margin:0;box-shadow:none}
+  .actions-bar{display:none!important}
+  .panel{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 12h8M9 16h8"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
+<symbol id="i-hand" viewBox="0 0 24 24"><path d="M2 9l5-4 5 3 5-3 5 4"/><path d="M9 11l3 4 3-4"/></symbol>
+<symbol id="i-money" viewBox="0 0 24 24"><path d="M9 5h6l3 4c2 3 2 10-6 10S4 12 6 9z"/><path d="M9 5L8 3M15 5l1-2M12 9v7M10 11h4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-pie" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M14 2a9 9 0 0 1 8 8h-8z"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7v1"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M3 5c3-1.5 6-1.5 9 0 3-1.5 6-1.5 9 0v14c-3-1.5-6-1.5-9 0-3-1.5-6-1.5-9 0z"/><path d="M12 5v14"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20h16M7 20v-8M12 20V6M17 20v-5"/></symbol>
+<symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4a3 3 0 0 1 6 0M9 11h6M9 15h6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-5L16 4l4 4L9 19z"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 21V4M6 4h12l-3 4 3 4H6"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="16" cy="10" r="3"/><path d="M4 19c0-3 2.5-5 5-5s5 2 5 5M14 19c0-2.5 1.6-4 3.5-4 1.9 0 3.5 1.5 3.5 4"/></symbol>
+</svg>
+
+<div class="actions-bar">
+  <button style="background:#6b7280" onclick="history.back()">← Retour</button>
+  <button style="background:#0e7a3a" onclick="enregistrerHTML()">💾 Enregistrer</button>
+  <button style="background:#d5251f" onclick="window.print()">📄 Télécharger PDF</button>
+</div>
+
+<div class="page">
+<div class="flagbar"><span class="g"></span><span class="y"></span><span class="r"></span></div>
+
+<header>
+  <div class="hrow">
+    <div class="hleft">
+      <svg class="emblem" viewBox="0 0 64 64"><path d="M14 46c-4-8-4-20 2-26 3 6 4 8 6 10-2 6-2 10-2 16z" fill="#f2b70b"/><path d="M50 46c4-8 4-20-2-26-3 6-4 8-6 10 2 6 2 10 2 16z" fill="#f2b70b"/><rect x="22" y="16" width="20" height="26" rx="2" fill="#0e7a3a"/><path d="M32 20l2 4 4 .5-3 3 .8 4-3.8-2-3.8 2 .8-4-3-3 4-.5z" fill="#f2b70b"/><path d="M26 36h12M24 42h16" stroke="#f2b70b" stroke-width="2"/></svg>
+      <div>
+        <div class="t1">RÉPUBLIQUE DU BÉNIN</div>
+        <div class="tri"><span style="background:#0e7a3a"></span><span style="background:#f2b70b"></span><span style="background:#d5251f"></span></div>
+        <div class="t2">MINISTÈRE DE L'ÉCONOMIE<br>ET DES FINANCES<br>DIRECTION GÉNÉRALE DU FINANCEMENT<br>DU DÉVELOPPEMENT (DGFD)</div>
+      </div>
+    </div>
+    <div class="hright">LOGO DU PARTENAIRE<br><svg class="ic"><use href="#i-hand"/></svg></div>
+  </div>
+  <div class="hcenter">
+    <h1>FICHE D'IDENTITÉ DU PROJET</h1>
+    <h2>SUIVI DES ACCORDS DE FINANCEMENT AU BÉNIN</h2>
+    <div class="dots"><i style="background:#0e7a3a"></i><i style="background:#f2b70b"></i><i style="background:#d5251f"></i></div>
+  </div>
+</header>
+
+<div class="kpis">
+  <div class="kpi"><svg class="ic c-g"><use href="#i-doc"/></svg><div><div class="t">Code Projet</div><div class="v" id="kpi_code">ACC-2025-XXX</div></div></div>
+  <div class="kpi"><svg class="ic c-g"><use href="#i-cal"/></svg><div><div class="t">Statut</div><div class="v c-g" id="kpi_statut">EN COURS ●</div></div></div>
+  <div class="kpi"><svg class="ic c-y"><use href="#i-hand"/></svg><div><div class="t">Partenaire</div><div class="v" id="kpi_partenaire" style="font-size:10px">Banque Africaine de Développement</div></div></div>
+  <div class="kpi"><svg class="ic c-r"><use href="#i-money"/></svg><div><div class="t">Montant Total (FCFA)</div><div class="v c-r" id="kpi_montant">25,500,000,000</div></div></div>
+  <div class="kpi"><svg class="ic c-g"><use href="#i-clock"/></svg><div><div class="t">Durée</div><div class="v" id="kpi_duree">60 Mois<small>(2025-2030)</small></div></div></div>
+  <div class="kpi"><svg class="ic c-g"><use href="#i-pie"/></svg><div><div class="t">Secteur Principal</div><div class="v c-g" id="kpi_secteur">AGRICULTURE</div></div></div>
+</div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-info"/></svg>1. INFORMATIONS GÉNÉRALES</div><div class="pbody">
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-doc"/></svg>Code Projet</div><div class="val" id="v_code">ACC-2025-XXX</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-cal"/></svg>Année de signature</div><div class="val" id="v_ansig">2025</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-cal"/></svg>Année de clôture prévue</div><div class="val" id="v_anclot">2030</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-target"/></svg>Modalité d'intervention</div><div class="val" id="v_modalite">Projet</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-doc"/></svg>Instrument de financement</div><div class="val" id="v_instrument">Accord de prêt / Don</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-pie"/></svg>Nature</div><div class="val" id="v_nature">Mixte</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-check"/></svg>APD</div><div class="val" id="v_apd">Oui</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-money"/></svg>Type de financement</div><div class="val" id="v_typefin">Bilatéral</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-users"/></svg>Type de contributeur</div><div class="val" id="v_typecontrib">Bailleur Multilatéral</div></div>
+  <div class="line"><div class="lab"><svg class="ic"><use href="#i-check"/></svg>Statut</div><div class="val" id="v_statut">En cours</div></div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-book"/></svg>2. DESCRIPTION DU PROJET</div><div class="pbody">
+  <div class="line"><div class="lab">Objet de l'accord</div><div class="val" id="v_objet">Financement du Projet d'Appui à la Modernisation de l'Agriculture et à la Sécurité Alimentaire.</div></div>
+  <div class="line"><div class="lab">Objectif général</div><div class="val" id="v_objgen">Contribuer à l'amélioration durable de la productivité agricole et à la sécurité alimentaire.</div></div>
+  <div class="line"><div class="lab">Objectifs spécifiques</div><div class="val" id="v_objspec"><ul><li>Accroître la productivité des filières agricoles ciblées ;</li><li>Renforcer les infrastructures et équipements agricoles ;</li><li>Améliorer l'accès aux marchés et aux services financiers ;</li><li>Renforcer les capacités des acteurs et l'innovation.</li></ul></div></div>
+  <div class="line"><div class="lab">Résultats attendus</div><div class="val" id="v_resultats"><ul><li>Augmentation des rendements agricoles ;</li><li>Amélioration des revenus des producteurs ;</li><li>Sécurité alimentaire renforcée.</li></ul></div></div>
+  <div class="line"><div class="lab">Principales composantes</div><div class="val" id="v_composantes"><ul><li>Appui à la production agricole</li><li>Infrastructures rurales</li><li>Renforcement des capacités</li><li>Gestion de projet</li></ul></div></div>
+  <div class="line"><div class="lab">Bénéficiaires directs</div><div class="val" id="v_benef">Producteurs agricoles, coopératives, PME agroalimentaires</div></div>
+  <div class="line"><div class="lab">Population cible</div><div class="val" id="v_pop">Communautés rurales des zones d'intervention</div></div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-money"/></svg>3. INFORMATIONS FINANCIÈRES</div><div class="pbody finwrap">
+  <div class="lines">
+    <div class="line"><div class="lab">Devise</div><div class="val" id="v_devise">USD</div></div>
+    <div class="line"><div class="lab">Montant Prêt (FCFA)</div><div class="val" id="v_pret">15 000 000 000</div></div>
+    <div class="line"><div class="lab">Montant Don (FCFA)</div><div class="val" id="v_don">10 500 000 000</div></div>
+    <div class="line"><div class="lab">Montant Total (FCFA)</div><div class="val red" id="v_total">25 500 000 000</div></div>
+    <div class="line"><div class="lab">Montant total (Devise)</div><div class="val" id="v_totaldev">43 000 000</div></div>
+    <div class="line"><div class="lab">Pourcentage Prêt</div><div class="val" id="v_pctpret">58,82 %</div></div>
+    <div class="line"><div class="lab">Pourcentage Don</div><div class="val" id="v_pctdon">41,18 %</div></div>
+  </div>
+  <div class="donutbox">
+    <div class="donut" id="donut"><div class="ctr"><b id="donut_val">25,5</b><span>Milliards FCFA</span></div></div>
+    <div class="legend"><div><i style="background:#0e7a3a"></i>Prêt : <span id="leg_pret">58,82 %</span></div><div><i style="background:#f2b70b"></i>Don : <span id="leg_don">41,18 %</span></div></div>
+  </div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-users"/></svg>4. PARTENAIRE FINANCIER</div><div class="pbody">
+  <div class="line"><div class="lab">Partenaire</div><div class="val" id="v_partenaire2">Banque Africaine de Développement</div></div>
+  <div class="line"><div class="lab">Sigle_Part</div><div class="val" id="v_sigle">BAD</div></div>
+  <div class="line"><div class="lab">Co-partenaires</div><div class="val" id="v_copartenaires">—</div></div>
+  <div class="line"><div class="lab">Type de contributeur</div><div class="val" id="v_typecontrib2">Bailleur Multilatéral</div></div>
+  <div class="line"><div class="lab">Adresse</div><div class="val" id="v_adresse">Immeuble CCIA, Avenue Jean-Paul II, Abidjan, Côte d'Ivoire</div></div>
+  <div class="line"><div class="lab">Contact</div><div class="val" id="v_contact">+225 20 26 44 44</div></div>
+  <div class="line"><div class="lab">Site web</div><div class="val"><a class="web" href="#" id="v_web">www.afdb.org</a></div></div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-pin"/></svg>5. LOCALISATION</div><div class="pbody">
+  <div class="line"><div class="lab">Zone d'intervention</div><div class="val" id="v_zone">Nord, Centre, Sud</div></div>
+  <div class="line"><div class="lab">Départements</div><div class="val" id="v_deps">Alibori, Borgou, Zou, Atlantique</div></div>
+  <div class="line"><div class="lab">Communes</div><div class="val" id="v_communes">10 Communes ciblées</div></div>
+  <div class="line"><div class="lab">Niveau</div><div class="val" id="v_niveau">Régional / Local</div></div>
+  <svg class="map" viewBox="0 0 220 120"><path d="M18 72 L55 58 L92 62 L128 50 L168 56 L204 68 L196 88 L150 96 L104 92 L60 90 L30 84 Z" fill="#ececec" stroke="#9a9a9a"/><path d="M60 74 L82 70 L88 82 L66 86 Z" fill="#7fc29a"/><path d="M92 74 L108 72 L112 82 L96 84 Z" fill="#a9d7bc"/><path d="M128 62 L152 60 L158 76 L134 78 Z" fill="#1b8a4a"/></svg>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-cal"/></svg>6. CALENDRIER DU PROJET</div><div class="pbody">
+  <div class="tl">
+    <div class="step"><div class="name">Approbation</div><div class="c c-g"><svg class="ic"><use href="#i-check"/></svg></div><div class="date" id="d_approb">15/04/2025</div></div>
+    <div class="step"><div class="name">Signature</div><div class="c c-g"><svg class="ic"><use href="#i-pen"/></svg></div><div class="date" id="d_sig">20/05/2025</div></div>
+    <div class="step"><div class="name">Entrée en vigueur</div><div class="c c-g"><svg class="ic"><use href="#i-play"/></svg></div><div class="date" id="d_vig">10/06/2025</div></div>
+    <div class="step orange"><div class="name">1er Décaissement</div><div class="c"><svg class="ic"><use href="#i-money"/></svg></div><div class="date" id="d_dec">30/07/2025</div></div>
+    <div class="step red"><div class="name">Clôture prévue</div><div class="c"><svg class="ic"><use href="#i-flag"/></svg></div><div class="date" id="d_clot">30/06/2030</div></div>
+  </div>
+  <div class="durline"><div class="durlab" id="duree_lab">Durée totale : 60 mois</div></div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-target"/></svg>7. SECTEUR &amp; STRATÉGIES NATIONALES</div><div class="pbody s7wrap">
+  <div class="lines">
+    <div class="line"><div class="lab">Secteur principal</div><div class="val" id="v_secteur2">Agriculture</div></div>
+    <div class="line"><div class="lab">Sous-secteur</div><div class="val" id="v_soussecteur">Production végétale</div></div>
+    <div class="line"><div class="lab">Axe PAG</div><div class="val" id="v_axe">Axe 2 : Développement du capital humain et social</div></div>
+    <div class="line"><div class="lab">Pilier PAG</div><div class="val" id="v_pilier">Pilier 2 : Promotion de la croissance inclusive</div></div>
+    <div class="line"><div class="lab">ODD</div><div class="val" id="v_odd">ODD 2 : Faim «zéro»</div></div>
+    <div class="line"><div class="lab">Cible ODD</div><div class="val" id="v_cible">2.3 ; 2.4 ; 2.a</div></div>
+    <div class="line"><div class="lab">Pilier (SNFD)</div><div class="val" id="v_snfd">Financement du développement inclusif</div></div>
+  </div>
+  <div class="odds" id="odds">
+    <div class="odd" style="background:#DDA63A"><div class="n">2</div><div class="t">FAIM «ZÉRO»</div></div>
+    <div class="odd" style="background:#A21942"><div class="n">8</div><div class="t">TRAVAIL DÉCENT ET CROISSANCE ÉCONOMIQUE</div></div>
+    <div class="odd" style="background:#DD1367"><div class="n">11</div><div class="t">INÉGALITÉS RÉDUITES</div></div>
+    <div class="odd" style="background:#3F7E44"><div class="n">13</div><div class="t">LUTTE CONTRE LES CHANGEMENTS CLIMATIQUES</div></div>
+  </div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-chart"/></svg>8. SUIVI DE LA MISE EN ŒUVRE</div><div class="pbody">
+  <div class="stats">
+    <div class="stat"><div class="lab">Taux d'exécution physique</div><svg class="gauge" viewBox="0 0 100 62"><path d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#e3e3e3" stroke-width="9" stroke-linecap="round" pathLength="100"/><path id="g_phys" d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#0e7a3a" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="72 100"/><text x="50" y="50" text-anchor="middle">72%</text></svg></div>
+    <div class="stat"><div class="lab">Taux de décaissement financier</div><svg class="gauge" viewBox="0 0 100 62"><path d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#e3e3e3" stroke-width="9" stroke-linecap="round" pathLength="100"/><path id="g_fin" d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#f2b70b" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="56 100"/><text x="50" y="50" text-anchor="middle">56%</text></svg></div>
+    <div class="stat"><div class="lab">Niveau de risque</div><svg class="gauge" viewBox="0 0 100 62"><path d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#e3e3e3" stroke-width="9" stroke-linecap="round" pathLength="100"/><path id="g_risk" d="M12 56 A40 40 0 0 1 88 56" fill="none" stroke="#d5251f" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="60 100"/><text x="50" y="50" text-anchor="middle" style="fill:#f28c00;font-size:12px">MOYEN</text></svg></div>
+    <div class="stat"><div class="lab">Nombre d'avenants</div><div class="big" id="v_avenants">01</div></div>
+    <div class="stat"><div class="lab">Nombre de prorogations</div><div class="big" id="v_prorog">00</div></div>
+  </div>
+  <div class="line"><div class="lab">Date de dernière mise à jour</div><div class="val" id="v_maj">15/05/2025</div></div>
+  <div class="line"><div class="lab">Responsable de suivi</div><div class="val" id="v_resp">DECAD / DGFD</div></div>
+  <div class="line"><div class="lab">Structure d'exécution</div><div class="val" id="v_structure">Ministère de l'Agriculture</div></div>
+  <div class="line"><div class="lab">Chef de projet</div><div class="val" id="v_chef">Jean K. HOUNSOU</div></div>
+  <div class="line"><div class="lab">Coordonnées</div><div class="val" id="v_coord">+229 97 12 34 56 / jean.hounsou@gouv.bj</div></div>
+</div></div>
+
+<div class="panel"><div class="phead"><svg class="ic"><use href="#i-clip"/></svg>9. OBSERVATIONS / COMMENTAIRES</div><div class="pbody" id="obs">
+  <p style="margin-bottom:6px">Le projet connaît une mise en œuvre satisfaisante avec des progrès significatifs dans les composantes infrastructures et renforcement des capacités.</p>
+  <p style="margin-bottom:6px">Des difficultés persistent au niveau des acquisitions et des délais de décaissement.</p>
+  <p style="margin-bottom:8px">Des mesures correctives sont en cours pour améliorer la performance.</p>
+  <div class="dline"></div><div class="dline"></div><div class="dline"></div>
+</div></div>
+
+<div class="panel"><div class="phead" style="background:#fff;color:#0e7a3a;border-bottom:1px solid #e3e3e3"><svg class="ic"><use href="#i-doc"/></svg>10. DOCUMENTS ASSOCIÉS</div><div class="pbody docs" id="docs"></div></div>
+
+<footer><div class="txt">Ensemble, mobilisons les ressources pour le développement durable du Bénin.</div><div class="fb"><span style="background:#0e7a3a"></span><span style="background:#f2b70b"></span><span style="background:#d5251f"></span></div></footer>
+</div>
+
+<script>
+/* ── Documents associés ── */
+var docs=[['Accord de financement','#d5251f',1],['Avis de non objection','#d5251f',1],['Rapport d\'évaluation','#d5251f',1],['Accord signé','#d5251f',1],['Rapports de supervision','#d5251f',1],['Rapports d\'audit','#0e7a3a',1],['Cadre logique','#f28c00',0],['Plan de passation des marchés','#d5251f',1]];
+document.getElementById('docs').innerHTML=docs.map(function(d){var pdf=d[2]?'<text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+d[1]+'" stroke="none">PDF</text>':'';return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="'+d[1]+'" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/>'+pdf+'</svg><div class="t">'+d[0]+'</div></div>';}).join('')+'<div class="doc plus"><span style="font-size:15px">+</span>Autres documents</div>';
+
+/* ── Remplissage depuis l'API Supabase ── */
+var API=(localStorage.getItem('sgiad_api_host')||location.hostname||'127.0.0.1');
+var PORT=localStorage.getItem('sgiad_api_port')||'5000';
+var BASE='http://'+API+':'+PORT;
+var code=new URLSearchParams(location.search).get('code');
+function $(id){return document.getElementById(id)}
+function fmt(n){n=Math.round(Number(n)||0);return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
+function fdate(s){if(!s)return '—';var d=new Date(s);if(isNaN(d))return s;return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
+function year(s){if(!s)return '—';var d=new Date(s);return isNaN(d)?'—':String(d.getFullYear())}
+function split(s){return String(s||'').split(/\s*;\s*/).filter(function(x){return x.length>2})}
+function ul(a){return '<ul>'+a.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'}
+if(code){fetch(BASE+'/api/accords-financiers/list?t='+Date.now()).then(function(r){return r.json()}).then(function(data){
+  var list=data.data||data||[];
+  var p=list.find(function(x){return (x['Code Projet']||'').trim()===code.trim()});
+  if(!p)return;
+  $('kpi_code').textContent=p['Code Projet']||'—'; $('v_code').textContent=p['Code Projet']||'—';
+  var statut=p['STATUT (en cours, achevé, en approbation)']||'—';
+  $('kpi_statut').textContent=statut.toUpperCase()+' ●'; $('v_statut').textContent=statut;
+  $('kpi_partenaire').textContent=p['Partenaire']||'—'; $('v_partenaire2').textContent=p['Partenaire']||'—';
+  $('kpi_secteur').textContent=(p['Secteur principal']||'—').toUpperCase(); $('v_secteur2').textContent=p['Secteur principal']||'—';
+  var tot=Number(p['Montant_Total_FCFA'])||0;
+  $('kpi_montant').textContent=String(fmt(tot)).replace(/ /g,',');
+  $('v_objet').textContent=p["Objet de l'accord"]||'—'; $('v_objgen').textContent=p['Objectif général']||'—';
+  var os=split(p['Objectifs spécifiques']); if(os.length)$('v_objspec').innerHTML=ul(os);
+  var ra=split(p['Resultats attendues']); if(ra.length)$('v_resultats').innerHTML=ul(ra);
+  var cp=split(p['Principales composantes']); if(cp.length)$('v_composantes').innerHTML=ul(cp);
+  $('v_benef').textContent=p['Bénéficiaires directes']||'—'; $('v_pop').textContent=p['Population cible']||'—';
+  $('v_ansig').textContent=year(p['Annee de signature']); $('v_anclot').textContent=year(p['Annee de cloture']);
+  $('v_modalite').textContent=p["Modalité d'intervention"]||'—'; $('v_instrument').textContent=p['Instrument de financement']||'—';
+  $('v_nature').textContent=p['Nature (Prêt/Don/Mixte)']||'—'; $('v_apd').textContent=p['APD Oui/non']||'—';
+  $('v_typefin').textContent=p['TYPE DE FINANCEMENT']||'—'; $('v_typecontrib').textContent=p['TYPE DE CONTRIBUTEUR']||'—'; $('v_typecontrib2').textContent=p['TYPE DE CONTRIBUTEUR']||'—';
+  $('v_sigle').textContent=p['Sigle_Part']||'—'; $('v_web').textContent=p['Source vérifiable']||'—';
+  var pret=Number(p['Montant_Pret_FCFA'])||0,don=Number(p['Montant_Don_FCFA'])||0;
+  if(!tot)tot=pret+don;
+  var pp=tot?pret/tot*100:0,pd=tot?don/tot*100:0;
+  $('v_devise').textContent=p['Devise']||'—'; $('v_pret').textContent=fmt(pret); $('v_don').textContent=fmt(don);
+  $('v_total').textContent=fmt(tot); $('v_totaldev').textContent=fmt(p['Montant total (devise)']);
+  $('v_pctpret').textContent=String(pp.toFixed(2)).replace('.',',')+' %'; $('v_pctdon').textContent=String(pd.toFixed(2)).replace('.',',')+' %';
+  $('leg_pret').textContent=String(pp.toFixed(2)).replace('.',',')+' %'; $('leg_don').textContent=String(pd.toFixed(2)).replace('.',',')+' %';
+  $('donut_val').textContent=String((tot/1e9).toFixed(1)).replace('.',',');
+  $('donut').style.background='conic-gradient(#0e7a3a 0 '+pp+'%,#f2b70b '+pp+'% 100%)';
+  $('v_zone').textContent=p['Zone']?p['Zone'].substring(0,60):'—';
+  $('v_deps').textContent=p['Departement']||'—'; $('v_communes').textContent=p['Commune']||'—';
+  $('d_approb').textContent=fdate(p["Date d'approbation"]); $('d_sig').textContent=fdate(p['Date de signature']);
+  $('d_vig').textContent='—'; $('d_dec').textContent=fdate(p['Date_Demarrage']); $('d_clot').textContent=fdate(p['Date de clôture']);
+  if(p['Duree_Initiale_Mois'])$('duree_lab').textContent='Durée totale : '+Math.round(Number(p['Duree_Initiale_Mois']))+' mois';
+  $('v_soussecteur').textContent=p['SOUS SECTEUR']||'—'; $('v_axe').textContent=p['AXE PAG']||'—'; $('v_pilier').textContent=p['PILIER PAG']||'—';
+  $('v_odd').textContent=p['ODD']||'—'; $('v_cible').textContent=p['Cible_ODD']||'—'; $('v_snfd').textContent=p['Pilier']||'—';
+  var dureeMois=p['Duree_Initiale_Mois']?Math.round(Number(p['Duree_Initiale_Mois']))+' Mois':'—';
+  var anneeSig=p['Annee de signature']||'';
+  var anneeClot=p['Annee de cloture']||'...';
+  $('kpi_duree').innerHTML=dureeMois+(anneeSig?'<small>('+anneeSig+'-'+anneeClot+')</small>':'');
+  /* Co-partenaires */
+  var coparts=[];
+  for(var i=1;i<=7;i++){var cv=p['Co_Partenaire_'+i];if(cv&&cv.trim())coparts.push(cv);}
+  if(coparts.length)$('v_copartenaires').textContent=coparts.join(', ');
+}).catch(function(e){console.warn('API injoignable',e)});}
+function enregistrerHTML(){var c=document.documentElement.cloneNode(true);var b=c.querySelector('.actions-bar');if(b)b.remove();var blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FICHE_'+(code||'PROJET')+'.html';a.click();URL.revokeObjectURL(a.href);}
+</script>
+</body>
+</html>

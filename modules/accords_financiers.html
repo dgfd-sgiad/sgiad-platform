@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Gestion des Accords Financiers</title>
+<link rel="stylesheet" href="../css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    :root { --primary-blue: #0f4c81; --secondary-green: #27ae60; --bg-light: #f8f9fa; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg-light); margin: 0; }
+
+    .top-header-tools { background: white; padding: 12px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .filter-input { padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 11px; height: 32px; box-sizing: border-box; }
+    .btn-tool { height: 32px; padding: 0 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 4px; color: white; }
+
+    .stats-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; padding: 0 20px; }
+    .stat-card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-blue); }
+    .stat-card div:first-child { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+
+    .data-table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-height: calc(100vh - 260px); overflow-y: auto; margin: 0 20px; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1200px; }
+    .data-table th { background: var(--primary-blue); color: white; padding: 10px; text-align: left; position: sticky; top: 0; white-space: nowrap; z-index: 5; }
+    .data-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; white-space: nowrap; }
+    .action-btn { border: none; background: none; cursor: pointer; font-size: 14px; margin: 0 3px; }
+    .btn-edit { color: #f59e0b; } .btn-delete { color: #ef4444; }
+
+    #modal-accord { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; backdrop-filter: blur(2px); }
+    .modal-content { background:white; padding:20px; border-radius:12px; width:95%; max-width:900px; max-height:90vh; overflow-y:auto; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-full { grid-column: span 2; }
+    .form-input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; font-size: 12px; }
+    .form-input:focus { outline: none; border-color: var(--primary-blue); }
+    .section-label { font-size: 10px; font-weight: 700; color: #444; display: block; margin-bottom: 3px; }
+    .readonly-note { font-size: 9px; color: #999; font-style: italic; }
+
+    .export-widget { position: fixed; bottom: 80px; right: 20px; z-index: 90; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid var(--secondary-green); max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; display: none; }
+    .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; padding: 10px; background: #fcfcfc; border: 1px solid #e9ecef; border-radius: 4px; }
+    .checkbox-grid label { font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .btn-fab { position: fixed; bottom: 20px; right: 20px; background: var(--secondary-green); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100; }
+
+    .chart-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; padding: 0 20px; }
+    .chart-box { background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+    .chart-box h4 { margin:0 0 8px 0; font-size:12px; color:var(--primary-blue); }
+    .bar-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .bar-label { width:110px; font-size:9px; font-weight:600; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .bar-track { flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:3px; background: var(--primary-blue); }
+    .bar-value { width:80px; font-size:9px; font-weight:700; text-align:right; color:#333; }
+</style>
+</head>
+<body>
+<div class="main-container">
+    <aside class="sidebar-benin">
+        <div class="flag-stripes"><div class="stripe green"></div><div class="stripe yellow"></div><div class="stripe red"></div></div>
+        <div class="user-info-vertical"><p>Superviseur DGFD</p><button class="btn-disconnect" onclick="window.location.href='../index.html'">Déconnexion</button></div>
+    </aside>
+
+    <main class="content-area">
+        <header class="top-header-tools">
+            <div style="display:flex; align-items:center; gap:15px;">
+                <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">Gestion des Accords Financiers</h1>
+                <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <input type="text" id="filter-texte" class="filter-input" placeholder="🔍 Rechercher..." style="width:180px;">
+                <div id="dynamic-filters" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+                <button onclick="resetFilters()" class="btn-tool" style="background:#6c757d;"><i class="fas fa-undo"></i> Reset</button>
+                <button onclick="toggleExportWidget()" class="btn-tool" style="background:var(--secondary-green);"><i class="fas fa-file-export"></i> Export</button>
+                <button onclick="toggleImportZone()" class="btn-tool" style="background:#f59e0b;"><i class="fas fa-file-import"></i> Import</button>
+            </div>
+        </header>
+
+        <div id="import-zone" style="display:none; background:white; padding:12px 20px; margin:0 20px 12px 20px; border-left:4px solid #f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h4 style="margin:0; font-size:12px; color:#92400e;">📥 Import Excel (doit contenir la colonne "Code Projet")</h4>
+                <button onclick="toggleImportZone()" style="background:none; border:none; cursor:pointer; font-size:16px; color:#666;">✕</button>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <input type="file" id="import-file" accept=".xlsx,.xls" class="filter-input" style="flex:1;">
+                <button onclick="importExcel()" class="btn-tool" style="background:#f59e0b;">Lancer l'import</button>
+            </div>
+        </div>
+
+        <div class="stats-dashboard">
+            <div class="stat-card"><div>Total Accords</div><div id="stat-total" style="font-size:20px; font-weight:800;">-</div></div>
+            <div class="stat-card"><div>Montant Total (FCFA)</div><div id="stat-montant" style="font-size:18px; font-weight:800;">-</div></div>
+            <div class="stat-card"><div>Top Secteur</div><div id="stat-secteur" style="font-size:13px; font-weight:800;">-</div></div>
+            <div class="stat-card"><div>Année de référence</div>
+                <select id="annee-reference" onchange="updateStats()" style="font-size:14px; font-weight:800; border:none; background:transparent; color:var(--primary-blue);"></select>
+            </div>
+        </div>
+
+        <div class="chart-row">
+            <div class="chart-box">
+                <h4>📅 Par Année de Signature</h4>
+                <div id="chart-annees"></div>
+            </div>
+            <div class="chart-box">
+                <h4 id="chart-ptf-title">💰 Top 10 Partenaires (par montant total FCFA)</h4>
+                <div id="chart-ptf"></div>
+            </div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-box">
+                <h4>📊 Statut (accords)</h4>
+                <div id="chart-statut"></div>
+            </div>
+            <div class="chart-box">
+                <h4>📌 En cours vs Clôturés — année de référence sélectionnée</h4>
+                <div id="chart-encours"></div>
+            </div>
+        </div>
+
+        <div style="background: #eef2f7; padding: 8px 15px; border-radius: 4px; font-size: 12px; color: #444; margin: 0 20px 10px 20px;">
+            <strong>Résultats :</strong> <span id="count-value" style="color: var(--primary-blue); font-weight: 800;">-</span> accord(s)
+        </div>
+
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead><tr id="table-head-row"></tr></thead>
+                <tbody id="table-body"><tr><td style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<div id="export-widget" class="export-widget">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:13px; color:var(--secondary-green); font-weight:700;"><i class="fas fa-file-export"></i> Export Personnalisé</h3>
+        <button onclick="toggleExportWidget()" style="background:none; border:none; cursor:pointer; font-size:18px; color:#666;">✕</button>
+    </div>
+    <p style="font-size:10px; color:#666;">Les filtres actifs en haut de page s'appliquent aussi à l'export. Cochez les colonnes à inclure :</p>
+    <div class="checkbox-grid" id="exp-cols"></div>
+    <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; padding-top:10px;">
+        <button onclick="selectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout cocher</button>
+        <button onclick="deselectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout décocher</button>
+        <button onclick="triggerCustomExport()" style="padding:6px 12px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px;">📥 Télécharger Excel</button>
+    </div>
+</div>
+
+<button class="btn-fab" onclick="openModal()">+</button>
+
+<div id="modal-accord">
+    <div class="modal-content">
+        <h2 style="margin-top:0;color:var(--primary-blue); font-family:'Montserrat',sans-serif; font-size:16px;" id="modal-title">NOUVEL ACCORD</h2>
+        <form id="form-accord">
+            <input type="hidden" id="Old_Code">
+            <div class="form-grid" id="form-fields-container"></div>
+            <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; padding-top:10px;">
+                <button type="button" onclick="closeModal()" style="padding:8px 14px; background:#f1f1f1; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Annuler</button>
+                <button type="submit" style="padding:8px 14px; background:var(--primary-blue); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px;">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const API_BASE = `http://${window.location.hostname || '127.0.0.1'}:5000/api/accords-financiers`;
+const CODE_FIELD = 'Code Projet';
+
+let COLUMNS = [];       // métadonnées des colonnes (clé, type, options, readonly)
+let ALL_ACCORDS = [];   // toutes les lignes chargées
+let FILTERED = [];
+let isEditMode = false;
+
+function getEl(id) { return document.getElementById(id); }
+function parseNum(v) { const n = parseFloat(String(v).replace(/\s/g,'').replace(',', '.')); return isNaN(n) ? 0 : n; }
+
+async function init() {
+    const colsRes = await fetch(`${API_BASE}/columns`);
+    const colsData = await colsRes.json();
+    COLUMNS = colsData.columns;
+    buildTableHead();
+    buildDynamicFilters();
+    buildFormFields();
+    buildExportCheckboxes();
+    await loadAccords();
+}
+
+async function loadAccords() {
+    const res = await fetch(`${API_BASE}/list`);
+    const data = await res.json();
+    ALL_ACCORDS = data.data;
+    FILTERED = ALL_ACCORDS;
+    populateYearReference();
+    applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABLEAU
+// ═══════════════════════════════════════════════════════════════
+function buildTableHead() {
+    const tr = getEl('table-head-row');
+    tr.innerHTML = '';
+    COLUMNS.forEach(c => {
+        const th = document.createElement('th');
+        th.textContent = c.key;
+        tr.appendChild(th);
+    });
+    const thActions = document.createElement('th');
+    thActions.textContent = 'Actions';
+    tr.appendChild(thActions);
+}
+
+function renderTable(rows) {
+    const tbody = getEl('table-body');
+    tbody.innerHTML = '';
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${COLUMNS.length + 1}" style="text-align:center;padding:20px;">Aucun résultat</td></tr>`;
+        return;
+    }
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+        COLUMNS.forEach(c => {
+            const td = document.createElement('td');
+            let val = row[c.key];
+            if (c.type === 'number' && val) val = parseNum(val).toLocaleString('fr-BJ');
+            td.textContent = val || '';
+            tr.appendChild(td);
+        });
+        const tdActions = document.createElement('td');
+        const code = row[CODE_FIELD];
+        tdActions.innerHTML = `
+            <button class="action-btn btn-edit" onclick="openModal('${code}')" title="Modifier"><i class="fas fa-edit"></i></button>
+            <button class="action-btn btn-delete" onclick="deleteAccord('${code}')" title="Supprimer"><i class="fas fa-trash"></i></button>`;
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+    });
+    getEl('count-value').textContent = rows.length;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTRES DYNAMIQUES (auto-générés à partir des colonnes 'select')
+// ═══════════════════════════════════════════════════════════════
+function buildDynamicFilters() {
+    const container = getEl('dynamic-filters');
+    container.innerHTML = '';
+    COLUMNS.filter(c => c.type === 'select').forEach(c => {
+        const select = document.createElement('select');
+        select.className = 'filter-input';
+        select.id = `filter-${c.key}`;
+        select.style.width = '130px';
+        select.innerHTML = `<option value="">${c.key}</option>` + c.options.map(o => `<option value="${o}">${o}</option>`).join('');
+        select.addEventListener('change', applyFilters);
+        container.appendChild(select);
+    });
+    getEl('filter-texte').addEventListener('input', applyFilters);
+}
+
+function applyFilters() {
+    const texte = getEl('filter-texte').value.toLowerCase().trim();
+    const selectFilters = COLUMNS.filter(c => c.type === 'select').map(c => ({
+        key: c.key, val: getEl(`filter-${c.key}`) ? getEl(`filter-${c.key}`).value : ''
+    })).filter(f => f.val);
+
+    FILTERED = ALL_ACCORDS.filter(row => {
+        const matchTexte = !texte || COLUMNS.some(c => c.type === 'text' && String(row[c.key] || '').toLowerCase().includes(texte));
+        const matchSelects = selectFilters.every(f => String(row[f.key] || '') === f.val);
+        return matchTexte && matchSelects;
+    });
+    renderTable(FILTERED);
+    updateStats();
+}
+
+function resetFilters() {
+    getEl('filter-texte').value = '';
+    COLUMNS.filter(c => c.type === 'select').forEach(c => {
+        const el = getEl(`filter-${c.key}`);
+        if (el) el.value = '';
+    });
+    applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATISTIQUES & GRAPHIQUES
+// ═══════════════════════════════════════════════════════════════
+function findColKey(fragment) {
+    const c = COLUMNS.find(c => c.key.toLowerCase().includes(fragment.toLowerCase()));
+    return c ? c.key : null;
+}
+
+const KEY_MONTANT = () => findColKey('Montant_Total') || findColKey('Montant Total');
+const KEY_ANNEE_SIGNATURE = () => findColKey('Annee de signature');
+const KEY_ANNEE_CLOTURE = () => findColKey('Annee de cloture');
+const KEY_PARTENAIRE = () => findColKey('Partenaire') && !findColKey('Sigle') ? findColKey('Partenaire') : findColKey('Partenaire');
+const KEY_SECTEUR = () => findColKey('Secteur principal') || findColKey('Secteur');
+const KEY_STATUT = () => findColKey('STATUT');
+
+function populateYearReference() {
+    const sel = getEl('annee-reference');
+    if (sel.options.length > 0) return;
+    const kSig = KEY_ANNEE_SIGNATURE();
+    const years = [...new Set(ALL_ACCORDS.map(a => parseInt(a[kSig])).filter(y => y && y > 1990 && y < 2100))].sort((a,b) => b - a);
+    sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    if (years.length) sel.value = new Date().getFullYear() <= years[0] ? new Date().getFullYear() : years[0];
+}
+
+function barChart(container, entries, colorFn) {
+    container.innerHTML = '';
+    if (entries.length === 0) { container.innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>'; return; }
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    entries.forEach(([label, value], i) => {
+        const pct = (value / max) * 100;
+        const color = colorFn ? colorFn(label, i) : 'var(--primary-blue)';
+        container.innerHTML += `
+            <div class="bar-row">
+                <div class="bar-label" title="${label}">${label}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+                <div class="bar-value">${typeof value === 'number' ? new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(value) : value}</div>
+            </div>`;
+    });
+}
+
+function updateStats() {
+    const rows = FILTERED;
+    getEl('stat-total').textContent = rows.length.toLocaleString('fr-BJ');
+
+    const kMontant = KEY_MONTANT();
+    const total = kMontant ? rows.reduce((s, a) => s + parseNum(a[kMontant]), 0) : 0;
+    getEl('stat-montant').textContent = new Intl.NumberFormat('fr-BJ', {maximumFractionDigits:0}).format(total) + ' FCFA';
+
+    const kSecteur = KEY_SECTEUR();
+    if (kSecteur) {
+        const secteurs = {};
+        rows.forEach(a => { const s = a[kSecteur] || 'Non défini'; secteurs[s] = (secteurs[s]||0)+1; });
+        const top = Object.entries(secteurs).sort((a,b)=>b[1]-a[1])[0];
+        if (top) getEl('stat-secteur').textContent = `${top[0]} (${Math.round(top[1]/rows.length*100)}%)`;
+    }
+
+    // Chart par année de signature
+    const kSig = KEY_ANNEE_SIGNATURE();
+    if (kSig) {
+        const byYear = {};
+        rows.forEach(a => { const y = a[kSig]; if (y) byYear[y] = (byYear[y]||0)+1; });
+        const entries = Object.entries(byYear).sort((a,b) => b[0]-a[0]).slice(0, 15);
+        barChart(getEl('chart-annees'), entries);
+    }
+
+    // ── Logique "en cours par année de référence" ─────────────────────
+    // Un accord est "en cours" pour l'année Y si Annee_signature <= Y <= Annee_cloture.
+    // S'il n'a pas d'année de clôture connue, on le considère en cours dès sa signature.
+    const kClo = KEY_ANNEE_CLOTURE();
+    const refYear = parseInt(getEl('annee-reference').value);
+    const estEnCoursSurAnnee = (a) => {
+        const sig = parseInt(a[kSig]);
+        const clo = kClo ? parseInt(a[kClo]) : null;
+        if (!sig || sig > refYear) return false;
+        if (clo && clo < refYear) return false;
+        return true;
+    };
+
+    // Chart Top 10 Partenaires par montant — dynamique selon l'année de référence
+    // (montants des accords "en cours" pendant l'année sélectionnée)
+    const kPart = KEY_PARTENAIRE();
+    if (kPart && kMontant) {
+        const titleEl = getEl('chart-ptf-title');
+        const rowsAnnee = (kSig && refYear) ? rows.filter(estEnCoursSurAnnee) : rows;
+        if (titleEl) titleEl.textContent = (kSig && refYear)
+            ? `💰 Top 10 Partenaires en ${refYear} (montant total FCFA)`
+            : '💰 Top 10 Partenaires (par montant total FCFA)';
+        const byPart = {};
+        rowsAnnee.forEach(a => { const p = a[kPart] || 'Non défini'; byPart[p] = (byPart[p]||0) + parseNum(a[kMontant]); });
+        const entries = Object.entries(byPart).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        barChart(getEl('chart-ptf'), entries);
+    }
+
+    // Chart par Statut
+    const kStatut = KEY_STATUT();
+    if (kStatut) {
+        const byStatut = {};
+        rows.forEach(a => { const s = a[kStatut] || 'Non défini'; byStatut[s] = (byStatut[s]||0)+1; });
+        const entries = Object.entries(byStatut).sort((a,b)=>b[1]-a[1]);
+        barChart(getEl('chart-statut'), entries, (label) => label.toLowerCase().includes('cours') ? '#27ae60' : (label.toLowerCase().includes('achev') ? '#3498db' : '#95a5a6'));
+    }
+
+    if (kSig && refYear) {
+        let enCours = 0, clotures = 0, nonDemarres = 0;
+        rows.forEach(a => {
+            const sig = parseInt(a[kSig]);
+            const clo = kClo ? parseInt(a[kClo]) : null;
+            if (!sig) return;
+            if (sig > refYear) { nonDemarres++; return; }
+            if (clo && clo < refYear) { clotures++; return; }
+            enCours++;
+        });
+        barChart(getEl('chart-encours'), [
+            ['En cours', enCours],
+            ['Clôturés', clotures],
+            ['Pas encore démarrés', nonDemarres],
+        ], (label) => label === 'En cours' ? '#27ae60' : (label === 'Clôturés' ? '#95a5a6' : '#f59e0b'));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════
+function buildExportCheckboxes() {
+    const container = getEl('exp-cols');
+    container.innerHTML = '';
+    COLUMNS.forEach(c => {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${c.key}" checked> ${c.key}`;
+        container.appendChild(label);
+    });
+}
+function selectAllExportCols() { document.querySelectorAll('#exp-cols input').forEach(i => i.checked = true); }
+function deselectAllExportCols() { document.querySelectorAll('#exp-cols input').forEach(i => i.checked = false); }
+function toggleExportWidget() { const w = getEl('export-widget'); w.style.display = w.style.display === 'none' ? 'block' : 'none'; }
+function toggleImportZone() { const z = getEl('import-zone'); z.style.display = z.style.display === 'none' ? 'block' : 'none'; }
+
+async function triggerCustomExport() {
+    const selected_columns = [...document.querySelectorAll('#exp-cols input:checked')].map(cb => cb.value);
+    if (selected_columns.length === 0) { alert('Cochez au moins une colonne.'); return; }
+
+    const filters = {};
+    COLUMNS.filter(c => c.type === 'select').forEach(c => {
+        const el = getEl(`filter-${c.key}`);
+        if (el && el.value) filters[c.key] = [el.value];
+    });
+
+    try {
+        const res = await fetch(`${API_BASE}/export`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({filters, selected_columns})
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `Export_Accords_Financiers_${Date.now()}.xlsx`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toggleExportWidget();
+    } catch(e) { alert('❌ Erreur export: ' + e.message); }
+}
+
+async function importExcel() {
+    const file = getEl('import-file').files[0];
+    if (!file) return alert('Sélectionnez un fichier');
+    const fd = new FormData(); fd.append('file', file);
+    try {
+        const res = await fetch(`${API_BASE}/import`, { method:'POST', body: fd });
+        const r = await res.json();
+        if (!res.ok) throw new Error(r.error);
+        alert('✅ ' + r.message);
+        toggleImportZone();
+        await loadAccords();
+    } catch(e) { alert('❌ Erreur import: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORMULAIRE CRUD (généré dynamiquement à partir des colonnes)
+// ═══════════════════════════════════════════════════════════════
+function buildFormFields() {
+    const container = getEl('form-fields-container');
+    container.innerHTML = '';
+    COLUMNS.forEach(c => {
+        const wrapper = document.createElement('div');
+        if (c.type === 'text' && (c.key.length > 25 || c.key.toLowerCase().includes('objet') || c.key.toLowerCase().includes('objectif'))) {
+            wrapper.className = 'form-full';
+        }
+        let inputHtml;
+        const disabledAttr = c.readonly ? 'disabled' : '';
+        if (c.readonly) {
+            inputHtml = `<input type="text" class="form-input" data-field="${c.key}" disabled placeholder="calculé automatiquement">`;
+        } else if (c.type === 'select') {
+            inputHtml = `<select class="form-input" data-field="${c.key}"><option value="">--</option>${c.options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+        } else if (c.type === 'date') {
+            inputHtml = `<input type="text" class="form-input" data-field="${c.key}" placeholder="jj/mm/aaaa">`;
+        } else if (c.type === 'number') {
+            inputHtml = `<input type="number" step="any" class="form-input" data-field="${c.key}">`;
+        } else {
+            inputHtml = `<input type="text" class="form-input" data-field="${c.key}">`;
+        }
+        wrapper.innerHTML = `<label class="section-label">${c.key}${c.key === CODE_FIELD ? ' *' : ''}</label>${inputHtml}${c.readonly ? '<div class="readonly-note">Calculé depuis la date correspondante</div>' : ''}`;
+        container.appendChild(wrapper);
+    });
+}
+
+function openModal(code = null) {
+    getEl('modal-accord').style.display = 'flex';
+    const form = getEl('form-accord');
+    form.reset();
+    if (code) {
+        isEditMode = true;
+        getEl('modal-title').textContent = 'MODIFIER L\'ACCORD';
+        getEl('Old_Code').value = code;
+        const acc = ALL_ACCORDS.find(a => a[CODE_FIELD] === code);
+        if (!acc) return;
+        COLUMNS.forEach(c => {
+            const el = form.querySelector(`[data-field="${CSS.escape(c.key)}"]`);
+            if (el) el.value = acc[c.key] || '';
+        });
+    } else {
+        isEditMode = false;
+        getEl('modal-title').textContent = 'NOUVEL ACCORD';
+        getEl('Old_Code').value = '';
+    }
+}
+function closeModal() { getEl('modal-accord').style.display = 'none'; }
+
+async function deleteAccord(code) {
+    if (!confirm('Supprimer cet accord ?')) return;
+    try {
+        const res = await fetch(`${API_BASE}/delete/${encodeURIComponent(code)}`, { method: 'DELETE' });
+        const r = await res.json();
+        if (!res.ok) throw new Error(r.error);
+        await loadAccords();
+    } catch(e) { alert('❌ Erreur: ' + e.message); }
+}
+
+getEl('form-accord').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {};
+    COLUMNS.forEach(c => {
+        if (c.readonly) return;
+        const el = document.querySelector(`[data-field="${CSS.escape(c.key)}"]`);
+        if (el) payload[c.key] = el.value;
+    });
+
+    const oldCode = getEl('Old_Code').value;
+    try {
+        const url = isEditMode ? `${API_BASE}/update/${encodeURIComponent(oldCode)}` : `${API_BASE}/add`;
+        const res = await fetch(url, {
+            method: isEditMode ? 'PUT' : 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const r = await res.json();
+        if (!res.ok) throw new Error(r.error);
+        alert(isEditMode ? 'Mis à jour !' : 'Enregistré !');
+        closeModal();
+        await loadAccords();
+    } catch(e) { alert('❌ Erreur: ' + e.message); }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+
+# Environnement local
+.env
+.env.local
+
+# Fichiers Excel locaux (non deployes, Supabase est la source)
+# *.xlsx
+# Uncomment si vous ne voulez pas deployer les Excel:
+# Banque_Projets.xlsx
+# Banque_Accords_V2.xlsx
+# Cooperation_Decentralisee.xlsx
+# Taux_Change_Historique.xlsx
+
+# Logs et temporaire
+logs/
+temp/
+exports/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Uploads (non deployes)
+uploads/
+
+# Fichiers de test
+test_*.py
+verify*.py
+fix_*.py

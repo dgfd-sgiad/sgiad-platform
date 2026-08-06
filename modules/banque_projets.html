@@ -1,0 +1,2705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SGIAD - Banque de Projets</title>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <!-- Styles Personnalisés -->
+    <style>
+        :root {
+            --primary-blue: #0f4c81;
+            --secondary-green: #27ae60;
+            --bg-light: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-light);
+            margin: 0;
+            font-size: 12px;
+        }
+
+        .sidebar-benin {
+            width: 190px !important;
+        }
+
+        .sidebar-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .sidebar-stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            padding: 8px 10px;
+            border-left: 3px solid var(--primary-blue);
+        }
+
+        .sidebar-stat-card div:first-child {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-stat-card div:last-child {
+            font-size: 14px;
+            font-weight: 800;
+            color: #222;
+            word-break: break-word;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .dashboard-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: var(--primary-blue);
+        }
+
+        #benin-map {
+            height: 200px;
+            border-radius: 6px;
+        }
+
+        .form-input {
+            padding: 8px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .btn-primary {
+            height: 34px;
+            padding: 0 15px;
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary:hover {
+            background: #0a355c;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fcfcfc;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+
+        .checkbox-grid label {
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            overflow-x: auto;
+            max-height: calc(100vh - 340px);
+            min-height: 400px;
+            overflow-y: auto;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            min-width: 1000px;
+        }
+
+        .data-table th {
+            background: var(--primary-blue);
+            color: white;
+            padding: 10px 12px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .data-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        .data-table tbody tr {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .data-table tbody tr:hover {
+            background: #f0f7f2;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .bg-green { background: #d1fae5; color: #065f46; }
+        .bg-blue { background: #dbeafe; color: #1e40af; }
+        .bg-red { background: #fee2e2; color: #991b1b; }
+        .bg-gold { background: #fef3c7; color: #92400e; }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 8px 15px;
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #eee;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            font-size: 11px;
+        }
+
+        .tab-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+        }
+
+        .tab-content {
+            display: none !important;
+        }
+
+        .tab-content.active {
+            display: grid !important;
+            animation: fadeIn 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #444;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-full {
+            grid-column: span 2;
+        }
+
+        .tab-reserve-banner {
+            grid-column: span 2;
+            background: #f1f3f5;
+            border: 1px dashed #adb5bd;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .tab-content.disabled-tab .form-input,
+        .tab-content.disabled-tab select,
+        .tab-content.disabled-tab textarea {
+            background: #f1f3f5;
+            color: #999;
+        }
+
+        .tab-content.disabled-tab .section-label {
+            color: #aaa;
+        }
+
+        .import-zone {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fffbeb;
+            border: 1px dashed #f59e0b;
+            border-radius: 4px;
+        }
+
+        .btn-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--secondary-green);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .export-widget {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            z-index: 90;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--secondary-green);
+            max-width: 700px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .exp-tab-content {
+            display: none;
+        }
+
+        .exp-tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s;
+        }
+
+        .exp-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .exp-filter-grid label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #444;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .exp-filter-grid select {
+            width: 100%;
+            padding: 4px 6px;
+            font-size: 11px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .stat-card div:first-child {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .chart-box {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .chart-box h4 {
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: var(--primary-blue);
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 2px;
+        }
+
+        .bar-label {
+            width: 100px;
+            font-size: 8px;
+            font-weight: 600;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bar-track {
+            flex: 1;
+            background: #f0f0f0;
+            border-radius: 2px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--primary-blue);
+        }
+
+        .bar-value {
+            width: 70px;
+            font-size: 8px;
+            font-weight: 700;
+            text-align: right;
+            color: #333;
+        }
+
+        /* Toast notifications */
+        .toast-container { position:fixed; top:20px; right:20px; z-index:10000; display:flex; flex-direction:column; gap:8px; }
+        .toast { padding:12px 20px; border-radius:8px; color:#fff; font-size:13px; font-weight:600;
+            box-shadow:0 4px 12px rgba(0,0,0,0.15); animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+            max-width:350px; display:flex; align-items:center; gap:8px; }
+        .toast-success { background:#059669; }
+        .toast-error { background:#dc2626; }
+        .toast-info { background:#0f4c81; }
+        @keyframes toastIn { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+        @keyframes toastOut { from { opacity:1; } to { opacity:0; transform:translateY(-20px); } }
+
+        /* Pagination */
+        .pagination-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 15px;
+            background:#fff; border-top:1px solid #e9ecef; font-size:12px; flex-wrap:wrap; gap:6px; }
+        .pagination-bar .page-info { color:#666; }
+        .pagination-controls { display:flex; gap:4px; align-items:center; }
+        .pagination-controls button { padding:4px 10px; border:1px solid #dee2e6; background:#fff;
+            border-radius:4px; cursor:pointer; font-size:11px; color:#333; }
+        .pagination-controls button:hover { background:#f0f0f0; }
+        .pagination-controls button.active { background:var(--primary-blue); color:#fff; border-color:var(--primary-blue); }
+        .pagination-controls button:disabled { opacity:0.4; cursor:not-allowed; }
+        .pagination-controls select { padding:3px 6px; border:1px solid #dee2e6; border-radius:4px; font-size:11px; }
+
+        /* Sort indicators */
+        .sort-header { cursor:pointer; user-select:none; position:relative; }
+        .sort-header:hover { background:#f0f4f8; }
+        .sort-header::after { content:''; margin-left:4px; font-size:9px; }
+        .sort-header.sort-asc::after { content:'▲'; }
+        .sort-header.sort-desc::after { content:'▼'; }
+
+        /* Bulk select */
+        .bulk-bar { display:none; padding:8px 15px; background:#fef3c7; border-top:1px solid #fde68a;
+            align-items:center; gap:10px; font-size:12px; font-weight:600; color:#92400e; }
+        .bulk-bar.visible { display:flex; }
+        .bulk-bar button { padding:5px 12px; border:1px solid #d97706; background:#fff; border-radius:4px;
+            cursor:pointer; font-size:11px; color:#92400e; font-weight:600; }
+        .bulk-bar button:hover { background:#fef3c7; }
+        .bulk-bar button.danger { border-color:#dc2626; color:#dc2626; }
+        .bulk-bar button.danger:hover { background:#fee2e2; }
+
+        html {
+            zoom: 1;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            transform: scale(1);
+            transform-origin: top left;
+        }
+
+        .flag-stripes {
+            display: flex;
+            height: 6px;
+        }
+        .flag-stripes .stripe {
+            flex: 1;
+        }
+        .flag-stripes .green { background: #008751; }
+        .flag-stripes .yellow { background: #fcd116; }
+        .flag-stripes .red { background: #e31b23; }
+
+        .user-info-vertical {
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .user-info-vertical p {
+            margin: 0 0 6px 0;
+            font-weight: 600;
+            color: #333;
+        }
+        .btn-disconnect {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        .btn-disconnect:hover {
+            background: #c82333;
+        }
+
+        #ficheOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: rgba(10, 20, 40, 0.62);
+            display: none;
+            overflow-y: auto;
+            padding: 26px 14px 110px;
+        }
+
+        #ficheOverlay.open {
+            display: block;
+        }
+
+        .fiche-page {
+            max-width: 940px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+            font-size: 13.5px;
+            color: #1f2937;
+        }
+
+        .fiche-head {
+            background: linear-gradient(135deg, #0e3a75, #1f66b0);
+            color: #fff;
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .fiche-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.16);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .fiche-head-titles {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fiche-head-titles h2 {
+            margin: 0;
+            font-size: 16.5px;
+            line-height: 1.3;
+        }
+
+        .fiche-head-titles small {
+            opacity: 0.85;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .fiche-head-code {
+            background: rgba(255, 255, 255, 0.16);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            white-space: nowrap;
+            font-size: 12.5px;
+        }
+
+        .fiche-close {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 17px;
+            cursor: pointer;
+            padding: 4px 9px;
+            border-radius: 6px;
+        }
+
+        .fiche-close:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .fiche-kpis {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1px;
+            background: #d8dee5;
+            border-bottom: 1px solid #d8dee5;
+        }
+
+        .fiche-kpi {
+            background: #f4f7fb;
+            padding: 10px 13px;
+        }
+
+        .fiche-kpi span {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 3px;
+        }
+
+        .fiche-kpi b {
+            font-size: 12.5px;
+            color: #0e3a75;
+            word-break: break-word;
+        }
+
+        .fiche-section {
+            padding: 14px 22px;
+            border-bottom: 1px solid #e5eaf1;
+        }
+
+        .fiche-section h4 {
+            margin: 0 0 10px 0;
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #0e3a75;
+            border-left: 4px solid #1f66b0;
+            padding-left: 8px;
+        }
+
+        .fiche-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 22px;
+        }
+
+        .fiche-field span {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #8a94a3;
+            letter-spacing: 0.4px;
+        }
+
+        .fiche-field p {
+            margin: 1px 0 6px;
+            font-weight: 600;
+            white-space: pre-line;
+        }
+
+        .fiche-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .fiche-zone {
+            background: #f4f7fb;
+            border: 1px dashed #b9c6d8;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .fiche-bar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 3001;
+            background: #fff;
+            border-top: 3px solid #0e3a75;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+        }
+
+        .fiche-btn {
+            border: none;
+            border-radius: 7px;
+            padding: 10px 26px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .fiche-btn.edit {
+            background: #1f66b0;
+            color: #fff;
+        }
+        .fiche-btn.edit:hover {
+            background: #17558f;
+        }
+
+        .fiche-btn.delete {
+            background: #dc2626;
+            color: #fff;
+        }
+        .fiche-btn.delete:hover {
+            background: #b91c1c;
+        }
+
+        .fiche-btn.close {
+            background: #e5eaf1;
+            color: #334155;
+        }
+        .fiche-btn.close:hover {
+            background: #d3dce6;
+        }
+
+        @media (max-width: 760px) {
+            .fiche-kpis {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .fiche-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Modal styles (voir aussi style.css global) */
+        .modal-body, .modal-content-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+            background: white;
+        }
+
+        #benin-map, .map-container, .leaflet-container {
+            flex: 0 0 45%;
+            max-width: 45%;
+            min-width: 300px;
+            height: 400px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .form-container, .inputs-section {
+            flex: 1;
+            max-width: 55%;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-container input,
+        .form-container select,
+        .form-container textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar-benin { display: none !important; }
+            main { margin-left: 0 !important; }
+        }
+        @media (max-width: 768px) {
+            .data-table-container { overflow-x: auto; }
+            .filters-bar { flex-direction: column !important; }
+            .modal-content { width: 95% !important; max-height: 95vh !important; }
+            #ficheOverlay { padding: 10px !important; }
+            .fiche-kpis { flex-direction: column !important; }
+            .fiche-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar-benin">
+            <div class="flag-stripes">
+                <div class="stripe green"></div>
+                <div class="stripe yellow"></div>
+                <div class="stripe red"></div>
+            </div>
+            <div class="sidebar-stats">
+                <div class="sidebar-stat-card">
+                    <div>Total Accords</div>
+                    <div id="stat-total">-</div>
+                </div>
+                <div class="sidebar-stat-card">
+                    <div>Montant Total (FCFA)</div>
+                    <div id="stat-montant">-</div>
+                </div>
+                <div class="sidebar-stat-card">
+                    <div>Top Secteur</div>
+                    <div id="stat-secteur">-</div>
+                </div>
+                <div class="sidebar-stat-card">
+                    <div>En Cours</div>
+                    <div id="stat-encours">-</div>
+                </div>
+            </div>
+            <div class="user-info-vertical">
+                <p>Superviseur DGFD</p>
+                <button class="btn-disconnect" onclick="window.location.href='../index.html'">Déconnexion</button>
+            </div>
+        </aside>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="content-area">
+
+            <!-- HEADER -->
+            <header style="background:white; padding:12px 20px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">Banque Nationale de Projets</h1>
+                    <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <input type="text" id="filter-texte" class="form-input" placeholder="🔍 Rechercher..." style="width:170px; height:32px; font-size:11px;">
+                    <select id="filter-secteur" class="form-input" style="width:140px; height:32px; font-size:11px;">
+                        <option value="">Tous secteurs</option>
+                    </select>
+                    <select id="filter-sous-secteur" class="form-input" style="width:170px; height:32px; font-size:11px;">
+                        <option value="">Tous sous-secteurs</option>
+                    </select>
+                    <select id="filter-ptf" class="form-input" style="width:140px; height:32px; font-size:11px;">
+                        <option value="">Tous partenaires</option>
+                    </select>
+                    <select id="filter-statut" class="form-input" style="width:130px; height:32px; font-size:11px;">
+                        <option value="">Tous statuts</option>
+                    </select>
+                    <select id="filter-apd" class="form-input" style="width:100px; height:32px; font-size:11px;">
+                        <option value="">APD ?</option>
+                    </select>
+                    <select id="filter-type-financement" class="form-input" style="width:150px; height:32px; font-size:11px;">
+                        <option value="">Tous types financement</option>
+                    </select>
+                    <select id="filter-type-contributeur" class="form-input" style="width:150px; height:32px; font-size:11px;">
+                        <option value="">Tous types contributeur</option>
+                    </select>
+                    <select id="filter-modalite" class="form-input" style="width:150px; height:32px; font-size:11px;">
+                        <option value="">Toutes modalités</option>
+                    </select>
+                    <select id="filter-nature" class="form-input" style="width:120px; height:32px; font-size:11px;">
+                        <option value="">Toutes natures</option>
+                    </select>
+                    <select id="filter-departement" class="form-input" style="width:150px; height:32px; font-size:11px;">
+                        <option value="">📍 Tous départements</option>
+                    </select>
+                    <select id="filter-commune" class="form-input" style="width:150px; height:32px; font-size:11px;">
+                        <option value="">Toutes communes</option>
+                    </select>
+                    <button onclick="resetFilters()" class="btn-primary" style="background:#6c757d; height:32px; font-size:10px; padding:0 10px;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                    <button onclick="document.getElementById('export-widget').style.display='block'; updateExportMatchCount();" style="height:32px; padding:0 12px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px; display:flex; align-items:center; gap:4px;">
+                        <i class="fas fa-file-export"></i> Export
+                    </button>
+                    <button onclick="exportVueFiltree()" title="Exporte directement les accords actuellement affichés" style="height:32px; padding:0 12px; background:#0d6efd; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px; display:flex; align-items:center; gap:4px;">
+                        <i class="fas fa-download"></i> Exporter la vue
+                    </button>
+                    <button onclick="document.getElementById('import-zone').style.display='block'" style="height:32px; padding:0 12px; background:#f59e0b; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px; display:flex; align-items:center; gap:4px;">
+                        <i class="fas fa-file-import"></i> Import
+                    </button>
+                </div>
+            </header>
+
+            <!-- IMPORT ZONE -->
+            <div id="import-zone" style="display:none; background:white; padding:12px 20px; margin-bottom:12px; border-left:4px solid #f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h4 style="margin:0; font-size:12px; color:#92400e;">📥 Import Excel (doit contenir la colonne "Code Projet")</h4>
+                    <button onclick="document.getElementById('import-zone').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:16px; color:#666;">✕</button>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="file" id="import-file" accept=".xlsx,.xls" class="form-input" style="flex:1; height:32px;">
+                    <button onclick="importExcel()" class="btn-primary" style="background:#f59e0b; height:32px; font-size:11px;">Lancer l'import</button>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div style="display:grid; grid-template-columns:0.7fr 1.3fr; gap:10px; margin-bottom:10px;">
+                <!-- Carte reduite -->
+                <div class="dashboard-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <h4 style="margin:0;">🗺 Répartition géographique</h4>
+                        <small>Carte du Bénin</small>
+                    </div>
+                    <div id="benin-map"></div>
+                </div>
+                <!-- 4 graphiques alignés -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto; gap:8px;">
+                    <div class="dashboard-card" style="padding:8px;">
+                        <h4 style="font-size:11px; margin-bottom:4px;">📊 Par année de signature</h4>
+                        <div id="chart-annees"></div>
+                    </div>
+                    <div class="dashboard-card" style="padding:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h4 style="margin:0; font-size:11px;">💰 Top 10 Partenaires</h4>
+                            <select id="filter-annee-ptf" onchange="updateStats()" style="padding:2px 5px; font-size:10px;">
+                                <option value="">Toutes années</option>
+                            </select>
+                        </div>
+                        <div id="chart-ptf"></div>
+                    </div>
+                    <div class="dashboard-card" style="padding:8px;">
+                        <h4 style="font-size:11px; margin-bottom:4px;">📊 Statut</h4>
+                        <div id="chart-statut"></div>
+                    </div>
+                    <div class="dashboard-card" style="padding:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h4 style="margin:0; font-size:11px;">📌 En cours vs Clôturés</h4>
+                            <select id="annee-reference" onchange="updateStats()" style="padding:2px 5px; font-size:10px;"></select>
+                        </div>
+                        <div id="chart-encours"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTRE COUNTER -->
+            <div id="filter-counter" style="background: #eef2f7; padding: 8px 15px; border-radius: 4px 4px 0 0; font-size: 12px; color: #444; display: flex; justify-content: space-between; align-items: center;">
+                <span><strong>Résultats :</strong> <span id="count-value" style="color: var(--primary-blue); font-weight: 800;">-</span> accord(s)</span>
+                <span id="total-montant-filter" style="font-size: 11px; color: #666;"></span>
+            </div>
+
+            <!-- BULK BAR -->
+            <div id="bulk-bar" class="bulk-bar">
+                <span class="bulk-count">0 sélectionné(s)</span>
+                <button onclick="selectedCodes.clear(); renderFilteredTable(filteredData);">Désélectionner tout</button>
+                <button class="danger" onclick="bulkDelete()">🗑️ Supprimer la sélection</button>
+            </div>
+
+            <!-- TABLEAU -->
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;"><input type="checkbox" id="bulk-check-all" onchange="toggleAllBulk(this.checked)" title="Sélectionner toute la page"></th>
+                            <th class="sort-header" data-sort="Code Projet" onclick="toggleSort('Code Projet')">Code Projet</th>
+                            <th class="sort-header" data-sort="Objet de l'accord" onclick="toggleSort('Objet de l\'accord')">Objet de l'accord</th>
+                            <th class="sort-header" data-sort="Secteur" onclick="toggleSort(window._secteurKey||'Secteur principal')">Secteur</th>
+                            <th class="sort-header" data-sort="Sous-secteur" onclick="toggleSort(window._sousSecteurKey||'SOUS SECTEUR')">Sous-secteur</th>
+                            <th class="sort-header" data-sort="Partenaire" onclick="toggleSort('Partenaire')">Partenaire</th>
+                            <th class="sort-header" data-sort="Montant_Total_FCFA" onclick="toggleSort('Montant_Total_FCFA')">Montant Total (FCFA)</th>
+                            <th class="sort-header" data-sort="Statut" onclick="toggleSort('STATUT (en cours, achevé, en approbation)')">Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr>
+                            <td colspan="9" style="text-align:center;padding:20px;">Chargement...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PAGINATION BAR -->
+            <div id="pagination-bar" class="pagination-bar"></div>
+
+            <!-- EXPORT WIDGET -->
+            <div id="export-widget" class="export-widget" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0; font-size:13px; color:var(--secondary-green); font-weight:700;">
+                        <i class="fas fa-file-export"></i> Export Personnalisé
+                    </h3>
+                    <button onclick="document.getElementById('export-widget').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#666;">✕</button>
+                </div>
+
+                <div class="tabs-nav" id="export-tabs-nav"></div>
+                <div id="export-tabs-body"></div>
+
+                <div id="export-match-counter" style="margin-top:12px; padding:8px 12px; background:#eef2f7; border-left:4px solid var(--primary-blue); border-radius:4px; font-size:11px; color:#333; font-weight:600;">
+                    🔎 <span id="export-match-count">0</span> accord(s) correspondent aux filtres actuels
+                </div>
+                <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; padding-top:10px;">
+                    <button onclick="resetExportFilters()" style="padding:6px 10px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:4px; cursor:pointer; font-size:10px;">🔄 Réinitialiser filtres</button>
+                    <button onclick="selectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout cocher</button>
+                    <button onclick="deselectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout décocher</button>
+                    <button onclick="triggerCustomExport()" style="padding:6px 12px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px;">📥 Télécharger Excel</button>
+                </div>
+            </div>
+
+            <!-- BOUTON FAB -->
+            <button class="btn-fab" onclick="openModal()">+</button>
+
+            <!-- MODAL -->
+            <div id="modal-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+                <div class="modal-content">
+                    <h2 style="margin-top:0;color:var(--primary-blue);font-size:16px; cursor:grab;" id="modal-title">NOUVEL ACCORD</h2>
+                    <div class="tabs-nav" id="modal-tabs-nav"></div>
+                    <form id="form-projet">
+                        <input type="hidden" id="Old_Code">
+                        <div id="modal-tabs-body"></div>
+
+                        <div style="grid-column:1/-1;margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                            <label style="font-weight:700;font-size:12px; display:block; margin-bottom:6px;">Co-partenaires (co-financiers) — 7 max</label>
+                            <div id="copartWrap" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+                            <button type="button" id="btnAddCopart" style="margin-top:8px;padding:6px 12px;border:1px solid #0e7a3a;color:#0e7a3a;background:#fff;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px;">
+                                + Ajouter un co-partenaire
+                            </button>
+                        </div>
+
+                        <div style="text-align:right;margin-top:20px;padding-top:15px;border-top:1px solid #eee;">
+                            <button type="button" onclick="closeModal()" style="padding:8px 15px;border:1px solid #ddd;background:white;cursor:pointer;border-radius:4px;font-size:12px; margin-right:10px;">Annuler</button>
+                            <button type="submit" style="padding:8px 15px;background:var(--secondary-green);color:white;border:none;cursor:pointer;border-radius:4px;font-weight:600;font-size:12px;"> Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="../js/localisation_selector.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const FLASK_HOST = localStorage.getItem('sgiad_api_host') || window.location.hostname || '127.0.0.1';
+        const FLASK_PORT = localStorage.getItem('sgiad_api_port') || '5000';
+        const FLASK_BASE = `http://${FLASK_HOST}:${FLASK_PORT}`;
+        const API_BASE = `${FLASK_BASE}/api/accords-financiers`;
+        const CODE_FIELD = 'Code Projet';
+
+        let COLUMNS = [];
+        let COLUMNS_BY_KEY = {};
+        let allProjets = [];
+        let modalLocSelector = null;
+        let exportLocSelector = null;
+        let exportLocSelectorReady = false;
+        let ZONE_HIERARCHY = {};
+
+        // Pagination state
+        let currentPage = 1;
+        let pageSize = 25;
+        let filteredData = [];
+
+        // Sorting state
+        let sortColumn = null;
+        let sortDirection = 'asc';
+
+        // Bulk selection
+        let selectedCodes = new Set();
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 3200);
+        }
+
+        // Auth check
+        function checkAuth() {
+            const token = localStorage.getItem('sgiad_token');
+            if (!token) {
+                showToast('Session non connectée — mode consultation', 'info');
+            }
+        }
+
+        const TAB_LABELS = [
+            '1. Identification',
+            '2. Localisation',
+            '3. Calendrier',
+            '4. Financement',
+            '5. Partenaires & Classification',
+            '6. Coordination',
+            '7. Maturité'
+        ];
+
+        const TAB_FIELDS = [
+            ['Code Projet', "Objet de l'accord", 'Objectif général', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Source vérifiable'],
+            ['Zone'],
+            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date de clôture', 'Annee de cloture'],
+            ['Nature (Prêt/Don/Mixte)', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant_Total_FCFA', 'Devise', 'Montant total (devise)', 'Instrument de financement', 'APD Oui/non', 'TYPE DE FINANCEMENT'],
+            ['TYPE DE CONTRIBUTEUR', 'AXE PAG', 'PILIER PAG', 'ODD', 'Cible_ODD', 'Pilier', 'STATUT (en cours, achevé, en approbation)'],
+            [],
+            []
+        ];
+
+        const TAB_ICONS = ['📋', '📍', '📅', '💰', '🤝', '👥', '📈'];
+
+        // ============================================
+        // UTILITAIRES
+        // ============================================
+        function getEl(id) { return document.getElementById(id); }
+
+        function parseNum(v) {
+            if (v === null || v === undefined || v === '') return 0;
+            const n = parseFloat(String(v).replace(/\s/g, '').replace(',', '.'));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function frToIso(d) {
+            if (!d) return '';
+            const m = String(d).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (!m) return '';
+            return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        }
+
+        function isoToFr(d) {
+            if (!d) return '';
+            const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!m) return '';
+            return `${m[3]}/${m[2]}/${m[1]}`;
+        }
+
+        // ============================================
+        // INITIALISATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log('🚀 Initialisation Banque de Projets...');
+
+        // Auth check
+        checkAuth();
+
+        // Chargement des colonnes
+        const colsRes = await fetch(`${API_BASE}/columns`);
+
+        if (!colsRes.ok) {
+            throw new Error(`Erreur API colonnes : ${colsRes.status}`);
+        }
+
+        const colsData = await colsRes.json();
+
+        COLUMNS = colsData.columns || [];
+        COLUMNS_BY_KEY = Object.fromEntries(
+            COLUMNS.map(c => [c.key, c])
+        );
+
+        buildModalTabs();
+        buildExportPanel();
+
+        // Chargement des données
+        await loadProjets();
+
+        // Hiérarchie localisation
+        await loadZoneHierarchy();
+
+        // Filtres texte
+        const txt = getEl('filter-texte');
+        if (txt) txt.addEventListener('input', applyFilters);
+
+        // Filtres select : cross-filtering complet
+        [
+            'filter-secteur',
+            'filter-sous-secteur',
+            'filter-ptf',
+            'filter-statut',
+            'filter-apd',
+            'filter-type-financement',
+            'filter-type-contributeur',
+            'filter-modalite',
+            'filter-nature'
+        ].forEach(id => {
+            const el = getEl(id);
+            if (el) el.addEventListener('change', () => {
+                updateAllFilterOptions();
+                applyFilters();
+            });
+        });
+
+        // Département
+        const dep = getEl('filter-departement');
+        if (dep) {
+            dep.addEventListener('change', () => {
+                updateAllFilterOptions();
+                applyFilters();
+            });
+        }
+
+        // Commune
+        const com = getEl('filter-commune');
+        if (com) com.addEventListener('change', () => {
+            updateAllFilterOptions();
+            applyFilters();
+        });
+
+        // Bouton co-partenaire
+        const btnCopart = getEl('btnAddCopart');
+        if (btnCopart) {
+            btnCopart.addEventListener('click', () => addCopartRow(''));
+        }
+
+        console.log('✅ Banque de Projets initialisée');
+
+        // Initialiser la carte APRÈS le chargement
+        setTimeout(initMap, 300);
+
+    } catch (e) {
+        console.error('❌ Erreur critique:', e);
+
+        const tbody = getEl('table-body');
+
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="color:red;text-align:center;padding:30px;">
+                        Impossible de charger les données.<br>
+                        <small>${e.message}</small>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+});
+        // ============================================
+        // CHARGEMENT DES PROJETS
+        // ============================================
+       async function loadProjets() {
+    const res = await fetch(`${API_BASE}/list?t=` + Date.now());
+
+    if (!res.ok) {
+        throw new Error(`Impossible de charger les projets (${res.status})`);
+    }
+
+    const data = await res.json();
+
+    allProjets = Array.isArray(data)
+        ? data
+        : (data.data || []);
+
+    currentPage = 1;
+    selectedCodes.clear();
+    buildQuickFilters();
+    applyFilters();
+    updateStats();
+
+    // Mettre à jour la carte si elle existe
+    if (typeof updateMapMarkers === 'function') {
+        setTimeout(updateMapMarkers, 200);
+    }
+}
+
+        // ============================================
+        // FILTRES
+        // ============================================
+        function fillSelectOptions(id, values, placeholder) {
+            const el = getEl(id);
+            if (!el) return;
+            const current = el.value;
+            el.innerHTML = `<option value="">${placeholder}</option>` + values.map(v => `<option value="${v}">${v}</option>`).join('');
+            el.value = current;
+        }
+
+        // Fonction de génération automatique des sous-secteurs
+   function updateSousSecteurFilter() {
+    const secteur = getEl('filter-secteur')?.value || '';
+    const sousSelect = getEl('filter-sous-secteur');
+    if (!sousSelect) return;
+
+    const currentSousSecteur = sousSelect.value;
+    sousSelect.innerHTML = '<option value="">Tous sous-secteurs</option>';
+
+    const secteurKey = window._secteurKey || 'Secteur principal';
+    const sousSecteurKey = window._sousSecteurKey || 'SOUS SECTEUR';
+
+    if (allProjets.length > 0 && secteurKey in allProjets[0] && sousSecteurKey in allProjets[0]) {
+        const sousSecteurs = [...new Set(
+            allProjets
+                .filter(p => {
+                    const pSecteur = String(p[secteurKey] || '').trim();
+                    return !secteur || pSecteur === secteur;
+                })
+                .map(p => String(p[sousSecteurKey] || '').trim())
+                .filter(Boolean)
+        )].sort();
+
+        sousSecteurs.forEach(ss => {
+            const selected = (ss === currentSousSecteur) ? 'selected' : '';
+            sousSelect.innerHTML += `<option value="${ss}" ${selected}>${ss}</option>`;
+        });
+
+        if (!sousSecteurs.includes(currentSousSecteur)) {
+            sousSelect.value = '';
+        }
+    }
+}
+       function buildQuickFilters() {
+    // Detecter les cles secteur / sous-secteur
+    let secteurKey = null;
+    const possibleKeys = ['Secteur_Activite_1', 'Secteur principal', 'Secteur', 'secteur', 'Secteur_Activite'];
+    if (allProjets.length > 0) {
+        for (const key of possibleKeys) { if (key in allProjets[0]) { secteurKey = key; break; } }
+        if (!secteurKey) { for (const key of Object.keys(allProjets[0])) { if (key.toLowerCase().includes('sect')) { secteurKey = key; break; } } }
+    }
+    let sousSecteurKey = null;
+    const possibleSousKeys = ['Sous_Secteur', 'SOUS SECTEUR', 'Sous-secteur', 'sous_secteur'];
+    if (allProjets.length > 0) {
+        for (const key of possibleSousKeys) { if (key in allProjets[0]) { sousSecteurKey = key; break; } }
+        if (!sousSecteurKey) { for (const key of Object.keys(allProjets[0])) { if (key.toLowerCase().includes('sous') && key.toLowerCase().includes('sect')) { sousSecteurKey = key; break; } } }
+    }
+    window._secteurKey = secteurKey;
+    window._sousSecteurKey = sousSecteurKey;
+
+    // Initialiser tous les filtres
+    updateAllFilterOptions();
+}
+
+        // ============================================
+        // CROSS-FILTERING : met a jour tous les combobox
+        // ============================================
+        const FILTER_MAP = [
+            { id: 'filter-secteur',            keyFn: () => window._secteurKey || 'Secteur principal', placeholder: 'Tous secteurs' },
+            { id: 'filter-sous-secteur',       keyFn: () => window._sousSecteurKey || 'SOUS SECTEUR',  placeholder: 'Tous sous-secteurs' },
+            { id: 'filter-ptf',               keyFn: () => 'Partenaire',                               placeholder: 'Tous partenaires' },
+            { id: 'filter-statut',            keyFn: () => 'STATUT (en cours, achevé, en approbation)', placeholder: 'Tous statuts' },
+            { id: 'filter-apd',               keyFn: () => 'APD Oui/non',                              placeholder: 'Tous APD' },
+            { id: 'filter-type-financement',  keyFn: () => 'TYPE DE FINANCEMENT',                      placeholder: 'Tous financements' },
+            { id: 'filter-type-contributeur', keyFn: () => 'TYPE DE CONTRIBUTEUR',                     placeholder: 'Tous contributeurs' },
+            { id: 'filter-modalite',          keyFn: () => 'Modalité d\'intervention',                 placeholder: 'Toutes modalités' },
+            { id: 'filter-nature',            keyFn: () => 'Nature (Prêt/Don/Mixte)',                   placeholder: 'Toutes natures' },
+        ];
+
+        function updateAllFilterOptions() {
+            // Pour chaque filtre, calculer les donnees filtrees SANS ce filtre
+            FILTER_MAP.forEach(target => {
+                const dataKey = target.keyFn();
+                // Filtrer allProjets en appliquant tous les AUTRES filtres
+                const filtered = allProjets.filter(p => {
+                    return FILTER_MAP.every(other => {
+                        if (other.id === target.id) return true;
+                        const otherVal = getEl(other.id)?.value || '';
+                        if (!otherVal) return true;
+                        return p[other.keyFn()] === otherVal;
+                    }) && applyZoneFilter(p, target.id);
+                });
+                const values = [...new Set(filtered.map(p => String(p[dataKey] || '').trim()).filter(Boolean))].sort();
+                fillSelectOptions(target.id, values, target.placeholder);
+            });
+
+            // Cross-filter Departement (sans appliquer le filtre dept lui-meme)
+            const selDep = getEl('filter-departement');
+            const selCom = getEl('filter-commune');
+            const currentDep = selDep?.value || '';
+            const currentCom = selCom?.value || '';
+            const allDeps = Object.keys(ZONE_HIERARCHY || {}).sort();
+
+            // Departements pertinents : donnees filtrees par tous SAUF dept/commune
+            const forDept = allProjets.filter(p => {
+                return FILTER_MAP.every(f => {
+                    const v = getEl(f.id)?.value || '';
+                    return !v || p[f.keyFn()] === v;
+                });
+            });
+            const relevantDeps = allDeps.filter(dep =>
+                forDept.some(p => window.zoneInterventionMatches(p['Zone'], [dep]))
+            );
+            if (selDep) {
+                selDep.innerHTML = '<option value="">📍 Tous départements</option>' +
+                    relevantDeps.map(d => `<option value="${d}">${d}</option>`).join('');
+                selDep.value = currentDep;
+            }
+
+            // Communes pertinentes : filtrees par dept selectionne si applicable
+            const forCom = forDept.filter(p => {
+                if (currentDep) return window.zoneInterventionMatches(p['Zone'], [currentDep]);
+                return true;
+            });
+            const relevantComs = new Set();
+            forCom.forEach(p => {
+                relevantDeps.forEach(dep => {
+                    if (ZONE_HIERARCHY[dep] && window.zoneInterventionMatches(p['Zone'], Object.keys(ZONE_HIERARCHY[dep]))) {
+                        Object.keys(ZONE_HIERARCHY[dep]).forEach(com => {
+                            if (window.zoneInterventionMatches(p['Zone'], [com])) relevantComs.add(com);
+                        });
+                    }
+                });
+            });
+            if (selCom) {
+                const coms = [...relevantComs].sort();
+                selCom.innerHTML = '<option value="">Toutes communes</option>' +
+                    coms.map(c => `<option value="${c}">${c}</option>`).join('');
+                selCom.value = currentCom;
+                selCom.disabled = coms.length === 0;
+            }
+        }
+
+        // Applique le filtre zone UNLESS le filtre cible est dept/commune
+        function applyZoneFilter(p, excludeId) {
+            if (excludeId === 'filter-departement' || excludeId === 'filter-commune') return true;
+            const dep = getEl('filter-departement')?.value || '';
+            const com = getEl('filter-commune')?.value || '';
+            if (!dep && !com) return true;
+            if (com) return window.zoneInterventionMatches(p['Zone'], [com]);
+            return window.zoneInterventionMatches(p['Zone'], [dep]);
+        }
+
+        async function loadZoneHierarchy() {
+            try {
+                const res = await fetch(`${FLASK_BASE}/api/localisation/hierarchie`);
+                if (!res.ok) throw new Error('hiérarchie indisponible');
+                ZONE_HIERARCHY = await res.json();
+            } catch (e) {
+                console.error('❌ Impossible de charger la hiérarchie Département/Commune:', e);
+                ZONE_HIERARCHY = {};
+            }
+            const selDep = getEl('filter-departement');
+            if (selDep) {
+                const deps = Object.keys(ZONE_HIERARCHY).sort();
+                selDep.innerHTML = '<option value="">📍 Tous départements</option>' + deps.map(d =>
+                    `<option value="${d}">${d}</option>`).join('');
+            }
+            populateCommuneOptions();
+        }
+
+        function populateCommuneOptions() {
+            const selDep = getEl('filter-departement');
+            const selCom = getEl('filter-commune');
+            if (!selCom) return;
+            const dep = selDep?.value || '';
+            const communes = dep && ZONE_HIERARCHY[dep] ? Object.keys(ZONE_HIERARCHY[dep]).sort() : [];
+            selCom.innerHTML = '<option value="">Toutes communes</option>' + communes.map(c =>
+                `<option value="${c}">${c}</option>`).join('');
+            selCom.value = '';
+            selCom.disabled = communes.length === 0;
+        }
+
+        function getFilteredProjets() {
+            const texte = getEl('filter-texte')?.value.toLowerCase().trim() || '';
+            const secteur = getEl('filter-secteur')?.value || '';
+            const sousSecteur = getEl('filter-sous-secteur')?.value || '';
+            const ptf = getEl('filter-ptf')?.value || '';
+            const statut = getEl('filter-statut')?.value || '';
+            const apd = getEl('filter-apd')?.value || '';
+            const typeFinancement = getEl('filter-type-financement')?.value || '';
+            const typeContributeur = getEl('filter-type-contributeur')?.value || '';
+            const modalite = getEl('filter-modalite')?.value || '';
+            const nature = getEl('filter-nature')?.value || '';
+            const departement = getEl('filter-departement')?.value || '';
+            const commune = getEl('filter-commune')?.value || '';
+
+            return allProjets.filter(p => {
+                const matchTexte = !texte ||
+                    (p['Code Projet'] || '').toLowerCase().includes(texte) ||
+                    (p["Objet de l'accord"] || '').toLowerCase().includes(texte) ||
+                    (p['Partenaire'] || '').toLowerCase().includes(texte);
+                
+                const sKey = window._secteurKey || 'Secteur principal';
+                const ssKey = window._sousSecteurKey || 'SOUS SECTEUR';
+                const matchSecteur = !secteur || p[sKey] === secteur;
+                const matchSousSecteur = !sousSecteur || p[ssKey] === sousSecteur;
+                const matchPtf = !ptf || p['Partenaire'] === ptf;
+                const matchStatut = !statut || p['STATUT (en cours, achevé, en approbation)'] === statut;
+                const matchApd = !apd || p['APD Oui/non'] === apd;
+                const matchTypeFinancement = !typeFinancement || p['TYPE DE FINANCEMENT'] === typeFinancement;
+                const matchTypeContributeur = !typeContributeur || p['TYPE DE CONTRIBUTEUR'] === typeContributeur;
+                const matchModalite = !modalite || p["Modalité d'intervention"] === modalite;
+                const matchNature = !nature || p['Nature (Prêt/Don/Mixte)'] === nature;
+
+                const matchZone = (!departement && !commune) ||
+                    (commune ? window.zoneInterventionMatches(p['Zone'], [commune]) : window.zoneInterventionMatches(p['Zone'], [departement]));
+
+                return matchTexte && matchSecteur && matchSousSecteur && matchPtf && matchStatut && matchApd &&
+                    matchTypeFinancement && matchTypeContributeur && matchModalite && matchNature && matchZone;
+            });
+        }
+
+        function applyFilters() {
+            renderFilteredTable(getFilteredProjets());
+        }
+
+        function resetFilters() {
+            ['filter-texte'].forEach(id => { if (getEl(id)) getEl(id).value = ''; });
+            ['filter-secteur', 'filter-sous-secteur', 'filter-ptf', 'filter-statut', 'filter-apd', 'filter-type-financement',
+                'filter-type-contributeur', 'filter-modalite', 'filter-nature'
+            ].forEach(id => { if (getEl(id)) getEl(id).value = ''; });
+            if (getEl('filter-departement')) getEl('filter-departement').value = '';
+            populateCommuneOptions();
+            updateAllFilterOptions();
+            applyFilters();
+        }
+
+        // ============================================
+        // TABLEAU avec pagination + tri + bulk
+        // ============================================
+        const TABLE_COLUMNS = [
+            { key: 'Code Projet', label: 'Code' },
+            { key: "Objet de l'accord", label: 'Objet' },
+            { keyFn: () => window._secteurKey || 'Secteur principal', label: 'Secteur' },
+            { keyFn: () => window._sousSecteurKey || 'SOUS SECTEUR', label: 'Sous-secteur' },
+            { key: 'Partenaire', label: 'Partenaire' },
+            { key: 'Montant_Total_FCFA', label: 'Montant', format: 'money' },
+            { key: 'STATUT (en cours, achevé, en approbation)', label: 'Statut' },
+            { key: '_actions', label: 'Actions' },
+        ];
+
+        function getColumnKey(col) { return col.keyFn ? col.keyFn() : col.key; }
+
+        function sortData(data) {
+            if (!sortColumn) return data;
+            const dir = sortDirection === 'asc' ? 1 : -1;
+            return [...data].sort((a, b) => {
+                const va = String(a[sortColumn] || '').toLowerCase();
+                const vb = String(b[sortColumn] || '').toLowerCase();
+                if (sortColumn === 'Montant_Total_FCFA') return dir * (parseNum(a[sortColumn]) - parseNum(b[sortColumn]));
+                return dir * va.localeCompare(vb, 'fr');
+            });
+        }
+
+        function renderFilteredTable(data) {
+            filteredData = data || [];
+            const tbody = getEl('table-body');
+            const countValue = getEl('count-value');
+            const totalMontantEl = getEl('total-montant-filter');
+            if (!tbody) return;
+            if (countValue) countValue.textContent = filteredData.length.toLocaleString('fr-BJ');
+            if (totalMontantEl) {
+                const total = filteredData.reduce((sum, p) => sum + parseNum(p['Montant_Total_FCFA']), 0);
+                totalMontantEl.textContent =
+                    `Montant total : ${new Intl.NumberFormat('fr-BJ', {maximumFractionDigits:0}).format(total)} FCFA`;
+            }
+
+            // Sort
+            const sorted = sortData(filteredData);
+
+            // Pagination
+            const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * pageSize;
+            const pageData = sorted.slice(start, start + pageSize);
+
+            // Update sort indicators on headers
+            document.querySelectorAll('th.sort-header').forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.sort === sortColumn) th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            });
+
+            tbody.innerHTML = '';
+            if (pageData.length === 0) {
+                tbody.innerHTML =
+                    `<tr><td colspan="9" style="text-align:center;padding:20px;color:#666;">Aucun accord ne correspond aux critères.</td></tr>`;
+                renderPaginationBar(0, 0);
+                updateBulkBar();
+                setTimeout(updateStats, 50);
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            pageData.forEach(p => {
+                const statut = p['STATUT (en cours, achevé, en approbation)'] || '';
+                let bc = 'bg-blue';
+                const s = statut.toLowerCase();
+                if (s.includes('approuv')) bc = 'bg-green';
+                else if (s.includes('confirmer')) bc = 'bg-gold';
+                else if (s.includes('non trouv')) bc = 'bg-red';
+                else if (s.includes('cours')) bc = 'bg-blue';
+                const montant = p['Montant_Total_FCFA'] ? new Intl.NumberFormat('fr-BJ').format(parseNum(p['Montant_Total_FCFA'])) + ' FCFA' : '-';
+                const code = p['Code Projet'];
+                const checked = selectedCodes.has(code) ? 'checked' : '';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="bulk-check" data-code="${code}" ${checked} onclick="event.stopPropagation(); toggleBulkSelect('${code}')"></td>
+                    <td><strong>${code || ''}</strong></td>
+                    <td title="${p["Objet de l'accord"] || ''}">${p["Objet de l'accord"] || ''}</td>
+                    <td>${p[window._secteurKey || 'Secteur principal'] || ''}</td>
+                    <td>${p[window._sousSecteurKey || 'SOUS SECTEUR'] || ''}</td>
+                    <td>${p['Partenaire'] || ''}</td>
+                    <td style="font-weight:bold;text-align:right">${montant}</td>
+                    <td><span class="badge ${bc}">${statut}</span></td>
+                    <td style="white-space:nowrap;">
+                        <button class="action-btn btn-fiche" onclick="event.stopPropagation(); window.open('fiche_projet.html?code=' + encodeURIComponent('${code}'), '_blank')" style="border:none;background:none;cursor:pointer;color:#0e7a3a;margin-right:8px;" title="Voir la Fiche Projet"><i class="fas fa-file-alt"></i></button>
+                        <button class="action-btn btn-edit" onclick="event.stopPropagation(); openModal('${code}')" style="border:none;background:none;cursor:pointer;color:#f59e0b;margin-right:8px;" title="Modifier"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn btn-delete" onclick="event.stopPropagation(); deleteProjet('${code}')" style="border:none;background:none;cursor:pointer;color:#ef4444;" title="Supprimer"><i class="fas fa-trash-alt"></i></button>
+                    </td>`;
+                fragment.appendChild(tr);
+            });
+            tbody.appendChild(fragment);
+            renderPaginationBar(sorted.length, totalPages);
+            updateBulkBar();
+            setTimeout(updateStats, 50);
+        }
+
+        function renderPaginationBar(total, totalPages) {
+            let bar = getEl('pagination-bar');
+            if (!bar) return;
+            if (total <= pageSize) { bar.innerHTML = ''; return; }
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, total);
+            let pages = '';
+            const maxBtns = 7;
+            let startP = Math.max(1, currentPage - 3);
+            let endP = Math.min(totalPages, startP + maxBtns - 1);
+            if (endP - startP < maxBtns - 1) startP = Math.max(1, endP - maxBtns + 1);
+            if (startP > 1) pages += `<button onclick="goToPage(1)">1</button>`;
+            if (startP > 2) pages += `<span style="padding:0 4px">…</span>`;
+            for (let i = startP; i <= endP; i++) {
+                pages += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            if (endP < totalPages - 1) pages += `<span style="padding:0 4px">…</span>`;
+            if (endP < totalPages) pages += `<button onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            bar.innerHTML = `
+                <div class="page-info">Affichage ${start}–${end} sur ${total.toLocaleString('fr-BJ')} enregistrements</div>
+                <div class="pagination-controls">
+                    <select onchange="changePageSize(this.value)">
+                        ${[25,50,100,200].map(n => `<option value="${n}" ${n===pageSize?'selected':''}>${n}/page</option>`).join('')}
+                    </select>
+                    <button ${currentPage<=1?'disabled':''} onclick="goToPage(${currentPage-1})">◀</button>
+                    ${pages}
+                    <button ${currentPage>=totalPages?'disabled':''} onclick="goToPage(${currentPage+1})">▶</button>
+                </div>`;
+        }
+
+        function goToPage(p) { currentPage = p; renderFilteredTable(filteredData); }
+        function changePageSize(size) { pageSize = parseInt(size); currentPage = 1; renderFilteredTable(filteredData); }
+
+        function toggleSort(colKey) {
+            if (sortColumn === colKey) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = colKey;
+                sortDirection = 'asc';
+            }
+            renderFilteredTable(filteredData);
+        }
+
+        // Bulk selection
+        function toggleBulkSelect(code) {
+            if (selectedCodes.has(code)) selectedCodes.delete(code);
+            else selectedCodes.add(code);
+            updateBulkBar();
+        }
+        function toggleAllBulk(checked) {
+            const start = (currentPage - 1) * pageSize;
+            const pageData = sortData(filteredData).slice(start, start + pageSize);
+            pageData.forEach(p => {
+                const code = p['Code Projet'];
+                if (checked) selectedCodes.add(code); else selectedCodes.delete(code);
+            });
+            renderFilteredTable(filteredData);
+        }
+        function updateBulkBar() {
+            const bar = getEl('bulk-bar');
+            if (!bar) return;
+            if (selectedCodes.size > 0) {
+                bar.classList.add('visible');
+                bar.querySelector('.bulk-count').textContent = `${selectedCodes.size} sélectionné(s)`;
+            } else {
+                bar.classList.remove('visible');
+            }
+        }
+        async function bulkDelete() {
+            if (selectedCodes.size === 0) return;
+            if (!confirm(`Supprimer ${selectedCodes.size} accord(s) ?`)) return;
+            let ok = 0, fail = 0;
+            for (const code of selectedCodes) {
+                try {
+                    const res = await fetch(`${API_BASE}/delete/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                    if (res.ok) ok++; else fail++;
+                } catch { fail++; }
+            }
+            selectedCodes.clear();
+            showToast(`${ok} supprimé(s)${fail ? ', ' + fail + ' erreur(s)' : ''}`, fail ? 'error' : 'success');
+            await loadProjets();
+        }
+
+        async function deleteProjet(code) {
+            if (!confirm(`Supprimer l'accord "${code}" ?`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/delete/${encodeURIComponent(code)}`, { method: 'DELETE' });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Erreur serveur');
+                showToast(`Accord ${code} supprimé`, 'success');
+                await loadProjets();
+            } catch (e) {
+                showToast('Erreur suppression : ' + e.message, 'error');
+            }
+        }
+
+        // ============================================
+        // STATISTIQUES & GRAPHIQUES
+        // ============================================
+        function barChart(container, entries, colorFn) {
+            container.innerHTML = '';
+            if (entries.length === 0) {
+                container.innerHTML =
+                    '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                return;
+            }
+            const max = Math.max(...entries.map(e => e[1]), 1);
+            entries.forEach(([label, value], i) => {
+                const pct = (value / max) * 100;
+                const color = colorFn ? colorFn(label, i) : 'var(--primary-blue)';
+                container.innerHTML += `
+                    <div class="bar-row">
+                        <div class="bar-label" title="${label}">${label}</div>
+                        <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+                        <div class="bar-value">${typeof value === 'number' ? new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(value) : value}</div>
+                    </div>`;
+            });
+        }
+
+        function populateAnneeReference() {
+            const years = [...new Set(allProjets.map(p => parseInt(p['Annee de signature'])).filter(y => y && y > 1990 && y < 2100))].sort((a, b) => b - a);
+
+            // annee-reference
+            const sel = getEl('annee-reference');
+            if (sel) {
+                sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+                if (years.length) sel.value = new Date().getFullYear() <= years[0] ? new Date().getFullYear() : years[0];
+            }
+
+            // filter-annee-ptf
+            const selPtf = getEl('filter-annee-ptf');
+            if (selPtf) {
+                selPtf.innerHTML = '<option value="">Toutes années</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            }
+        }
+
+        function updateStats() {
+            if (!allProjets || allProjets.length === 0) {
+                ['stat-total', 'stat-montant', 'stat-encours', 'stat-secteur'].forEach(id => {
+                    if (getEl(id)) getEl(id).textContent = id === 'stat-montant' ? '0 FCFA' : (id === 'stat-secteur' ? '-' : '0');
+                });
+                ['chart-annees', 'chart-ptf', 'chart-statut', 'chart-encours'].forEach(id => {
+                    if (getEl(id)) getEl(id).innerHTML =
+                        '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                });
+                return;
+            }
+
+            const total = allProjets.length;
+            const montantTotal = allProjets.reduce((sum, p) => sum + parseNum(p['Montant_Total_FCFA']), 0);
+            const encours = allProjets.filter(p => (p['STATUT (en cours, achevé, en approbation)'] || '').toLowerCase().includes('cours')).length;
+
+            if (getEl('stat-total')) getEl('stat-total').textContent = total.toLocaleString('fr-BJ');
+            if (getEl('stat-montant')) getEl('stat-montant').textContent =
+                new Intl.NumberFormat('fr-BJ', { maximumFractionDigits: 0 }).format(montantTotal) + ' FCFA';
+            if (getEl('stat-encours')) getEl('stat-encours').textContent = encours.toLocaleString('fr-BJ');
+
+            const secteurs = {};
+            allProjets.forEach(p => {
+                const s = p[window._secteurKey || 'Secteur principal'] || 'Non défini';
+                secteurs[s] = (secteurs[s] || 0) + 1;
+            });
+            const topSecteur = Object.entries(secteurs).sort((a, b) => b[1] - a[1])[0];
+            if (topSecteur && getEl('stat-secteur')) {
+                const pct = Math.round((topSecteur[1] / total) * 100);
+                getEl('stat-secteur').textContent = `${topSecteur[0]} (${pct}%)`;
+            }
+
+            const anneesData = {};
+            allProjets.forEach(p => {
+                const a = p['Annee de signature'] || 'N/A';
+                if (!anneesData[a]) anneesData[a] = { count: 0, fcfa: 0 };
+                anneesData[a].count++;
+                anneesData[a].fcfa += parseNum(p['Montant_Total_FCFA']);
+            });
+            const sortedAnnees = Object.keys(anneesData).filter(a => a !== 'N/A' && parseInt(a) >= 2000 && parseInt(a) <= 2035).sort((a, b) => parseInt(b) - parseInt(a));
+            const maxCount = Math.max(...sortedAnnees.map(a => anneesData[a].count), 1);
+            const chartAnnees = getEl('chart-annees');
+            if (chartAnnees) {
+                chartAnnees.innerHTML = '';
+                sortedAnnees.forEach(annee => {
+                    const data = anneesData[annee];
+                    const pct = (data.count / maxCount) * 100;
+                    chartAnnees.innerHTML += `
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
+                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
+                                <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
+                                <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap; text-shadow:0 0 3px rgba(255,255,255,0.8);">
+                                    ${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} FCFA
+                                </div>
+                            </div>
+                            <div style="width:20px; font-size:9px; text-align:right; color:#666;">${data.count}</div>
+                        </div>`;
+                });
+            }
+
+            const anneeFiltre = getEl('filter-annee-ptf')?.value || '';
+            const projetsFiltres = anneeFiltre ? allProjets.filter(p => String(p['Annee de signature']) === anneeFiltre) : allProjets;
+            const ptfMontants = {};
+            projetsFiltres.forEach(p => {
+                const ptf = p['Partenaire'] || 'Non défini';
+                ptfMontants[ptf] = (ptfMontants[ptf] || 0) + parseNum(p['Montant_Total_FCFA']);
+            });
+            const maxPTF = Math.max(...Object.values(ptfMontants), 1);
+            const chartPTF = getEl('chart-ptf');
+            if (chartPTF) {
+                chartPTF.innerHTML = '';
+                const entries = Object.entries(ptfMontants).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                if (entries.length === 0) {
+                    chartPTF.innerHTML =
+                        '<div style="text-align:center;color:#999;padding:10px;font-size:10px;">Aucune donnée</div>';
+                } else {
+                    entries.forEach(([ptf, montant]) => {
+                        const pct = (montant / maxPTF) * 100;
+                        chartPTF.innerHTML += `
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <div style="width:90px; font-size:9px; font-weight:600; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${ptf}">${ptf}</div>
+                                <div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;">
+                                    <div style="width:${pct}%; background:#27ae60; height:100%; border-radius:3px;"></div>
+                                </div>
+                                <div style="width:80px; font-size:8px; font-weight:700; text-align:right; color:#333;">
+                                    ${new Intl.NumberFormat('fr-BJ',{notation:'compact', compactDisplay:'short'}).format(montant)} F
+                                </div>
+                            </div>`;
+                    });
+                }
+            }
+
+            const statutData = {};
+            allProjets.forEach(p => {
+                const s = p['STATUT (en cours, achevé, en approbation)'] || 'Non défini';
+                statutData[s] = (statutData[s] || 0) + 1;
+            });
+            if (getEl('chart-statut')) {
+                barChart(getEl('chart-statut'), Object.entries(statutData).sort((a, b) => b[1] - a[1]), (label) => label.toLowerCase().includes('cours') ? '#27ae60' : (label.toLowerCase().includes('approuv') ? '#3498db' : '#95a5a6'));
+            }
+
+            populateAnneeReference();
+            const refYear = parseInt(getEl('annee-reference')?.value);
+            if (refYear && getEl('chart-encours')) {
+                let enCoursN = 0, cloturesN = 0, nonDemarresN = 0;
+                allProjets.forEach(p => {
+                    const sig = parseInt(p['Annee de signature']);
+                    const clo = parseInt(p['Annee de cloture']);
+                    if (!sig) return;
+                    if (sig > refYear) { nonDemarresN++; return; }
+                    if (clo && clo < refYear) { cloturesN++; return; }
+                    enCoursN++;
+                });
+                barChart(getEl('chart-encours'), [
+                    ['En cours', enCoursN],
+                    ['Clôturés', cloturesN],
+                    ['Pas encore démarrés', nonDemarresN],
+                ], (label) => label === 'En cours' ? '#27ae60' : (label === 'Clôturés' ? '#95a5a6' : '#f59e0b'));
+            } else if (getEl('chart-encours')) {
+                getEl('chart-encours').innerHTML =
+                    '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Sélectionnez une année de référence</div>';
+            }
+        }
+
+        // ============================================
+        // MODAL & CO-PARTENAIRES
+        // ============================================
+        function fieldInputHtml(key) {
+            const col = COLUMNS_BY_KEY[key];
+            const required = key === CODE_FIELD ? ' required' : '';
+            const readonly = col && col.readonly ? ' disabled' : '';
+            const labelText = key.toUpperCase();
+            if (!col) return '';
+            if (col.type === 'select') {
+                const opts = (col.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+                return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><select name="${key}" class="form-input"${required}${readonly}><option value="">-- Sélectionner --</option>${opts}</select></div>`;
+            }
+            if (col.type === 'date') {
+                return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><input type="date" name="${key}" class="form-input"${required}${readonly}></div>`;
+            }
+            if (col.type === 'number') {
+                return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}${readonly ? ' (Auto)' : ''}</label><input type="number" name="${key}" class="form-input" step="any"${required}${readonly}></div>`;
+            }
+            if (key === "Objet de l'accord" || key === 'Objectif général') {
+                return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><textarea name="${key}" class="form-input" rows="2"${required}${readonly}></textarea></div>`;
+            }
+            return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><input type="text" name="${key}" class="form-input"${required}${readonly}></div>`;
+        }
+
+        // Custom fields for Coordination and Maturite tabs (not in COLUMNS_BY_KEY)
+        const COORDINATION_FIELDS = [
+            { key: 'Coordination_nationale', label: 'Coordination nationale', type: 'text' },
+            { key: 'Ministere_tutelle', label: 'Ministère de tutelle', type: 'text' },
+            { key: 'Point_focal', label: 'Point focal', type: 'text' },
+            { key: 'Comite_pilotage', label: 'Comité de pilotage', type: 'textarea' },
+            { key: 'Mecanisme_coordination', label: 'Mécanisme de coordination', type: 'textarea' },
+        ];
+        const MATURITE_FIELDS = [
+            { key: 'Niveau_maturite', label: 'Niveau de maturité', type: 'select', options: ['Identification', 'Préparation', 'Approbation', 'Mise en œuvre', 'Achèvement'] },
+            { key: 'Etudes_realisees', label: 'Études réalisées', type: 'textarea' },
+            { key: 'Statut_environnemental', label: 'Statut environnemental', type: 'select', options: ['Non requis', 'Évaluation préliminaire', 'EIES complète', 'PGES en cours'] },
+            { key: 'Conditions_prealaables', label: 'Conditions préalables', type: 'textarea' },
+            { key: 'Risques_identifies', label: 'Risques identifiés', type: 'textarea' },
+        ];
+
+        function customFieldHtml(field) {
+            const { key, label, type, options } = field;
+            if (type === 'select') {
+                const opts = (options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+                return `<div class="form-full"><label class="section-label">${label}</label><select name="${key}" class="form-input"><option value="">-- Sélectionner --</option>${opts}</select></div>`;
+            }
+            if (type === 'textarea') {
+                return `<div class="form-full"><label class="section-label">${label}</label><textarea name="${key}" class="form-input" rows="2"></textarea></div>`;
+            }
+            return `<div class="form-full"><label class="section-label">${label}</label><input type="text" name="${key}" class="form-input"></div>`;
+        }
+
+        function buildModalTabs() {
+            const nav = getEl('modal-tabs-nav');
+            const body = getEl('modal-tabs-body');
+            nav.innerHTML = TAB_LABELS.map((label, i) =>
+                `<button type="button" class="tab-btn${i === 0 ? ' active' : ''}" onclick="switchTab(${i})">${TAB_ICONS[i]} ${label}</button>`
+                ).join('');
+
+            let html = '';
+            TAB_FIELDS.forEach((fields, i) => {
+                html +=
+                    `<div id="tab-${i}" class="tab-content form-grid${i === 0 ? ' active' : ''}">`;
+                if (i === 1) {
+                    html +=
+                        `<div class="form-full"><label class="section-label">ZONE D'INTERVENTION</label><div id="loc-selector-container" style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #e9ecef;"></div></div>`;
+                } else if (i === 5) {
+                    html += `<div class="form-full" style="background:#e8f4fd; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:11px; color:#1a5276;">
+                        ℹ️ Ces champs sont en cours d'intégration dans la base de données. Les valeurs saisies seront stockées dans la colonne Notes.</div>`;
+                    html += COORDINATION_FIELDS.map(customFieldHtml).join('');
+                } else if (i === 6) {
+                    html += `<div class="form-full" style="background:#fef3c7; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:11px; color:#92400e;">
+                        ℹ️ Ces champs sont en cours d'intégration dans la base de données. Les valeurs saisies seront stockées dans la colonne Notes.</div>`;
+                    html += MATURITE_FIELDS.map(customFieldHtml).join('');
+                } else {
+                    html += fields.map(fieldInputHtml).join('');
+                }
+                html += `</div>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('#modal-tabs-body .tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#modal-tabs-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+            getEl(`tab-${index}`)?.classList.add('active');
+            document.querySelectorAll('#modal-tabs-nav .tab-btn')[index]?.classList.add('active');
+        }
+
+        function addCopartRow(val) {
+            const wrap = document.getElementById('copartWrap');
+            if (!wrap || wrap.children.length >= 7) return;
+            const d = document.createElement('div');
+            d.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+            d.innerHTML =
+                `<input type="text" name="Co_Partenaire_1" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="Nom du co-partenaire" style="flex:1;padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
+                `<button type="button" title="Retirer" style="border:none;background:#d5251f;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;">✕</button>`;
+            d.querySelector('button').onclick = function() { d.remove();
+                renumCopart(); };
+            wrap.appendChild(d);
+            renumCopart();
+        }
+
+        function renumCopart() {
+            const wrap = document.getElementById('copartWrap');
+            if (!wrap) return;
+            Array.from(wrap.children).forEach((d, i) => {
+                const inp = d.querySelector('input');
+                if (inp) inp.name = `Co_Partenaire_${i + 1}`;
+            });
+        }
+
+        window.prefillCopartenaires = function(p) {
+            const wrap = document.getElementById('copartWrap');
+            if (!wrap) return;
+            wrap.innerHTML = '';
+            for (let i = 1; i <= 7; i++) {
+                const val = p[`Co_Partenaire_${i}`];
+                if (val && String(val).trim()) {
+                    addCopartRow(String(val));
+                }
+            }
+        };
+
+        function openModal(code) {
+            getEl('modal-projet').style.display = 'flex';
+            getEl('form-projet').reset();
+            getEl('Old_Code').value = '';
+
+            const wrap = document.getElementById('copartWrap');
+            if (wrap) wrap.innerHTML = '';
+
+            switchTab(0);
+
+            if (!modalLocSelector) {
+                modalLocSelector = new LocalisationSelector('#loc-selector-container', { apiBase: FLASK_BASE });
+                modalLocSelector.init();
+            } else {
+                modalLocSelector.reset();
+            }
+
+            if (code) {
+                const p = allProjets.find(x => x['Code Projet'] === code);
+                if (!p) return;
+                getEl('modal-title').textContent = `MODIFIER : ${code}`;
+                getEl('Old_Code').value = code;
+                document.querySelectorAll('#form-projet [name]').forEach(el => {
+                    const key = el.name;
+                    if (key === 'Zone' || key.startsWith('Co_Partenaire_')) return;
+                    const col = COLUMNS_BY_KEY[key];
+                    if (col && col.type === 'date') el.value = frToIso(p[key]);
+                    else el.value = p[key] || '';
+                });
+                if (p['Zone'] && modalLocSelector) modalLocSelector.loadEncodedString(p['Zone']);
+                if (window.prefillCopartenaires) window.prefillCopartenaires(p);
+            } else {
+                getEl('modal-title').textContent = 'NOUVEL ACCORD';
+            }
+        }
+
+        function closeModal() { getEl('modal-projet').style.display = 'none'; }
+
+        const formProjet = getEl('form-projet');
+
+        if (formProjet) {
+            formProjet.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {};
+
+                // Validation
+                const codeInput = formProjet.querySelector('[name="Code Projet"]');
+                if (codeInput && !codeInput.value.trim()) {
+                    showToast('Le Code Projet est obligatoire', 'error');
+                    codeInput.focus();
+                    return;
+                }
+                // Validate numeric fields
+                const montantKeys = ['Montant_Total_FCFA', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant total (devise)'];
+                for (const key of montantKeys) {
+                    const inp = formProjet.querySelector(`[name="${key}"]`);
+                    if (inp && inp.value && isNaN(parseFloat(inp.value))) {
+                        showToast(`${key} doit être un nombre valide`, 'error');
+                        inp.focus();
+                        return;
+                    }
+                }
+                // Validate dates
+                formProjet.querySelectorAll('input[type="date"]').forEach(inp => {
+                    if (inp.value && isNaN(Date.parse(inp.value))) {
+                        showToast(`Date invalide : ${inp.name}`, 'error');
+                        inp.focus();
+                        return;
+                    }
+                });
+
+                document.querySelectorAll('#form-projet [name]').forEach(el => {
+                    const key = el.name;
+                    if (!key || key.startsWith('Co_Partenaire_')) return;
+                    const col = COLUMNS_BY_KEY[key];
+                    if (col && col.readonly) return;
+                    if (col && col.type === 'date') payload[key] = isoToFr(el.value);
+                    else payload[key] = el.value;
+                });
+
+                const wrap = document.getElementById('copartWrap');
+                if (wrap) {
+                    Array.from(wrap.children).forEach((d, i) => {
+                        const inp = d.querySelector('input');
+                        if (inp && inp.value.trim()) {
+                            payload[`Co_Partenaire_${i + 1}`] = inp.value.trim();
+                        }
+                    });
+                }
+
+                payload['Zone'] = modalLocSelector ? modalLocSelector.getEncodedString() : '';
+
+                const oldCode = getEl('Old_Code').value;
+                try {
+                    let res;
+                    if (oldCode) {
+                        res = await fetch(`${API_BASE}/update/${encodeURIComponent(oldCode)}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    } else {
+                        res = await fetch(`${API_BASE}/add`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    const result = await res.json();
+                    if (!res.ok) throw new Error(result.error || 'Erreur serveur');
+                    closeModal();
+                    showToast(oldCode ? `Accord ${oldCode} modifié avec succès` : `Nouvel accord ${result.code || payload['Code Projet'] || ''} ajouté`, 'success');
+                    await loadProjets();
+                } catch (err) {
+                    showToast('Erreur enregistrement : ' + err.message, 'error');
+                }
+            });
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        function buildExportPanel() {
+            const nav = getEl('export-tabs-nav');
+            const body = getEl('export-tabs-body');
+            nav.innerHTML = TAB_LABELS.map((label, i) =>
+                `<button class="tab-btn${i === 0 ? ' active' : ''}" onclick="switchExportTab(${i})">${label}</button>`).join('');
+
+            let html = '';
+            TAB_FIELDS.forEach((fields, i) => {
+                html += `<div id="exp-tab-${i}" class="exp-tab-content${i === 0 ? ' active' : ''}">`;
+                if (i === 5) {
+                    html += `<p style="font-size:11px; color:#666;"><i>ℹ️ Champs Coordination : ${COORDINATION_FIELDS.map(f => f.label).join(', ')}</i></p>`;
+                    html += `<div class="checkbox-grid">${COORDINATION_FIELDS.map(f => `<label><input type="checkbox" value="${f.key}" style="accent-color:var(--secondary-green);"> ${f.label}</label>`).join('')}</div>`;
+                } else if (i === 6) {
+                    html += `<p style="font-size:11px; color:#666;"><i>ℹ️ Champs Maturité : ${MATURITE_FIELDS.map(f => f.label).join(', ')}</i></p>`;
+                    html += `<div class="checkbox-grid">${MATURITE_FIELDS.map(f => `<label><input type="checkbox" value="${f.key}" style="accent-color:var(--secondary-green);"> ${f.label}</label>`).join('')}</div>`;
+                } else if (i === 1) {
+                    html +=
+                        `<div id="exp-loc-selector-container" style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #e9ecef;"></div>`;
+                } else {
+                    const selectFields = fields.filter(k => COLUMNS_BY_KEY[k] && COLUMNS_BY_KEY[k].type === 'select');
+                    if (selectFields.length > 0) {
+                        html += `<div class="exp-filter-grid">` + selectFields.map(k => `
+                            <div><label>Filtrer par ${k}</label>
+                                <select id="exp-filter-${k}" multiple size="3"><option value="">-- Tous --</option>${(COLUMNS_BY_KEY[k].options || []).map(o => `<option value="${o}">${o}</option>`).join('')}</select>
+                            </div>`).join('') + `</div>`;
+                    }
+                    html += `<div style="border-top:1px dashed #eee; padding-top:8px;">
+                        <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                        <div class="checkbox-grid">${fields.map(k => `<label><input type="checkbox" value="${k}" checked style="accent-color:var(--secondary-green);"> ${k}</label>`).join('')}</div>
+                    </div>`;
+                }
+                html += `</div>`;
+            });
+            body.innerHTML = html;
+        }
+
+        function switchExportTab(index) {
+            document.querySelectorAll('#export-tabs-body .exp-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#export-tabs-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+            getEl(`exp-tab-${index}`)?.classList.add('active');
+            document.querySelectorAll('#export-tabs-nav .tab-btn')[index]?.classList.add('active');
+            if (index === 1 && !exportLocSelectorReady) {
+                exportLocSelector = new LocalisationSelector('#exp-loc-selector-container', { apiBase: FLASK_BASE,
+                    onChange: updateExportMatchCount });
+                exportLocSelector.init();
+                exportLocSelectorReady = true;
+            }
+        }
+
+        function selectAllExportCols() {
+            document.querySelectorAll('#export-tabs-body input[type="checkbox"]').forEach(i => i.checked = true);
+        }
+
+        function deselectAllExportCols() {
+            document.querySelectorAll('#export-tabs-body input[type="checkbox"]').forEach(i => i.checked = false);
+        }
+
+        function resetExportFilters() {
+            document.querySelectorAll('#export-tabs-body select[id^="exp-filter-"]').forEach(select => {
+                for (let i = 0; i < select.options.length; i++) select.options[i].selected = false;
+            });
+            if (exportLocSelector) exportLocSelector.reset();
+            updateExportMatchCount();
+        }
+
+        function getCurrentExportFilters() {
+            const filters = {};
+            document.querySelectorAll('#export-tabs-body select[id^="exp-filter-"]').forEach(select => {
+                const fieldName = select.id.replace('exp-filter-', '');
+                const values = [];
+                for (let i = 0; i < select.options.length; i++) {
+                    const option = select.options[i];
+                    if (option.selected && option.value && option.value.trim()) values.push(option.value.trim());
+                }
+                if (values.length > 0) filters[fieldName] = values;
+            });
+            if (exportLocSelector) {
+                const zoneNames = exportLocSelector.getFlatSelectionNames();
+                if (zoneNames.length > 0) filters['Zone'] = zoneNames;
+            }
+            return filters;
+        }
+
+        function updateExportMatchCount() {
+            const filters = getCurrentExportFilters();
+            const countEl = getEl('export-match-count');
+            const boxEl = getEl('export-match-counter');
+            if (!countEl) return;
+            let count = 0;
+            allProjets.forEach(p => {
+                let match = true;
+                for (const [field, values] of Object.entries(filters)) {
+                    if (field === 'Zone') {
+                        if (!window.zoneInterventionMatches(p[field], values)) { match = false; break; }
+                        continue;
+                    }
+                    const projVal = (p[field] !== undefined && p[field] !== null) ? String(p[field]).trim() : '';
+                    if (!values.includes(projVal)) { match = false; break; }
+                }
+                if (match) count++;
+            });
+            countEl.textContent = count.toLocaleString('fr-BJ');
+            if (boxEl) {
+                boxEl.style.background = count === 0 ? '#fee2e2' : '#eef2f7';
+                boxEl.style.borderLeftColor = count === 0 ? '#dc2626' : 'var(--primary-blue)';
+                boxEl.style.color = count === 0 ? '#991b1b' : '#333';
+            }
+        }
+
+        async function triggerCustomExport() {
+            const filters = getCurrentExportFilters();
+            const selected_columns = [];
+            document.querySelectorAll('#export-tabs-body input[type="checkbox"]:checked').forEach(cb => selected_columns.push(cb.value));
+            if (selected_columns.length === 0) {
+                showToast("Veuillez cocher au moins une colonne à exporter", 'error');
+                return;
+            }
+            const payload = { filters, selected_columns };
+            try {
+                const res = await fetch(`${API_BASE}/export`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(`Le serveur a répondu : ${res.status}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Export_Accords_${Date.now()}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                showToast('Erreur export : ' + e.message, 'error');
+            }
+        }
+
+        async function exportVueFiltree() {
+            const filtered = getFilteredProjets();
+            if (filtered.length === 0) {
+                showToast("Aucun accord ne correspond aux filtres — rien à exporter", 'error');
+                return;
+            }
+            const codes = filtered.map(p => p['Code Projet']).filter(Boolean);
+            const payload = { filters: { 'Code Projet': codes }, selected_columns: [] };
+            try {
+                const res = await fetch(`${API_BASE}/export`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(`Le serveur a répondu : ${res.status}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Export_Vue_Filtree_${Date.now()}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                showToast('Erreur export : ' + e.message, 'error');
+            }
+        }
+
+        async function importExcel() {
+            const fileInput = getEl('import-file');
+            if (!fileInput.files.length) {
+                showToast("Veuillez choisir un fichier", 'error');
+                return;
+            }
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch(`${API_BASE}/import`, { method: 'POST', body: fd });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Erreur serveur');
+                showToast(result.message || 'Import réussi', 'success');
+                getEl('import-zone').style.display = 'none';
+                await loadProjets();
+            } catch (e) {
+                showToast('Erreur import : ' + e.message, 'error');
+            }
+        }
+
+        // ============================================
+        // FICHE PROJET
+        // ============================================
+        (function() {
+            let ficheCode = null;
+
+            const put = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = (v && String(v).trim() !== '') ? String(v).trim() : '—';
+            };
+
+            const fmtN = v => {
+                const n = Number(String(v).replace(/\s/g, ''));
+                return isNaN(n) ? v : n.toLocaleString('fr-FR');
+            };
+
+            const fmtD = v => {
+                if (!v) return '—';
+                const d = new Date(v);
+                return isNaN(d) ? v : d.toLocaleDateString('fr-FR');
+            };
+
+            window.fermerFiche = () => {
+                document.getElementById('ficheOverlay').classList.remove('open');
+                ficheCode = null;
+            };
+
+            window.ouvrirFicheProjet = async function(code) {
+                // Utilise les données déjà chargées en mémoire (évite un appel réseau inutile)
+                const p = allProjets.find(x => (x['Code Projet'] || '') === code);
+                if (!p) { showToast('Projet introuvable : ' + code, 'error'); return; }
+                ficheCode = code;
+                window._ficheCode = code;  // Exposer pour les boutons externes
+                put('fTitre', p["Objet de l'accord"] || p['Intitule_Projet']);
+                put('fCode', p['Code Projet'] || p['Code_Projet']);
+                put('fPartenaire', p['Partenaire'] || p['Sigle_Partenaire'] || p['Contributeur']);
+                put('fMontant', p['Montant_Total_FCFA'] ? fmtN(p['Montant_Total_FCFA']) + ' FCFA' : (p['Cout_Total_FCFA'] ? fmtN(p['Cout_Total_FCFA']) + ' FCFA' : ''));
+                put('fSecteur', p[window._secteurKey || 'Secteur principal'] || p['Secteur']);
+                put('fStatut', p['STATUT (en cours, achevé, en approbation)'] || p['Statut_Projet']);
+                const sigDate = p['Date de signature'] || p['Date_Signature'];
+                const cloDate = p['Date de clôture'] || p['Date_Cloture'];
+                const annees = (sigDate && cloDate) ?
+                    ` (${String(sigDate).slice(-4)}–${String(cloDate).slice(-4)})` : '';
+                put('fDuree', (p['Duree_Initiale_Mois'] ? p['Duree_Initiale_Mois'] + ' mois' : '') + annees);
+                put('fObjGlobal', p['Objectif général'] || p['Objectif_Global']);
+                put('fObjSpec', (p['Objectifs spécifiques'] || p['Objectifs_Specifiques'] || '').replace(/; /g, ';\n'));
+                put('fResultats', (p['Principaux résultats'] || p['Principaux_Resultats'] || '').replace(/; /g, ';\n'));
+                put('fComposantes', (p['Composantes'] || p['Composantes_Projet'] || '').replace(/; /g, ';\n'));
+                put('fBenef', p['Bénéficiaires directs'] || p['Beneficiaires_Directs']);
+                put('fBenefInd', p['Bénéficiaires indirects'] || p['Beneficiaires_Indirects']);
+                put('fContributeur', p['Contributeur']);
+                put('fSigle', p['Sigle_Part'] || p['Sigle_Partenaire']);
+                put('fTypeContrib', p['TYPE DE CONTRIBUTEUR'] || p['Type_Contributeur']);
+                put('fAPD', p['APD Oui/non'] || p['APD_Oui_Non']);
+                put('fNature', [p['Nature (Prêt/Don/Mixte)'] || p['Nature_Financement'], p['Instrument de financement'] || p['Instrument_Financement']].filter(Boolean).join(' / '));
+                put('fSource', p['Source vérifiable'] || p['Source_Verifiable']);
+                put('fCoutFCFA', (p['Montant_Total_FCFA'] || p['Cout_Total_FCFA']) ? fmtN(p['Montant_Total_FCFA'] || p['Cout_Total_FCFA']) : '');
+                put('fMilliards', p['Milliards_FCFA'] ? fmtN(p['Milliards_FCFA']) + ' Md' : '');
+                const devise = p['Devise'];
+                const montDevise = p['Montant total (devise)'] || p['Montant_Devise_Origine'];
+                put('fDeviseOrigine', (devise && montDevise) ? devise + ' ' + fmtN(montDevise) : (devise || ''));
+                const don = p['Montant_Don_FCFA'];
+                const pret = p['Montant_Pret_FCFA'] || p['Pret_Attendu_FCFA'];
+                put('fDonPret', [don && 'Don : ' + fmtN(don), pret && 'Prêt : ' + fmtN(pret)].filter(Boolean).join('  •  '));
+                put('fZone', p['Zone'] || p['Zone_intervention']);
+                put('fDeps', p['Departement'] || p['Département']);
+                put('fComs', p['Commune']);
+                put('fApprob', fmtD(p["Date d'approbation"] || p['Date_Approbation']));
+                put('fSign', fmtD(sigDate));
+                put('fDemarr', fmtD(p['Date_Demarrage']));
+                put('fClot', fmtD(cloDate));
+                put('fDureeMois', p['Duree_Initiale_Mois'] ? p['Duree_Initiale_Mois'] + ' mois' : '');
+                put('fSectPAG', p['Secteur_PAG']);
+                put('fPilier', p['PILIER PAG'] || p['Pilier_PAG']);
+                put('fAxe', p['AXE PAG'] || p['Axe_PAG']);
+                put('fODD', [p['ODD'], p['Cible_ODD']].filter(Boolean).join(' / '));
+                document.getElementById('ficheOverlay').classList.add('open');
+            };
+
+            // Clic sur une ligne du tableau → ouvre la fiche
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('button, a, input, select, textarea, label, #ficheOverlay')) return;
+                const row = e.target.closest('tbody tr');
+                if (!row || !row.cells || !row.cells[1] || !row.querySelector('button')) return;
+                const code = row.cells[1].textContent.trim();
+                if (code && code.trim()) ouvrirFicheProjet(code);
+            });
+
+            // Barre du bas : réutilise les boutons de la ligne
+            function clicBoutonLigne(code, type) {
+                for (const r of document.querySelectorAll('tbody tr')) {
+                    if (r.cells[1] && r.cells[1].textContent.trim() === code) {
+                        const btns = [...r.querySelectorAll('button')];
+                        const btn = btns.find(b => ((b.title || '') + (b.textContent || '')).toLowerCase().includes(type)) || (type === 'modif' ? btns[0] : btns[btns.length - 1]);
+                        if (btn) { btn.click(); return true; }
+                    }
+                }
+                return false;
+            }
+
+            // Les boutons ficheBtnEdit/ficheBtnDelete sont attachés après le HTML (voir plus bas)
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape') fermerFiche();
+            });
+        })();
+
+
+// ============================================
+// GESTION DE LA CARTE
+// ============================================
+let map = null;
+
+function initMap() {
+    const mapContainer = document.getElementById('benin-map');
+    if (!mapContainer) return;
+
+    // Si la carte existe déjà, on la redimensionne
+    if (map) {
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 300);
+        return;
+    }
+
+    try {
+        map = L.map('benin-map', {
+            center: [7.5, 2.2],
+            zoom: 7,
+            zoomControl: true
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Ajouter les marqueurs
+        updateMapMarkers();
+
+        // Forcer le redimensionnement après l'affichage
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 500);
+
+    } catch (e) {
+        console.error("Erreur lors de l'initialisation de la carte:", e);
+    }
+}
+
+function updateMapMarkers() {
+    if (!map) return;
+
+    // Supprimer les anciens marqueurs (sauf le fond de carte)
+    map.eachLayer(function(layer) {
+        if (layer instanceof L.Marker || layer instanceof L.CircleMarker) {
+            map.removeLayer(layer);
+        }
+    });
+
+    const projets = getFilteredProjets();
+    let hasMarkers = false;
+
+    projets.forEach(projet => {
+        const coords = projet['Coordonnees_GPS'] || '';
+        if (coords) {
+            const match = coords.match(/([\d.]+)\s*,\s*([\d.]+)/);
+            if (match) {
+                const lat = parseFloat(match[1]);
+                const lng = parseFloat(match[2]);
+                if (!isNaN(lat) && !isNaN(lng) && lat >= 0 && lat <= 15 && lng >= -5 && lng <= 10) {
+                    hasMarkers = true;
+                    const marker = L.circleMarker([lat, lng], {
+                        radius: 8,
+                        fillColor: '#0f4c81',
+                        color: '#fff',
+                        weight: 1.5,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+
+                    const montant = projet['Montant_Total_FCFA'] ? 
+                        new Intl.NumberFormat('fr-BJ').format(parseFloat(projet['Montant_Total_FCFA'])) + ' FCFA' : 
+                        'Montant non défini';
+
+                    marker.bindPopup(`
+                        <div style="font-size:11px;">
+                            <strong style="color:#0f4c81;">${projet['Code Projet'] || ''}</strong><br>
+                            <span>${projet["Objet de l'accord"] || ''}</span><br>
+                            <span style="color:#666;">${projet['Partenaire'] || ''}</span><br>
+                            <strong style="color:#27ae60;">${montant}</strong>
+                        </div>
+                    `);
+                }
+            }
+        }
+    });
+
+    // Si pas de marqueurs, centrer sur le Bénin
+    if (!hasMarkers) {
+        map.setView([7.5, 2.2], 7);
+    }
+
+    // Forcer le redimensionnement
+    setTimeout(function() {
+        map.invalidateSize();
+    }, 100);
+}
+
+// Fonction pour redimensionner la carte (à appeler après ouverture du modal)
+function resizeMap() {
+    if (map) {
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 300);
+    }
+}
+
+    </script>
+
+    <!-- FICHE PROJET - OVERLAY -->
+    <div id="ficheOverlay">
+        <div class="fiche-page">
+            <div class="fiche-head">
+                <div class="fiche-logo">🏗️</div>
+                <div class="fiche-head-titles">
+                    <small>Fiche d'identité du projet — Suivi des accords de financement (DGFD)</small>
+                    <h2 id="fTitre">—</h2>
+                </div>
+                <div class="fiche-head-code" id="fCode">—</div>
+                <button class="fiche-close" onclick="fermerFiche()">✕</button>
+            </div>
+
+            <div class="fiche-kpis">
+                <div class="fiche-kpi"><span>Partenaire</span><b id="fPartenaire">—</b></div>
+                <div class="fiche-kpi"><span>Montant total</span><b id="fMontant">—</b></div>
+                <div class="fiche-kpi"><span>Secteur principal</span><b id="fSecteur">—</b></div>
+                <div class="fiche-kpi"><span>Statut</span><b id="fStatut">—</b></div>
+                <div class="fiche-kpi"><span>Durée</span><b id="fDuree">—</b></div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>1. Description du projet</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field full"><span>Objectif global</span><p id="fObjGlobal">—</p></div>
+                    <div class="fiche-field full"><span>Objectifs spécifiques</span><p id="fObjSpec">—</p></div>
+                    <div class="fiche-field full"><span>Principaux résultats attendus</span><p id="fResultats">—</p></div>
+                    <div class="fiche-field full"><span>Composantes</span><p id="fComposantes">—</p></div>
+                    <div class="fiche-field"><span>Bénéficiaires directs</span><p id="fBenef">—</p></div>
+                    <div class="fiche-field"><span>Bénéficiaires indirects</span><p id="fBenefInd">—</p></div>
+                </div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>2. Partenaire financier</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field"><span>Contributeur</span><p id="fContributeur">—</p></div>
+                    <div class="fiche-field"><span>Sigle</span><p id="fSigle">—</p></div>
+                    <div class="fiche-field"><span>Type de contributeur</span><p id="fTypeContrib">—</p></div>
+                    <div class="fiche-field"><span>APD</span><p id="fAPD">—</p></div>
+                    <div class="fiche-field"><span>Nature / instrument</span><p id="fNature">—</p></div>
+                    <div class="fiche-field"><span>Source vérifiable</span><p id="fSource">—</p></div>
+                </div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>3. Montants</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field"><span>Coût total (FCFA)</span><p id="fCoutFCFA">—</p></div>
+                    <div class="fiche-field"><span>Milliards FCFA</span><p id="fMilliards">—</p></div>
+                    <div class="fiche-field"><span>Devise &amp; montant d'origine</span><p id="fDeviseOrigine">—</p></div>
+                    <div class="fiche-field"><span>Don / Prêt attendus (FCFA)</span><p id="fDonPret">—</p></div>
+                </div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>4. Localisation</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field full"><span>Zone d'intervention</span><p class="fiche-zone" id="fZone">—</p></div>
+                    <div class="fiche-field"><span>Départements</span><p id="fDeps">—</p></div>
+                    <div class="fiche-field"><span>Communes</span><p id="fComs">—</p></div>
+                </div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>5. Dates &amp; durée</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field"><span>Approbation</span><p id="fApprob">—</p></div>
+                    <div class="fiche-field"><span>Signature</span><p id="fSign">—</p></div>
+                    <div class="fiche-field"><span>Démarrage</span><p id="fDemarr">—</p></div>
+                    <div class="fiche-field"><span>Clôture</span><p id="fClot">—</p></div>
+                    <div class="fiche-field"><span>Durée initiale</span><p id="fDureeMois">—</p></div>
+                </div>
+            </div>
+
+            <div class="fiche-section">
+                <h4>6. Secteur &amp; stratégies nationales</h4>
+                <div class="fiche-grid">
+                    <div class="fiche-field"><span>Secteur PAG</span><p id="fSectPAG">—</p></div>
+                    <div class="fiche-field"><span>Pilier PAG</span><p id="fPilier">—</p></div>
+                    <div class="fiche-field"><span>Axe PAG</span><p id="fAxe">—</p></div>
+                    <div class="fiche-field"><span>ODD / cible</span><p id="fODD">—</p></div>
+                </div>
+            </div>
+
+            <!-- Barre fixe en bas -->
+            <div class="fiche-bar">
+                <button class="fiche-btn edit" id="ficheBtnEdit">✏️ Modifier</button>
+                <button class="fiche-btn delete" id="ficheBtnDelete">🗑️ Supprimer</button>
+                <button class="fiche-btn close" onclick="fermerFiche()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event listeners pour les boutons de la fiche (placés après le HTML de la fiche) -->
+    <script>
+        (function() {
+            const btnEdit = document.getElementById('ficheBtnEdit');
+            const btnDelete = document.getElementById('ficheBtnDelete');
+
+            function findAndClickRowBtn(code, type) {
+                for (const r of document.querySelectorAll('tbody tr')) {
+                    if (r.cells[1] && r.cells[1].textContent.trim() === code) {
+                        const btns = [...r.querySelectorAll('button')];
+                        const btn = btns.find(b => ((b.title || '') + (b.textContent || '')).toLowerCase().includes(type)) || (type === 'modif' ? btns[0] : btns[btns.length - 1]);
+                        if (btn) btn.click();
+                        return;
+                    }
+                }
+            }
+
+            if (btnEdit) btnEdit.addEventListener('click', () => {
+                const c = window._ficheCode || '';
+                if (window.fermerFiche) window.fermerFiche();
+                if (c) findAndClickRowBtn(c, 'modif');
+            });
+            if (btnDelete) btnDelete.addEventListener('click', () => {
+                const c = window._ficheCode || '';
+                if (window.fermerFiche) window.fermerFiche();
+                if (c) findAndClickRowBtn(c, 'suppr');
+            });
+        })();
+    </script>
+
+
+<!-- SCRIPT FINAL DE DÉPLACEMENT DE LA MODALE (CORRIGÉ) -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. On trouve la fenêtre principale (le contenu de la modale)
+        let modalBox = document.querySelector('.modal-content');
+
+        // 2. On cherche le titre de la modale
+        let dragHandle = null;
+        
+        if (modalBox) {
+            // On cible spécifiquement votre titre <h2 id="modal-title">
+            dragHandle = modalBox.querySelector('#modal-title');
+            
+            // Si on ne trouve pas le H2, on prend le premier enfant visible
+            if (!dragHandle) {
+                dragHandle = modalBox.firstElementChild;
+            }
+        }
+
+        // SI ON A TROUVÉ LES DEUX
+        if (modalBox && dragHandle) {
+            console.log("✅ Système de déplacement activé ! Cliquez sur le titre pour déplacer.");
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            // On ajoute un style visuel pour que l'utilisateur sache que c'est cliquable
+            dragHandle.style.cursor = 'grab';
+            dragHandle.style.paddingBottom = '10px';
+            dragHandle.style.borderBottom = '2px dashed #ccc';
+
+            // Au clic sur le titre
+            dragHandle.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                
+                const rect = modalBox.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+
+                modalBox.style.cursor = 'grabbing';
+                modalBox.style.position = 'fixed';
+                modalBox.style.top = rect.top + 'px';
+                modalBox.style.left = rect.left + 'px';
+                modalBox.style.transform = 'none';
+            });
+
+            // Déplacement de la souris
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                modalBox.style.left = (e.clientX - offsetX) + 'px';
+                modalBox.style.top = (e.clientY - offsetY) + 'px';
+            });
+
+            // Relâchement de la souris
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                modalBox.style.cursor = 'default';
+            });
+        } else {
+            console.error("❌ Erreur : Impossible de trouver la barre de titre dans la modale.");
+        }
+    });
+</script>
+
+
+
+
+</body>
+</html>
