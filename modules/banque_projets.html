@@ -1147,6 +1147,26 @@
         const API_BASE = `${FLASK_BASE}/api/accords-financiers`;
         const CODE_FIELD = 'Code Projet';
 
+        // Fetch avec retry automatique pour les 502 (cold start Render)
+        async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+            for (let i = 0; i <= maxRetries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.status === 502 && i < maxRetries) {
+                        await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+                        continue;
+                    }
+                    return res;
+                } catch (e) {
+                    if (i < maxRetries) {
+                        await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+                        continue;
+                    }
+                    throw e;
+                }
+            }
+        }
+
         let COLUMNS = [];
         let COLUMNS_BY_KEY = {};
         let allProjets = [];
@@ -1250,7 +1270,7 @@
         checkAuth();
 
         // Chargement des colonnes
-        const colsRes = await fetch(`${API_BASE}/columns`);
+        const colsRes = await fetchWithRetry(`${API_BASE}/columns`);
 
         if (!colsRes.ok) {
             throw new Error(`Erreur API colonnes : ${colsRes.status}`);
@@ -1346,7 +1366,7 @@
         // CHARGEMENT DES PROJETS
         // ============================================
        async function loadProjets() {
-    const res = await fetch(`${API_BASE}/list?t=` + Date.now());
+    const res = await fetchWithRetry(`${API_BASE}/list?t=` + Date.now());
 
     if (!res.ok) {
         throw new Error(`Impossible de charger les projets (${res.status})`);
@@ -3172,7 +3192,7 @@ async function loadParamValues(fieldKey) {
     
     try {
         // Fetch directly from parametres table via API
-        const res = await fetch(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
         let values = [];
         if (res.ok) {
             const data = await res.json();
@@ -3254,7 +3274,7 @@ async function addParamValue() {
     }
     
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/parametres/add`, {
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/parametres/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ colonne: currentParamField, valeur: newValue })
@@ -3330,7 +3350,7 @@ async function confirmEditParamValue(oldValue) {
     }
     
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/parametres/update`, {
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/parametres/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ colonne: currentParamField, ancienne_valeur: oldValue, nouvelle_valeur: newValue })
@@ -3378,7 +3398,7 @@ function startDeleteParamValue(value) {
 
 async function confirmDeleteParamValue(value) {
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/parametres/delete`, {
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/parametres/delete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ colonne: currentParamField, valeur: value })
@@ -3400,7 +3420,7 @@ async function confirmDeleteParamValue(value) {
 async function refreshColumnOptions(fieldKey) {
     // Reload columns metadata from API
     try {
-        const res = await fetch(`${API_BASE}/columns?t=${Date.now()}`);
+        const res = await fetchWithRetry(`${API_BASE}/columns?t=${Date.now()}`);
         if (res.ok) {
             const cols = await res.json();
             COLUMNS = cols;
@@ -3411,7 +3431,7 @@ async function refreshColumnOptions(fieldKey) {
     }
     // Also directly fetch from parametres to ensure the field options are up-to-date
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
         if (res.ok) {
             const data = await res.json();
             const values = Array.isArray(data) ? data : (data[fieldKey] || []);
@@ -3478,7 +3498,7 @@ async function loadLinkedSousSecteurs() {
     listEl.innerHTML = '<div style="text-align:center; padding:10px; color:#999; font-size:11px;">Chargement...</div>';
     
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
         if (!res.ok) throw new Error('Erreur serveur');
         const sousSecteurs = await res.json();
         
@@ -3513,7 +3533,7 @@ async function addLinkedSousSecteur() {
     }
     
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/add`, {
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/add`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secteur, sous_secteur: newSousSecteur })
@@ -3545,7 +3565,7 @@ async function deleteLinkedSousSecteur(sousSecteur) {
     if (!confirm(`Délier le sous-secteur "${sousSecteur}" de "${secteur}" ?`)) return;
     
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/delete`, {
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/delete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ secteur, sous_secteur })
@@ -3567,7 +3587,7 @@ async function deleteLinkedSousSecteur(sousSecteur) {
 async function updateSousSecteurFilterForSecteur(secteur) {
     if (!secteur) return;
     try {
-        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
+        const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
         if (!res.ok) return;
         const sousSecteurs = await res.json();
         
