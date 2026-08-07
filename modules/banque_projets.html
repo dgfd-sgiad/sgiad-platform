@@ -1045,7 +1045,10 @@
             <!-- MODAL -->
             <div id="modal-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
                 <div class="modal-content">
-                    <h2 style="margin-top:0;color:var(--primary-blue);font-size:16px; cursor:grab;" id="modal-title">NOUVEL ACCORD</h2>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                        <h2 style="margin:0;color:var(--primary-blue);font-size:16px; cursor:grab;" id="modal-title">NOUVEL ACCORD</h2>
+                        <button type="button" onclick="closeModal()" title="Fermer le formulaire" style="border:none;background:#d5251f;color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:14px;line-height:1;">✕</button>
+                    </div>
                     <div class="tabs-nav" id="modal-tabs-nav"></div>
                     <form id="form-projet">
                         <input type="hidden" id="Old_Code">
@@ -2518,7 +2521,12 @@
                     if (!res.ok) throw new Error(result.error || 'Erreur serveur');
                     closeModal();
                     showToast(oldCode ? `Accord ${oldCode} modifié avec succès` : `Nouvel accord ${result.code || payload['Code Projet'] || ''} ajouté`, 'success');
-                    await loadProjets(true); // Préserver page + scroll + sélection
+                    try {
+                        await loadProjets(true); // Préserver page + scroll + sélection
+                    } catch (reloadErr) {
+                        // L'enregistrement a reussi mais le serveur n'a pas pu renvoyer la liste
+                        showToast('✔ Enregistré en base — actualisez la page si la liste ne se met pas à jour', 'success');
+                    }
                 } catch (err) {
                     showToast('Erreur enregistrement : ' + err.message, 'error');
                 }
