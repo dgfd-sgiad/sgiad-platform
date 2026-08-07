@@ -29,7 +29,7 @@
                 <img src="assets/logos/logo_bad.png" alt="BAD" class="donor-logo" onerror="this.style.display='none'">
             </div>
 
-            <button class="btn-disconnect" onclick="alert('Déconnexion...')">Déconnexion</button>
+            <button class="btn-disconnect" onclick="localStorage.removeItem('sgiad_accueil_user');window.location.href='/'">Déconnexion</button>
 
             <div class="user-info-vertical">
                 <p><strong>Superviseur :</strong> Structure SUPER - Paramétrage</p>
