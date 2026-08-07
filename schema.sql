@@ -57,6 +57,9 @@ CREATE TABLE accords_consolides (
 
     -- Localisation
     zone                    TEXT,
+    departement             TEXT,
+    commune                 TEXT,
+    niveau_intervention     TEXT,
 
     -- Classification
     apd_oui_non             TEXT,
@@ -76,6 +79,40 @@ CREATE TABLE accords_consolides (
     principales_composantes TEXT,
     beneficiaires_directes  TEXT,
     population_cible        TEXT,
+
+    -- Calendrier / duree
+    duree_initiale_mois     INTEGER,
+    date_demarrage          DATE,
+    date_entree_vigueur     DATE,
+
+    -- Co-partenaires
+    co_partenaire_1         TEXT,
+    co_partenaire_2         TEXT,
+    co_partenaire_3         TEXT,
+    co_partenaire_4         TEXT,
+    co_partenaire_5         TEXT,
+    co_partenaire_6         TEXT,
+    co_partenaire_7         TEXT,
+
+    -- Partenaire (coordonnees)
+    adresse_partenaire      TEXT,
+    contact_partenaire      TEXT,
+    site_web_partenaire     TEXT,
+
+    -- Gouvernance / tutelle
+    tutelle                 TEXT,
+    agence_execution        TEXT,
+
+    -- Suivi de la mise en oeuvre
+    taux_execution_physique NUMERIC,
+    taux_decaissement       NUMERIC,
+    niveau_risque           TEXT,
+    nb_avenants             INTEGER,
+    nb_prorogations         INTEGER,
+    responsable_suivi       TEXT,
+    chef_projet             TEXT,
+    coordonnees_chef        TEXT,
+    observations            TEXT,
 
     -- Metadata
     created_at  TIMESTAMPTZ DEFAULT NOW(),
@@ -378,3 +415,61 @@ CREATE TABLE IF NOT EXISTS documents_projets (
 
 CREATE INDEX IF NOT EXISTS idx_documents_projets_code
     ON documents_projets (code_projet);
+
+-- ============================================================
+-- MIGRATION : colonnes manquantes pour la fiche de projet
+-- Bloc idempotent : IF NOT EXISTS / ON CONFLICT DO NOTHING.
+-- Permet de renseigner TOUS les indicateurs de la fiche depuis
+-- la base (aucune donnee fictive dans l'interface).
+-- ============================================================
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS departement TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS commune TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS niveau_intervention TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS duree_initiale_mois INTEGER;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS date_demarrage DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS date_entree_vigueur DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_1 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_2 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_3 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_4 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_5 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS adresse_partenaire TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS contact_partenaire TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS site_web_partenaire TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS tutelle TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS agence_execution TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS taux_execution_physique NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS taux_decaissement NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS niveau_risque TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS nb_avenants INTEGER;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS nb_prorogations INTEGER;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS responsable_suivi TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS chef_projet TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS coordonnees_chef TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS observations TEXT;
+
+-- Declaration des nouvelles colonnes dans colonnes_meta pour qu'elles
+-- soient editables dans le formulaire de la banque de projets.
+INSERT INTO colonnes_meta (table_name, column_key, db_column, col_type, readonly, col_order)
+VALUES
+    ('accords_consolides', 'Duree_Initiale_Mois', 'duree_initiale_mois', 'number', FALSE, 100),
+    ('accords_consolides', 'Date_Demarrage', 'date_demarrage', 'date', FALSE, 101),
+    ('accords_consolides', 'Date entree en vigueur', 'date_entree_vigueur', 'date', FALSE, 102),
+    ('accords_consolides', 'Departement', 'departement', 'text', FALSE, 103),
+    ('accords_consolides', 'Commune', 'commune', 'text', FALSE, 104),
+    ('accords_consolides', 'Niveau', 'niveau_intervention', 'text', FALSE, 105),
+    ('accords_consolides', 'Adresse partenaire', 'adresse_partenaire', 'text', FALSE, 106),
+    ('accords_consolides', 'Contact partenaire', 'contact_partenaire', 'text', FALSE, 107),
+    ('accords_consolides', 'Site web partenaire', 'site_web_partenaire', 'text', FALSE, 108),
+    ('accords_consolides', 'Taux execution physique', 'taux_execution_physique', 'number', FALSE, 109),
+    ('accords_consolides', 'Taux de decaissement', 'taux_decaissement', 'number', FALSE, 110),
+    ('accords_consolides', 'Niveau de risque', 'niveau_risque', 'text', FALSE, 111),
+    ('accords_consolides', 'Nb avenants', 'nb_avenants', 'number', FALSE, 112),
+    ('accords_consolides', 'Nb prorogations', 'nb_prorogations', 'number', FALSE, 113),
+    ('accords_consolides', 'Responsable de suivi', 'responsable_suivi', 'text', FALSE, 114),
+    ('accords_consolides', 'Chef de projet', 'chef_projet', 'text', FALSE, 115),
+    ('accords_consolides', 'Coordonnees', 'coordonnees_chef', 'text', FALSE, 116),
+    ('accords_consolides', 'Observations', 'observations', 'text', FALSE, 117)
+ON CONFLICT (table_name, column_key) DO NOTHING;

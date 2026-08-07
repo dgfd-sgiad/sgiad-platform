@@ -85,6 +85,32 @@ ACCORDS_DISPLAY_TO_DB = {
     "Population cible": "population_cible",
     "Tutelle": "tutelle",
     "Agence Exécution": "agence_execution",
+    # ── Colonnes ajoutees pour completer la fiche de projet ──
+    "Duree_Initiale_Mois": "duree_initiale_mois",
+    "Date_Demarrage": "date_demarrage",
+    "Date entree en vigueur": "date_entree_vigueur",
+    "Departement": "departement",
+    "Commune": "commune",
+    "Niveau": "niveau_intervention",
+    "Co_Partenaire_1": "co_partenaire_1",
+    "Co_Partenaire_2": "co_partenaire_2",
+    "Co_Partenaire_3": "co_partenaire_3",
+    "Co_Partenaire_4": "co_partenaire_4",
+    "Co_Partenaire_5": "co_partenaire_5",
+    "Co_Partenaire_6": "co_partenaire_6",
+    "Co_Partenaire_7": "co_partenaire_7",
+    "Adresse partenaire": "adresse_partenaire",
+    "Contact partenaire": "contact_partenaire",
+    "Site web partenaire": "site_web_partenaire",
+    "Taux execution physique": "taux_execution_physique",
+    "Taux de decaissement": "taux_decaissement",
+    "Niveau de risque": "niveau_risque",
+    "Nb avenants": "nb_avenants",
+    "Nb prorogations": "nb_prorogations",
+    "Responsable de suivi": "responsable_suivi",
+    "Chef de projet": "chef_projet",
+    "Coordonnees": "coordonnees_chef",
+    "Observations": "observations",
 }
 
 # Reverse: colonne SQL -> nom affiche
@@ -284,8 +310,11 @@ def _generate_columns_meta_fallback() -> list[dict]:
     NUMBER_FIELDS = {
         'annee_signature', 'annee_cloture', 'montant_pret_fcfa',
         'montant_don_fcfa', 'montant_total_fcfa', 'montant_total_devise',
+        'duree_initiale_mois', 'nb_avenants', 'nb_prorogations',
+        'taux_execution_physique', 'taux_decaissement',
     }
-    DATE_FIELDS = {'date_signature', 'date_approbation', 'date_cloture'}
+    DATE_FIELDS = {'date_signature', 'date_approbation', 'date_cloture',
+                   'date_demarrage', 'date_entree_vigueur'}
     READONLY_FIELDS = {'annee_cloture'}
     SELECT_FIELDS = {
         'modalite_intervention', 'secteur_principal', 'sous_secteur',
@@ -455,7 +484,16 @@ def _db_to_display(row: dict) -> dict:
     """Convertit un dict avec cles SQL -> cles affichees."""
     result = {}
     for db_col, value in row.items():
-        if db_col in ('id', 'created_at', 'updated_at'):
+        if db_col in ('id', 'created_at'):
+            continue
+        # Date de derniere mise a jour (fiche de projet)
+        if db_col == 'updated_at':
+            if value:
+                try:
+                    dt = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+                    result['Date_MAJ'] = dt.strftime('%d/%m/%Y')
+                except (ValueError, TypeError):
+                    result['Date_MAJ'] = value
             continue
         display_key = ACCORDS_DB_TO_DISPLAY.get(db_col, db_col)
         # Convertir les dates

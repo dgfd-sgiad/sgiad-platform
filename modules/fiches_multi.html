@@ -36,10 +36,14 @@
   function year(s){ if(s == null || s === '') return '—'; var n = Number(s); if (!isNaN(n) && String(s).trim().length === 4) return String(n); var d = new Date(s); return isNaN(d) ? '—' : String(d.getFullYear()); }
   function split(s){ return String(s || '').split(/\s*;\s*/).filter(function(x){ return x.length > 2; }); }
   function ul(a){ return '<ul>' + a.map(function(x){ return '<li>'+x+'</li>'; }).join('') + '</ul>'; }
-  var docs = [['Accord de financement','#d5251f',1],['Avis de non objection','#d5251f',1],['Rapport d\'évaluation','#d5251f',1],['Accord signé','#d5251f',1],['Rapports de supervision','#d5251f',1],['Rapports d\'audit','#0e7a3a',1],['Cadre logique','#f28c00',0],['Plan de passation des marchés','#d5251f',1]];
+  /* ── Indicateurs de suivi et tuiles ODD : 100% issus de la base ── */
+  function setGauge($, gid, tid, val){ var g=$(gid),t=$(tid); var has=(val!==''&&val!=null&&!isNaN(Number(val))); var n=has?Math.max(0,Math.min(100,Number(val))):0; if(g)g.setAttribute('stroke-dasharray',n+' 100'); if(t)t.textContent=has?Math.round(n)+'%':'—'; }
+  var ODD_INFO={1:['#E5243B','PAS DE PAUVRETÉ'],2:['#DDA63A','FAIM «ZÉRO»'],3:['#4C9F38','BONNE SANTÉ ET BIEN-ÊTRE'],4:['#C5192D','ÉDUCATION DE QUALITÉ'],5:['#FF3A21','ÉGALITÉ ENTRE LES SEXES'],6:['#26BDE2','EAU PROPRE ET ASSAINISSEMENT'],7:['#FCC30B','ÉNERGIE PROPRE ET ABORDABLE'],8:['#A21942','TRAVAIL DÉCENT ET CROISSANCE ÉCONOMIQUE'],9:['#FD6925','INDUSTRIE, INNOVATION ET INFRASTRUCTURE'],10:['#DD1367','INÉGALITÉS RÉDUITES'],11:['#FD9D24','VILLES ET COMMUNAUTÉS DURABLES'],12:['#BF8B2E','CONSOMMATION ET PRODUCTION RESPONSABLES'],13:['#3F7E44','LUTTE CONTRE LES CHANGEMENTS CLIMATIQUES'],14:['#0A97D9','VIE AQUATIQUE'],15:['#56C02B','VIE TERRESTRE'],16:['#00689D','PAIX, JUSTICE ET INSTITUTIONS EFFICACES'],17:['#19486A','PARTENARIATS POUR LES OBJECTIFS']};
+  function renderOddTiles($, oddStr){ var box=$('odds'); if(!box)return; var nums=[],seen={}; String(oddStr||'').split(/[;,\/]/).forEach(function(tok){ var m=tok.match(/\d{1,2}/g); if(m)m.forEach(function(x){ var n=parseInt(x,10); if(n>=1&&n<=17&&!seen[n]){seen[n]=1;nums.push(n);} }); }); box.innerHTML=nums.length?nums.map(function(n){ var i=ODD_INFO[n]; return '<div class="odd" style="background:'+i[0]+'"><div class="n">'+n+'</div><div class="t">'+i[1]+'</div></div>'; }).join(''):''; }
 
   /* ── Remplissage d'une fiche (logique identique à fiche_projet.html, scopée au conteneur) ── */
   function fillSheet(wrap, p, code){
+    return (async function(){
     var $ = function(id){ return wrap.querySelector('#' + id); };
     var set = function(id, val){ var el = $(id); if (el) el.textContent = val; };
     set('kpi_code', p['Code Projet'] || '—'); set('v_code', p['Code Projet'] || '—');
@@ -58,7 +62,11 @@
     set('v_modalite', p["Modalité d'intervention"] || '—'); set('v_instrument', p['Instrument de financement'] || '—');
     set('v_nature', p['Nature (Prêt/Don/Mixte)'] || '—'); set('v_apd', p['APD Oui/non'] || '—');
     set('v_typefin', p['TYPE DE FINANCEMENT'] || '—'); set('v_typecontrib', p['TYPE DE CONTRIBUTEUR'] || '—'); set('v_typecontrib2', p['TYPE DE CONTRIBUTEUR'] || '—');
-    set('v_sigle', p['Sigle_Part'] || '—'); set('v_web', p['Source vérifiable'] || '—');
+    set('v_sigle', p['Sigle_Part'] || '—');
+    set('v_web', p['Site web partenaire'] || p['Source vérifiable'] || '—');
+    set('v_adresse', p['Adresse partenaire'] || '—');
+    set('v_contact', p['Contact partenaire'] || '—');
+    set('v_niveau', p['Niveau'] || '—');
     var pret = Number(p['Montant_Pret_FCFA']) || 0, don = Number(p['Montant_Don_FCFA']) || 0;
     if (!tot) tot = pret + don;
     var pp = tot ? pret / tot * 100 : 0, pd = tot ? don / tot * 100 : 0;
@@ -71,7 +79,7 @@
     set('v_zone', p['Zone'] ? p['Zone'].substring(0, 60) : '—');
     set('v_deps', p['Departement'] || '—'); set('v_communes', p['Commune'] || '—');
     set('d_approb', fdate(p["Date d'approbation"])); set('d_sig', fdate(p['Date de signature']));
-    set('d_vig', '—'); set('d_dec', fdate(p['Date_Demarrage'])); set('d_clot', fdate(p['Date de clôture']));
+    set('d_vig', fdate(p['Date entree en vigueur'])); set('d_dec', fdate(p['Date_Demarrage'])); set('d_clot', fdate(p['Date de clôture']));
     if (p['Duree_Initiale_Mois'] && $('duree_lab')) $('duree_lab').textContent = 'Durée totale : ' + Math.round(Number(p['Duree_Initiale_Mois'])) + ' mois';
     set('v_soussecteur', p['SOUS SECTEUR'] || '—'); set('v_axe', p['AXE PAG'] || '—'); set('v_pilier', p['PILIER PAG'] || '—');
     set('v_odd', p['ODD'] || '—'); set('v_cible', p['Cible_ODD'] || '—'); set('v_snfd', p['Pilier'] || '—');
@@ -83,13 +91,46 @@
     var coparts = [];
     for (var i = 1; i <= 7; i++) { var cv = p['Co_Partenaire_' + i]; if (cv && cv.trim()) coparts.push(cv); }
     if (coparts.length) set('v_copartenaires', coparts.join(', '));
-    /* Documents associés */
-    if ($('docs')) {
-      $('docs').innerHTML = docs.map(function(d){
-        var pdf = d[2] ? '<text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="' + d[1] + '" stroke="none">PDF</text>' : '';
-        return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="' + d[1] + '" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/>' + pdf + '</svg><div class="t">' + d[0] + '</div></div>';
-      }).join('') + '<div class="doc plus"><span style="font-size:15px">+</span>Autres documents</div>';
+    /* Tuiles ODD generees depuis la valeur en base */
+    renderOddTiles($, p['ODD']);
+    /* 8. Suivi de la mise en œuvre */
+    setGauge($, 'g_phys', 't_phys', p['Taux execution physique']);
+    setGauge($, 'g_fin', 't_fin', p['Taux de decaissement']);
+    var risque = String(p['Niveau de risque'] || '').trim();
+    if (risque) {
+      var RISK_MAP = {faible:[25,'#0e7a3a'],moyen:[50,'#f28c00'],eleve:[75,'#d5251f'],critique:[90,'#d5251f']};
+      var rk = risque.toLowerCase().replace(/[éèê]/g,'e').replace(/[^a-z]/g,'');
+      var rinfo = RISK_MAP[rk] || [60,'#f28c00'];
+      var gr = $('g_risk'); if (gr) { gr.setAttribute('stroke-dasharray', rinfo[0]+' 100'); gr.setAttribute('stroke', rinfo[1]); }
+      var tr = $('t_risk'); if (tr) { tr.textContent = risque.toUpperCase(); tr.style.fill = rinfo[1]; }
     }
+    var nav = p['Nb avenants'], npr = p['Nb prorogations'];
+    set('v_avenants', (nav !== '' && nav != null) ? String(Math.round(Number(nav) || 0)) : '—');
+    set('v_prorog', (npr !== '' && npr != null) ? String(Math.round(Number(npr) || 0)) : '—');
+    set('v_maj', p['Date_MAJ'] || '—');
+    set('v_resp', p['Responsable de suivi'] || '—');
+    set('v_structure', p['Agence Exécution'] || p['Tutelle'] || '—');
+    set('v_chef', p['Chef de projet'] || '—');
+    set('v_coord', p['Coordonnees'] || '—');
+    /* 9. Observations */
+    set('obs_txt', p['Observations'] || '—');
+    /* Documents associés : chargés depuis Supabase */
+    if ($('docs')) {
+      try {
+        var docsRes = await fetch(API + '/api/banque/documents?code=' + encodeURIComponent(code));
+        var realDocs = await docsRes.json();
+        if (Array.isArray(realDocs) && realDocs.length) {
+          $('docs').innerHTML = realDocs.map(function(d){
+            return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="#0e7a3a" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/><text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="#0e7a3a" stroke="none">PDF</text></svg><div class="t">' + (d.categorie && d.categorie !== 'Autre' ? '<small style="display:block;color:#888;font-size:7.5px;font-weight:700">' + d.categorie + '</small>' : '') + (d.nom_fichier || 'Document') + '</div></div>';
+          }).join('');
+        } else {
+          $('docs').innerHTML = '<div style="color:#999;font-size:10px">Aucun document associé</div>';
+        }
+      } catch (e) {
+        $('docs').innerHTML = '<div style="color:#999;font-size:10px">Aucun document associé</div>';
+      }
+    }
+    })();
   }
 
   try {
@@ -117,16 +158,17 @@
     /* 3. Générer une fiche par code sélectionné */
     var container = document.getElementById('fiches-container');
     var rendered = 0, missing = [];
-    codes.forEach(function(code){
+    for (var ci = 0; ci < codes.length; ci++) {
+      var code = codes[ci];
       var p = list.find(function(x){ return (x['Code Projet'] || '').trim() === code.trim(); });
-      if (!p) { missing.push(code); return; }
+      if (!p) { missing.push(code); continue; }
       var sheet = document.createElement('div');
       sheet.className = 'fiche-sheet';
       sheet.innerHTML = pageHtml;
-      fillSheet(sheet, p, code);
+      await fillSheet(sheet, p, code);
       container.appendChild(sheet);
       rendered++;
-    });
+    }
 
     if (rendered === 0) {
       statusEl.textContent = 'Aucun projet trouvé';
