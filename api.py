@@ -492,12 +492,12 @@ def add_parametre_banque():
         try:
             from db import get_supabase
             sb = get_supabase()
-            # Verifier doublon (case-insensitive)
-            existing = sb.table('parametres').select('id', 'valeur').eq(
-                'categorie', colonne).execute()
-            for row in (existing.data or []):
-                if str(row.get('valeur', '')).strip().lower() == nouvelle_valeur.lower():
-                    return jsonify({"message": f"Cette valeur existe déjà : '{nouvelle_valeur}'", "doublon": True}), 409
+            # Verifier doublon (case-insensitive, requête ciblée)
+            escaped = nouvelle_valeur.replace('%', '\\%').replace('_', '\\_')
+            existing = sb.table('parametres').select('id').eq(
+                'categorie', colonne).ilike('valeur', escaped).limit(1).execute()
+            if existing.data:
+                return jsonify({"message": f"Cette valeur existe déjà : '{nouvelle_valeur}'", "doublon": True}), 409
             # Inserer
             sb.table('parametres').insert({
                 'categorie': colonne,
@@ -603,7 +603,7 @@ def update_parametre_banque():
             sb = get_supabase()
             # Verifier doublon
             existing = sb.table('parametres').select('id').eq(
-                'categorie', colonne).eq('valeur', nouvelle_valeur).execute()
+                'categorie', colonne).eq('valeur', nouvelle_valeur).limit(1).execute()
             if existing.data:
                 return jsonify({"message": "Doublon", "doublon": True}), 409
             # Update

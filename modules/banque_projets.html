@@ -3237,39 +3237,49 @@ async function loadParamValues(fieldKey) {
         }
         
         countEl.textContent = values.length;
-        
-        if (values.length === 0) {
-            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur. Ajoutez-en une ci-dessus.</div>';
-            return;
-        }
-        
-        // Use data-attributes instead of onclick to handle special characters
-        listEl.innerHTML = values.map((v, i) => `
-            <div class="param-row" data-value="${v.replace(/"/g, '&quot;')}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
-                <span class="param-value-label" style="font-size:12px; color:#333;">${v}</span>
-                <div style="display:flex; gap:4px;">
-                    <button class="btn-edit-param" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
-                    <button class="btn-delete-param" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
-                </div>
-            </div>
-        `).join('');
-        
-        // Attach event listeners via data-attributes
-        listEl.querySelectorAll('.btn-edit-param').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const value = this.closest('.param-row').dataset.value;
-                startEditParamValue(value);
-            });
-        });
-        listEl.querySelectorAll('.btn-delete-param').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const value = this.closest('.param-row').dataset.value;
-                startDeleteParamValue(value);
-            });
-        });
+        renderParamList(values);
+        // Actualisation silencieuse des selects (sans rechargement réseau)
+        updateSelectOptions(fieldKey);
     } catch (e) {
         listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#dc2626;">Erreur: ${e.message}</div>`;
     }
+}
+
+// Rendu local de la liste des valeurs (réutilisé pour les mises à jour instantanées)
+function renderParamList(values) {
+    const listEl = getEl('param-values-list');
+    const countEl = getEl('param-count');
+    if (countEl) countEl.textContent = values.length;
+
+    if (values.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur. Ajoutez-en une ci-dessus.</div>';
+        return;
+    }
+
+    // Use data-attributes instead of onclick to handle special characters
+    listEl.innerHTML = values.map((v, i) => `
+        <div class="param-row" data-value="${v.replace(/"/g, '&quot;')}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
+            <span class="param-value-label" style="font-size:12px; color:#333;">${v}</span>
+            <div style="display:flex; gap:4px;">
+                <button class="btn-edit-param" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                <button class="btn-delete-param" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+
+    // Attach event listeners via data-attributes
+    listEl.querySelectorAll('.btn-edit-param').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const value = this.closest('.param-row').dataset.value;
+            startEditParamValue(value);
+        });
+    });
+    listEl.querySelectorAll('.btn-delete-param').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const value = this.closest('.param-row').dataset.value;
+            startDeleteParamValue(value);
+        });
+    });
 }
 
 async function addParamValue() {
@@ -3309,9 +3319,14 @@ async function addParamValue() {
         if (res.ok) {
             showToast('Valeur ajoutée', 'success');
             inputEl.value = '';
-            // Reload list (also updates COLUMNS_BY_KEY)
-            await loadParamValues(currentParamField);
-            // Update the select in the form
+            inputEl.focus();
+            // Mise à jour locale immédiate (pas de rechargement réseau)
+            const col = COLUMNS_BY_KEY[currentParamField];
+            if (col) {
+                if (!col.options) col.options = [];
+                col.options.push(newValue);
+                renderParamList(col.options);
+            }
             updateSelectOptions(currentParamField);
         } else {
             showToast(data.error || 'Erreur lors de l\'ajout', 'error');
@@ -3343,11 +3358,11 @@ function startEditParamValue(oldValue) {
         confirmEditParamValue(row.dataset.editOldValue);
     });
     row.querySelector('.btn-cancel-edit').addEventListener('click', function() {
-        loadParamValues(currentParamField);
+        renderParamList((COLUMNS_BY_KEY[currentParamField]?.options) || []);
     });
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') confirmEditParamValue(row.dataset.editOldValue);
-        if (e.key === 'Escape') loadParamValues(currentParamField);
+        if (e.key === 'Escape') renderParamList((COLUMNS_BY_KEY[currentParamField]?.options) || []);
     });
 }
 
@@ -3384,7 +3399,13 @@ async function confirmEditParamValue(oldValue) {
         
         if (res.ok) {
             showToast('Valeur modifiée', 'success');
-            await loadParamValues(currentParamField);
+            // Mise à jour locale immédiate (pas de rechargement réseau)
+            const col = COLUMNS_BY_KEY[currentParamField];
+            if (col && col.options) {
+                const idx = col.options.findIndex(o => o === oldValue);
+                if (idx >= 0) col.options[idx] = newValue;
+                renderParamList(col.options);
+            }
             updateSelectOptions(currentParamField);
         } else {
             showToast(data.error || 'Erreur lors de la modification', 'error');
@@ -3412,7 +3433,7 @@ function startDeleteParamValue(value) {
         confirmDeleteParamValue(row.dataset.deleteValue);
     });
     row.querySelector('.btn-cancel-delete').addEventListener('click', function() {
-        loadParamValues(currentParamField);
+        renderParamList((COLUMNS_BY_KEY[currentParamField]?.options) || []);
     });
 }
 
@@ -3427,7 +3448,12 @@ async function confirmDeleteParamValue(value) {
         
         if (res.ok) {
             showToast('Valeur supprimée', 'success');
-            await loadParamValues(currentParamField);
+            // Mise à jour locale immédiate (pas de rechargement réseau)
+            const col = COLUMNS_BY_KEY[currentParamField];
+            if (col && col.options) {
+                col.options = col.options.filter(o => o !== value);
+                renderParamList(col.options);
+            }
             updateSelectOptions(currentParamField);
         } else {
             showToast(data.error || 'Erreur lors de la suppression', 'error');
