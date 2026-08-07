@@ -3,67 +3,78 @@ const modules = [
         id: 'requetes_financement',
         title: 'Requêtes de Financement',
         icon: '💰',
-        file: 'modules/requetes.html'
+        file: 'modules/requetes.html',
+        actif: false
     },
     {
         id: 'suivi_financier_projets',
         title: 'Gestion des Accords Financiers',
         icon: '🏗️',
-        file: 'modules/banque_projets.html'
+        file: 'modules/banque_projets.html',
+        actif: true
     },
     {
         id: 'coop_decentralisee',
         title: 'Coopération Décentralisée',
         icon: '🤝',
-        file: 'modules/coop_dec.html'
+        file: 'modules/coop_dec.html',
+        actif: true
     },
     {
         id: 'suivi_des_projets',
         title: 'Suivi Financier des Projets',
         icon: '🎓',
-        file: 'modules/suivi.html'
+        file: 'modules/suivi.html',
+        actif: false
     },
     {
         id: 'investissements_etrangers',
         title: 'Investissements Étrangers',
         icon: '🌍',
-        file: 'modules/ide.html'
+        file: 'modules/ide.html',
+        actif: false
     },
     {
         id: 'partenariat_public_prive',
         title: 'Partenariat Public-Privé',
         icon: '🏢',
-        file: 'modules/ppp.html'
+        file: 'modules/ppp.html',
+        actif: false
     },
     {
         id: 'fonds_specifiques',
         title: 'Fonds Spécifiques',
         icon: '💵',
-        file: 'modules/fonds.html'
+        file: 'modules/fonds.html',
+        actif: false
     },
     {
         id: 'cadres_cooperation',
         title: 'Cadres de Coopération',
         icon: '📑',
-        file: 'modules/cadres.html'
+        file: 'modules/cadres.html',
+        actif: false
     },
     {
         id: 'parametrage_systeme',
         title: 'Paramétrage Système',
         icon: '⚙️',
-        file: 'modules/parametres.html'
+        file: 'modules/parametres.html',
+        actif: false
     },
     {
         id: 'gestion_utilisateurs',
         title: 'Gestion des Utilisateurs',
         icon: '👥',
-        file: 'modules/utilisateurs.html'
+        file: 'modules/utilisateurs.html',
+        actif: false
     },
     {
         id: 'generation_rapports',
         title: 'Génération de Rapports',
         icon: '📊',
-        file: 'modules/rapports.html'
+        file: 'modules/rapports.html',
+        actif: false
     }
 ];
 const SECTEURS_SOUS_SECTEURS = {

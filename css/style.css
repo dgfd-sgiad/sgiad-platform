@@ -217,4 +217,26 @@ header{grid-template-columns:1fr;justify-items:center;text-align:center;gap:12px
     cursor: grabbing;
 }
 
+/* ===============================================
+   MODULES NON ACTIFS — badge et carte grisée
+   =============================================== */
+
+.module-card.module-inactive { cursor: not-allowed; }
+.module-card.module-inactive:hover {
+    transform: none; box-shadow: none; border-color: var(--border-color);
+}
+.module-card.module-inactive .module-image img,
+.module-card.module-inactive .placeholder-icon {
+    filter: grayscale(1); opacity: 0.35;
+}
+.module-card.module-inactive .module-title { color: #9ca3af; }
+
+.badge-non-actif {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    background: #d5251f; color: white;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+    padding: 4px 8px; border-radius: 4px; text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
 /* =============================================== */

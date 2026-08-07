@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (grid && typeof modules !== 'undefined') {
         modules.forEach(mod => {
+            const actif = mod.actif !== false;
             const card = document.createElement('div');
-            card.className = 'module-card';
+            card.className = 'module-card' + (actif ? '' : ' module-inactive');
             
             // Structure HTML qui correspond à votre CSS (.module-image, .module-title)
             // Le script cherche l'image dans assets/modules/[id].webp
@@ -36,12 +37,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="module-image">
                     <img src="assets/modules/${mod.id}.webp" alt="${mod.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
                     <div class="placeholder-icon" style="display:none">${mod.icon}</div>
+                    ${actif ? '' : '<span class="badge-non-actif">Non actif</span>'}
                 </div>
                 <h3 class="module-title">${mod.title}</h3>
             `;
 
-            // Navigation vers le module au clic
+            // Navigation vers le module au clic (bloquée si non actif)
             card.onclick = () => {
+                if (!actif) {
+                    alert(`Le module « ${mod.title} » n'est pas encore actif.`);
+                    return;
+                }
                 window.location.href = mod.file;
             };
 
