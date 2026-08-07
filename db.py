@@ -127,6 +127,18 @@ ACCORDS_DISPLAY_TO_DB = {
     "Chef de projet": "chef_projet",
     "Coordonnees": "coordonnees_chef",
     "Observations": "observations",
+    # ── Onglet Coordination ──
+    "Coordination_nationale": "coordination_nationale",
+    "Ministere_tutelle": "ministere_tutelle",
+    "Point_focal": "point_focal",
+    "Comite_pilotage": "comite_pilotage",
+    "Mecanisme_coordination": "mecanisme_coordination",
+    # ── Onglet Maturité ──
+    "Niveau_maturite": "niveau_maturite",
+    "Etudes_realisees": "etudes_realisees",
+    "Statut_environnemental": "statut_environnemental",
+    "Conditions_prealaables": "conditions_prealaables",
+    "Risques_identifies": "risques_identifies",
 }
 
 # Reverse: colonne SQL -> nom affiche

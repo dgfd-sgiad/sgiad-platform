@@ -303,7 +303,7 @@ CREATE TABLE projets (
     resp_se_tel1            TEXT,
     resp_se_tel2            TEXT,
     resp_se_email           TEXT,
-    niveau_maturite         INTEGER,
+    niveau_maturite         TEXT,
     etude_faisabilite       TEXT,
     etude_environnementale  TEXT,
     plan_affaires           TEXT,
@@ -333,6 +333,16 @@ CREATE TABLE projets (
     instrument_financement  TEXT,
     source_verifiable       TEXT,
     montant_devise_origine  NUMERIC,
+    -- Onglet Coordination
+    coordination_nationale  TEXT,
+    ministere_tutelle       TEXT,
+    point_focal             TEXT,
+    comite_pilotage         TEXT,
+    mecanisme_coordination  TEXT,
+    -- Onglet Maturité (hors niveau_maturite / risques_identifies déjà définis plus haut)
+    etudes_realisees        TEXT,
+    statut_environnemental  TEXT,
+    conditions_prealaables  TEXT,
 
     created_at  TIMESTAMPTZ DEFAULT NOW(),
     updated_at  TIMESTAMPTZ DEFAULT NOW()
@@ -479,6 +489,20 @@ ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS responsable_suivi TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS chef_projet TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS coordonnees_chef TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS observations TEXT;
+
+-- ── Onglet Coordination ──
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS coordination_nationale TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS ministere_tutelle TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS point_focal TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS comite_pilotage TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS mecanisme_coordination TEXT;
+-- ── Onglet Maturité ──
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS niveau_maturite TEXT;
+ALTER TABLE accords_consolides ALTER COLUMN niveau_maturite TYPE TEXT USING niveau_maturite::text;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS etudes_realisees TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS statut_environnemental TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS conditions_prealaables TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS risques_identifies TEXT;
 
 -- Declaration des nouvelles colonnes dans colonnes_meta pour qu'elles
 -- soient editables dans le formulaire de la banque de projets.
