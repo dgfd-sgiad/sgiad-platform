@@ -1368,7 +1368,7 @@
         // ============================================
         // CHARGEMENT DES PROJETS
         // ============================================
-       async function loadProjets() {
+       async function loadProjets(preserveState = false) {
     const res = await fetchWithRetry(`${API_BASE}/list?t=` + Date.now());
 
     if (!res.ok) {
@@ -1381,11 +1381,18 @@
         ? data
         : (data.data || []);
 
-    currentPage = 1;
-    selectedCodes.clear();
+    const savedPage = currentPage;
+    const savedScroll = window.scrollY;
+    if (!preserveState) {
+        currentPage = 1;
+        selectedCodes.clear();
+    }
     buildQuickFilters();
     applyFilters();
     updateStats();
+    if (preserveState) {
+        window.scrollTo(0, savedScroll);
+    }
 
     // Mettre à jour la carte si elle existe
     if (typeof updateMapMarkers === 'function') {
@@ -1917,7 +1924,7 @@
             }
             selectedCodes.clear();
             showToast(`${ok} supprimé(s)${fail ? ', ' + fail + ' erreur(s)' : ''}`, fail ? 'error' : 'success');
-            await loadProjets();
+            await loadProjets(true); // Préserver page + scroll
         }
 
         async function deleteProjet(code) {
@@ -1927,7 +1934,7 @@
                 const result = await res.json();
                 if (!res.ok) throw new Error(result.error || 'Erreur serveur');
                 showToast(`Accord ${code} supprimé`, 'success');
-                await loadProjets();
+                await loadProjets(true); // Préserver page + scroll
             } catch (e) {
                 showToast('Erreur suppression : ' + e.message, 'error');
             }
@@ -2246,7 +2253,10 @@
             }
         };
 
+        let _scrollBeforeModal = 0; // Position scroll avant ouverture de la modal
+
         function openModal(code) {
+            _scrollBeforeModal = window.scrollY;
             getEl('modal-projet').style.display = 'flex';
             getEl('form-projet').reset();
             getEl('Old_Code').value = '';
@@ -2282,7 +2292,11 @@
             }
         }
 
-        function closeModal() { getEl('modal-projet').style.display = 'none'; }
+        function closeModal() {
+                    getEl('modal-projet').style.display = 'none';
+                    // Retour à la position du tableau
+                    window.scrollTo(0, _scrollBeforeModal);
+                }
 
         const formProjet = getEl('form-projet');
 
@@ -2358,7 +2372,7 @@
                     if (!res.ok) throw new Error(result.error || 'Erreur serveur');
                     closeModal();
                     showToast(oldCode ? `Accord ${oldCode} modifié avec succès` : `Nouvel accord ${result.code || payload['Code Projet'] || ''} ajouté`, 'success');
-                    await loadProjets();
+                    await loadProjets(true); // Préserver page + scroll + sélection
                 } catch (err) {
                     showToast('Erreur enregistrement : ' + err.message, 'error');
                 }
