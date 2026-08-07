@@ -505,8 +505,9 @@ def add_parametre_banque():
                 'ordre': 999,
             }).execute()
             return jsonify({"message": "Valeur ajoutée", "colonne": colonne, "valeur": nouvelle_valeur}), 201
-        except Exception:
-            pass
+        except Exception as sb_err:
+            traceback.print_exc()
+            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
 
         # Fallback Excel
         wb = load_wb_safe(BANQUE_FILE)
@@ -546,8 +547,9 @@ def delete_parametre_banque():
             sb.table('parametres').delete().eq(
                 'categorie', colonne).eq('valeur', valeur).execute()
             return jsonify({"message": "Valeur supprimée"}), 200
-        except Exception:
-            pass
+        except Exception as sb_err:
+            traceback.print_exc()
+            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
 
         # Fallback Excel
         wb = load_wb_safe(BANQUE_FILE)
@@ -594,8 +596,9 @@ def update_parametre_banque():
                 'valeur': nouvelle_valeur,
             }).eq('categorie', colonne).eq('valeur', ancienne_valeur).execute()
             return jsonify({"message": "Valeur modifiée", "colonne": colonne}), 200
-        except Exception:
-            pass
+        except Exception as sb_err:
+            traceback.print_exc()
+            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
 
         # Fallback Excel
         wb = load_wb_safe(BANQUE_FILE)
@@ -1024,6 +1027,36 @@ def setup_create_tables():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/parametres/diag', methods=['GET'])
+def diag_parametres():
+    """Diagnostic: verifie l'etat de la table parametres."""
+    result = {"status": "unknown", "details": {}}
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        # Test SELECT
+        resp = sb.table('parametres').select('id', 'categorie', 'valeur').limit(5).execute()
+        result["details"]["select"] = "OK"
+        result["details"]["sample"] = resp.data
+        # Test INSERT (puis rollback)
+        test_val = f"__diag_test_{int(time.time())}"
+        try:
+            sb.table('parametres').insert({'categorie': '__diag', 'valeur': test_val, 'ordre': 0}).execute()
+            result["details"]["insert"] = "OK"
+            # Nettoyer
+            sb.table('parametres').delete().eq('categorie', '__diag').eq('valeur', test_val).execute()
+            result["details"]["delete"] = "OK"
+        except Exception as e2:
+            result["details"]["insert"] = f"FAIL: {str(e2)}"
+            result["status"] = "read_only"
+        if result["status"] != "read_only":
+            result["status"] = "ok"
+    except Exception as e:
+        result["status"] = "error"
+        result["details"]["error"] = str(e)
+    return jsonify(result)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
