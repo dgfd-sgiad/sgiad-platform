@@ -359,3 +359,22 @@ CREATE TRIGGER trg_projets_updated_at
 -- CREATE POLICY "Ecriture pour utilisateurs authentifies"
 --     ON accords_consolides FOR ALL
 --     USING (auth.role() = 'authenticated');
+
+-- ============================================================
+-- DOCUMENTS ASSOCIES AUX PROJETS (fiche projet)
+-- Bloc idempotent : CREATE TABLE IF NOT EXISTS (ne supprime pas
+-- les documents existants si le schema complet est rejoué)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS documents_projets (
+    id              SERIAL PRIMARY KEY,
+    code_projet     TEXT NOT NULL,
+    categorie       TEXT NOT NULL DEFAULT 'Autre',
+    nom_fichier     TEXT NOT NULL,
+    type_mime       TEXT DEFAULT 'application/pdf',
+    taille_octets   INTEGER,
+    contenu_base64  TEXT NOT NULL,
+    ajoute_le       TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_documents_projets_code
+    ON documents_projets (code_projet);

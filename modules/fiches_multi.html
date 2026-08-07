@@ -33,7 +33,7 @@
   /* ── Helpers (identiques à fiche_projet.html) ── */
   function fmt(n){ n = Math.round(Number(n) || 0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function fdate(s){ if(!s) return '—'; var d = new Date(s); if(isNaN(d)) return s; return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
-  function year(s){ if(!s) return '—'; var d = new Date(s); return isNaN(d) ? '—' : String(d.getFullYear()); }
+  function year(s){ if(s == null || s === '') return '—'; var n = Number(s); if (!isNaN(n) && String(s).trim().length === 4) return String(n); var d = new Date(s); return isNaN(d) ? '—' : String(d.getFullYear()); }
   function split(s){ return String(s || '').split(/\s*;\s*/).filter(function(x){ return x.length > 2; }); }
   function ul(a){ return '<ul>' + a.map(function(x){ return '<li>'+x+'</li>'; }).join('') + '</ul>'; }
   var docs = [['Accord de financement','#d5251f',1],['Avis de non objection','#d5251f',1],['Rapport d\'évaluation','#d5251f',1],['Accord signé','#d5251f',1],['Rapports de supervision','#d5251f',1],['Rapports d\'audit','#0e7a3a',1],['Cadre logique','#f28c00',0],['Plan de passation des marchés','#d5251f',1]];

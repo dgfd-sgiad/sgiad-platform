@@ -636,6 +636,93 @@ def update_parametre_banque():
         return jsonify({"error": str(e)}), 500
 
 
+# ============================================
+# DOCUMENTS ASSOCIES AUX PROJETS (stockés dans Supabase)
+# ============================================
+@app.route('/api/banque/documents', methods=['GET'])
+def list_documents_projet():
+    """Liste les métadonnées des documents d'un projet (sans le contenu)."""
+    code = request.args.get('code', '').strip()
+    if not code:
+        return jsonify({"error": "Paramètre code requis"}), 400
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.table('documents_projets').select(
+            'id, code_projet, categorie, nom_fichier, type_mime, taille_octets, ajoute_le'
+        ).eq('code_projet', code).order('categorie').execute()
+        return jsonify(resp.data or [])
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/documents/upload', methods=['POST'])
+def upload_document_projet():
+    """Reçoit un fichier (multipart) et le stocke en base64 dans Supabase."""
+    try:
+        file = request.files.get('file')
+        code_projet = str(request.form.get('code_projet', '')).strip()
+        categorie = str(request.form.get('categorie', 'Autre')).strip() or 'Autre'
+        if not file or not code_projet:
+            return jsonify({"error": "Fichier et code_projet requis"}), 400
+        content = file.read()
+        if len(content) > 10 * 1024 * 1024:
+            return jsonify({"error": "Fichier trop volumineux (max 10 Mo)"}), 413
+        import base64
+        from db import get_supabase
+        sb = get_supabase()
+        sb.table('documents_projets').insert({
+            'code_projet': code_projet,
+            'categorie': categorie,
+            'nom_fichier': secure_filename(file.filename or 'document.pdf'),
+            'type_mime': file.mimetype or 'application/pdf',
+            'taille_octets': len(content),
+            'contenu_base64': base64.b64encode(content).decode('ascii'),
+        }).execute()
+        return jsonify({"message": "Document ajouté", "code_projet": code_projet}), 201
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/documents/<int:doc_id>/download', methods=['GET'])
+def download_document_projet(doc_id):
+    """Retourne le contenu du document pour téléchargissement/visualisation."""
+    try:
+        import base64
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.table('documents_projets').select(
+            'nom_fichier, type_mime, contenu_base64'
+        ).eq('id', doc_id).limit(1).execute()
+        if not resp.data:
+            return jsonify({"error": "Document introuvable"}), 404
+        doc = resp.data[0]
+        data = base64.b64decode(doc.get('contenu_base64') or '')
+        return send_file(
+            BytesIO(data),
+            mimetype=doc.get('type_mime') or 'application/pdf',
+            as_attachment=False,
+            download_name=doc.get('nom_fichier') or 'document.pdf'
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/documents/<int:doc_id>', methods=['DELETE'])
+def delete_document_projet(doc_id):
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        sb.table('documents_projets').delete().eq('id', doc_id).execute()
+        return jsonify({"message": "Document supprimé"}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/banque/projets/export', methods=['POST'])
 def export_projets():
     try:

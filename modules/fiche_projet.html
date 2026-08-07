@@ -100,6 +100,7 @@ footer .fb span{flex:1}
   .page{width:100%;margin:0;box-shadow:none}
   .actions-bar{display:none!important}
   .panel{break-inside:avoid}
+  .no-print{display:none!important}
 }
 </style>
 </head>
@@ -126,8 +127,19 @@ footer .fb span{flex:1}
 
 <div class="actions-bar">
   <button style="background:#6b7280" onclick="fermerOuRetour()">← Retour</button>
+  <button style="background:#0e7a3a" onclick="document.getElementById('doc-file').click()">📎 Ajouter document</button>
   <button style="background:#0e7a3a" onclick="enregistrerHTML()">💾 Enregistrer</button>
   <button style="background:#d5251f" onclick="window.print()">📄 Télécharger PDF</button>
+</div>
+<input type="file" id="doc-file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" onchange="prepareUpload(this)">
+<div id="doc-upload-panel" class="no-print" style="display:none;position:fixed;top:60px;right:10px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.2)">
+  <div style="font-size:12px;font-weight:700;margin-bottom:8px">Ajouter un document</div>
+  <div id="doc-file-name" style="font-size:11px;color:#555;margin-bottom:6px"></div>
+  <select id="doc-categorie" style="width:230px;padding:6px;font-size:11px;border:1px solid #ccc;border-radius:4px;margin-bottom:8px"></select>
+  <div style="display:flex;gap:6px;justify-content:flex-end">
+    <button onclick="closeUploadPanel()" style="background:#6b7280;border:none;border-radius:6px;padding:7px 12px;font-weight:700;font-size:11px;cursor:pointer;color:#fff">Annuler</button>
+    <button onclick="confirmUpload()" style="background:#0e7a3a;border:none;border-radius:6px;padding:7px 12px;font-weight:700;font-size:11px;cursor:pointer;color:#fff">Ajouter</button>
+  </div>
 </div>
 
 <div class="page">
@@ -275,9 +287,66 @@ footer .fb span{flex:1}
 </div>
 
 <script>
-/* ── Documents associés ── */
-var docs=[['Accord de financement','#d5251f',1],['Avis de non objection','#d5251f',1],['Rapport d\'évaluation','#d5251f',1],['Accord signé','#d5251f',1],['Rapports de supervision','#d5251f',1],['Rapports d\'audit','#0e7a3a',1],['Cadre logique','#f28c00',0],['Plan de passation des marchés','#d5251f',1]];
-document.getElementById('docs').innerHTML=docs.map(function(d){var pdf=d[2]?'<text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+d[1]+'" stroke="none">PDF</text>':'';return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="'+d[1]+'" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/>'+pdf+'</svg><div class="t">'+d[0]+'</div></div>';}).join('')+'<div class="doc plus"><span style="font-size:15px">+</span>Autres documents</div>';
+/* ── Documents associés (données réelles depuis Supabase) ── */
+var docCategories=[['Accord de financement','#d5251f'],['Avis de non objection','#d5251f'],['Rapport d\'évaluation','#d5251f'],['Accord signé','#d5251f'],['Rapports de supervision','#d5251f'],['Rapports d\'audit','#0e7a3a'],['Cadre logique','#f28c00'],['Plan de passation des marchés','#d5251f'],['Autre','#6b7280']];
+function docIcon(color,pdf){return '<svg viewBox="0 0 24 28" fill="none" stroke="'+color+'" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/>'+(pdf?'<text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="'+color+'" stroke="none">PDF</text>':'')+'</svg>';}
+function renderDocs(realDocs){
+  var html='';
+  realDocs.forEach(function(d){
+    html+='<div class="doc" style="position:relative"><a href="'+API+'/api/banque/documents/'+d.id+'/download" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:7px;text-decoration:none;color:inherit;width:100%" title="'+d.nom_fichier+'">'+docIcon('#0e7a3a',true)+'<div class="t">'+(d.categorie&&d.categorie!=='Autre'?'<small style="display:block;color:#888;font-size:7.5px;font-weight:700">'+d.categorie+'</small>':'')+d.nom_fichier+'</div></a><button class="no-print" data-delid="'+d.id+'" title="Supprimer ce document" style="position:absolute;top:-6px;right:-6px;background:#d5251f;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:9px;cursor:pointer;line-height:1">✕</button></div>';
+  });
+  var usedCats=realDocs.map(function(d){return d.categorie});
+  docCategories.forEach(function(c){
+    if(c[0]==='Autre')return;
+    if(usedCats.indexOf(c[0])===-1){html+='<div class="doc">'+docIcon(c[1],false)+'<div class="t">'+c[0]+'</div></div>';}
+  });
+  document.getElementById('docs').innerHTML=html||'<div style="color:#999;font-size:10px">Aucun document associé</div>';
+  Array.prototype.forEach.call(document.querySelectorAll('[data-delid]'),function(b){
+    b.addEventListener('click',function(){deleteDoc(this.getAttribute('data-delid'));});
+  });
+}
+function loadDocs(){
+  if(!code){renderDocs([]);return;}
+  fetch(API+'/api/banque/documents?code='+encodeURIComponent(code))
+    .then(function(r){return r.json()})
+    .then(function(d){renderDocs(Array.isArray(d)?d:[]);})
+    .catch(function(){renderDocs([]);});
+}
+function deleteDoc(id){
+  if(!confirm('Supprimer ce document ?'))return;
+  fetch(API+'/api/banque/documents/'+id,{method:'DELETE'})
+    .then(function(r){if(!r.ok)throw new Error('Erreur serveur');loadDocs();})
+    .catch(function(e){alert('Erreur suppression : '+e.message);});
+}
+var pendingFile=null;
+function prepareUpload(input){
+  if(!input.files||!input.files[0])return;
+  pendingFile=input.files[0];
+  var sel=document.getElementById('doc-categorie');
+  sel.innerHTML=docCategories.map(function(c){return '<option value="'+c[0]+'">'+c[0]+'</option>';}).join('');
+  document.getElementById('doc-file-name').textContent='📄 '+pendingFile.name+' ('+Math.round(pendingFile.size/1024)+' Ko)';
+  document.getElementById('doc-upload-panel').style.display='block';
+}
+function closeUploadPanel(){
+  document.getElementById('doc-upload-panel').style.display='none';
+  pendingFile=null;
+  document.getElementById('doc-file').value='';
+}
+function confirmUpload(){
+  if(!pendingFile||!code){alert('Aucun fichier sélectionné');return;}
+  var fd=new FormData();
+  fd.append('file',pendingFile);
+  fd.append('code_projet',code);
+  fd.append('categorie',document.getElementById('doc-categorie').value);
+  fetch(API+'/api/banque/documents/upload',{method:'POST',body:fd})
+    .then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d}})})
+    .then(function(res){
+      if(!res.ok){alert(res.data.error||'Erreur lors de l\'envoi');return;}
+      closeUploadPanel();
+      loadDocs();
+    })
+    .catch(function(e){alert('Erreur : '+e.message);});
+}
 
 /* ── Remplissage depuis l'API Supabase ── */
 var API=window.location.origin;
@@ -285,7 +354,7 @@ var code=new URLSearchParams(location.search).get('code');
 function $(id){return document.getElementById(id)}
 function fmt(n){n=Math.round(Number(n)||0);return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
 function fdate(s){if(!s)return '—';var d=new Date(s);if(isNaN(d))return s;return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear()}
-function year(s){if(!s)return '—';var d=new Date(s);return isNaN(d)?'—':String(d.getFullYear())}
+function year(s){if(s==null||s==='')return '—';var n=Number(s);if(!isNaN(n)&&String(s).trim().length===4)return String(n);var d=new Date(s);return isNaN(d)?'—':String(d.getFullYear())}
 function split(s){return String(s||'').split(/\s*;\s*/).filter(function(x){return x.length>2})}
 function ul(a){return '<ul>'+a.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'}
 if(code){fetch(API+'/api/accords-financiers/list?t='+Date.now()).then(function(r){return r.json()}).then(function(data){
@@ -345,6 +414,8 @@ function fermerOuRetour(){
   } catch(e) { /* cross-origin : fallback */ }
   if (history.length > 1) { history.back(); } else { window.close(); }
 }
+/* ── Chargement des documents associés ── */
+loadDocs();
 </script>
 </body>
 </html>
