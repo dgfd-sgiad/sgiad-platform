@@ -1054,6 +1054,37 @@
                 </div>
             </div>
 
+            <!-- MODAL GESTION PARAMETRES -->
+            <div id="modal-param-manager" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+                <div style="background:white; border-radius:12px; padding:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:2px solid var(--primary-blue); padding-bottom:10px;">
+                        <h3 style="margin:0; color:var(--primary-blue); font-size:14px;">
+                            <span id="param-manager-title">Gérer les valeurs</span>
+                        </h3>
+                        <button onclick="closeParamManager()" style="background:none; border:none; cursor:pointer; font-size:20px; color:#666;">✕</button>
+                    </div>
+                    
+                    <!-- Ajouter une valeur -->
+                    <div style="background:#f0fdf4; padding:12px; border-radius:8px; margin-bottom:15px; border:1px solid #bbf7d0;">
+                        <label style="font-size:11px; font-weight:700; color:#166534; display:block; margin-bottom:6px;">➕ Ajouter une valeur</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="param-new-value" class="form-input" placeholder="Nouvelle valeur..." style="flex:1; height:32px; font-size:12px;">
+                            <button onclick="addParamValue()" style="padding:0 15px; background:#16a34a; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px; height:32px;">Ajouter</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Liste des valeurs -->
+                    <div>
+                        <label style="font-size:11px; font-weight:700; color:#333; display:block; margin-bottom:8px;">📋 Valeurs existantes (<span id="param-count">0</span>)</label>
+                        <div id="param-values-list" style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px;"></div>
+                    </div>
+                    
+                    <div style="margin-top:15px; padding-top:12px; border-top:1px solid #eee; text-align:right;">
+                        <button onclick="closeParamManager()" style="padding:8px 15px; background:#6b7280; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Fermer</button>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -1933,7 +1964,7 @@
             if (!col) return '';
             if (col.type === 'select') {
                 const opts = (col.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
-                return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><select name="${key}" class="form-input"${required}${readonly}><option value="">-- Sélectionner --</option>${opts}</select></div>`;
+                return `<div class="form-full"><div style="display:flex; gap:4px; align-items:end;"><div style="flex:1;"><label class="section-label${required ? ' required' : ''}">${labelText}</label><select name="${key}" class="form-input" data-field-key="${key}"${required}${readonly}><option value="">-- Sélectionner --</option>${opts}</select></div><button type="button" class="btn-manage-param" data-field-key="${key}" data-field-label="${labelText}" title="Gérer les valeurs" style="padding:4px 8px; background:#e0e7ff; color:#3730a3; border:1px solid #a5b4fc; border-radius:4px; cursor:pointer; font-size:11px; height:28px;">⚙️</button></div></div>`;
             }
             if (col.type === 'date') {
                 return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><input type="date" name="${key}" class="form-input"${required}${readonly}></div>`;
@@ -2686,6 +2717,249 @@ function resizeMap() {
         }
     });
 })();
+
+// ============================================
+// PARAMETER MANAGER (Gestion des valeurs combobox)
+// ============================================
+let currentParamField = null; // Field being managed
+let formStateBeforeParamEdit = null; // Save form state
+
+// Event delegation for parameter management buttons
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-manage-param')) {
+        const fieldKey = e.target.dataset.fieldKey;
+        const fieldLabel = e.target.dataset.fieldLabel;
+        openParamManager(fieldKey, fieldLabel);
+    }
+});
+
+function saveFormState() {
+    const form = getEl('form-projet');
+    if (!form) return;
+    formStateBeforeParamEdit = {};
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.name) {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                formStateBeforeParamEdit[el.name] = el.checked;
+            } else {
+                formStateBeforeParamEdit[el.name] = el.value;
+            }
+        }
+    });
+    // Save co-partners
+    const copartWrap = getEl('copartWrap');
+    if (copartWrap) {
+        formStateBeforeParamEdit._copartners = [];
+        copartWrap.querySelectorAll('input').forEach(inp => {
+            formStateBeforeParamEdit._copartners.push(inp.value);
+        });
+    }
+}
+
+function restoreFormState() {
+    if (!formStateBeforeParamEdit) return;
+    const form = getEl('form-projet');
+    if (!form) return;
+    form.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.name && formStateBeforeParamEdit[el.name] !== undefined) {
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.checked = formStateBeforeParamEdit[el.name];
+            } else {
+                el.value = formStateBeforeParamEdit[el.name];
+            }
+        }
+    });
+    // Restore co-partners
+    if (formStateBeforeParamEdit._copartners && window.prefillCopartenaires) {
+        window.prefillCopartenaires({ _copartners: formStateBeforeParamEdit._copartners });
+    }
+    formStateBeforeParamEdit = null;
+}
+
+function openParamManager(fieldKey, fieldLabel) {
+    currentParamField = fieldKey;
+    saveFormState();
+    
+    getEl('param-manager-title').textContent = `Gérer : ${fieldLabel}`;
+    getEl('modal-param-manager').style.display = 'flex';
+    
+    loadParamValues(fieldKey);
+}
+
+function closeParamManager() {
+    getEl('modal-param-manager').style.display = 'none';
+    currentParamField = null;
+    restoreFormState();
+}
+
+async function loadParamValues(fieldKey) {
+    const listEl = getEl('param-values-list');
+    const countEl = getEl('param-count');
+    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Chargement...</div>';
+    
+    try {
+        // Get values from COLUMNS_BY_KEY
+        const col = COLUMNS_BY_KEY[fieldKey];
+        if (!col || !col.options) {
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur disponible</div>';
+            countEl.textContent = '0';
+            return;
+        }
+        
+        const values = col.options || [];
+        countEl.textContent = values.length;
+        
+        if (values.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur. Ajoutez-en une ci-dessus.</div>';
+            return;
+        }
+        
+        listEl.innerHTML = values.map(v => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
+                <span style="font-size:12px; color:#333;">${v}</span>
+                <div style="display:flex; gap:4px;">
+                    <button onclick="editParamValue('${v.replace(/'/g, "\\'")}')" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                    <button onclick="deleteParamValue('${v.replace(/'/g, "\\'")}')" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#dc2626;">Erreur: ${e.message}</div>`;
+    }
+}
+
+async function addParamValue() {
+    const inputEl = getEl('param-new-value');
+    const newValue = inputEl.value.trim();
+    if (!newValue) {
+        showToast('Veuillez saisir une valeur', 'error');
+        return;
+    }
+    if (!currentParamField) return;
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/parametres/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colonne: currentParamField, valeur: newValue })
+        });
+        const data = await res.json();
+        
+        if (data.doublon) {
+            showToast('Cette valeur existe déjà', 'error');
+            return;
+        }
+        
+        if (res.ok) {
+            showToast('Valeur ajoutée', 'success');
+            inputEl.value = '';
+            // Refresh column options
+            await refreshColumnOptions(currentParamField);
+            loadParamValues(currentParamField);
+            // Update the select in the form
+            updateSelectOptions(currentParamField);
+        } else {
+            showToast(data.error || 'Erreur lors de l\'ajout', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    }
+}
+
+async function editParamValue(oldValue) {
+    const newValue = prompt('Modifier la valeur :', oldValue);
+    if (!newValue || newValue.trim() === '' || newValue.trim() === oldValue) return;
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/parametres/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colonne: currentParamField, ancienne_valeur: oldValue, nouvelle_valeur: newValue.trim() })
+        });
+        const data = await res.json();
+        
+        if (data.doublon) {
+            showToast('Cette valeur existe déjà', 'error');
+            return;
+        }
+        
+        if (res.ok) {
+            showToast('Valeur modifiée', 'success');
+            await refreshColumnOptions(currentParamField);
+            loadParamValues(currentParamField);
+            updateSelectOptions(currentParamField);
+        } else {
+            showToast(data.error || 'Erreur lors de la modification', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    }
+}
+
+async function deleteParamValue(value) {
+    if (!confirm(`Supprimer la valeur "${value}" ?`)) return;
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/parametres/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colonne: currentParamField, valeur: value })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+            showToast('Valeur supprimée', 'success');
+            await refreshColumnOptions(currentParamField);
+            loadParamValues(currentParamField);
+            updateSelectOptions(currentParamField);
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    }
+}
+
+async function refreshColumnOptions(fieldKey) {
+    // Reload columns metadata from API
+    try {
+        const res = await fetch(`${API_BASE}/columns?t=${Date.now()}`);
+        if (res.ok) {
+            const cols = await res.json();
+            COLUMNS = cols;
+            COLUMNS_BY_KEY = Object.fromEntries(COLUMNS.map(c => [c.key, c]));
+        }
+    } catch (e) {
+        console.error('Error refreshing column options:', e);
+    }
+}
+
+function updateSelectOptions(fieldKey) {
+    const col = COLUMNS_BY_KEY[fieldKey];
+    if (!col) return;
+    
+    // Update all selects with this field key in the modal form
+    document.querySelectorAll(`#form-projet select[data-field-key="${fieldKey}"]`).forEach(select => {
+        const currentValue = select.value;
+        const opts = (col.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+        select.innerHTML = `<option value="">-- Sélectionner --</option>${opts}`;
+        // Restore selection if value still exists
+        if (col.options.includes(currentValue)) {
+            select.value = currentValue;
+        }
+    });
+    
+    // Also update filter dropdowns
+    const filterEl = getEl(`filter-${fieldKey.toLowerCase().replace(/\s+/g, '-')}`);
+    if (filterEl) {
+        const currentFilter = filterEl.value;
+        const opts = (col.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+        filterEl.innerHTML = `<option value="">Tous</option>${opts}`;
+        if (col.options.includes(currentFilter)) {
+            filterEl.value = currentFilter;
+        }
+    }
+}
 
     </script>
 

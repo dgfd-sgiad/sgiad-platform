@@ -565,6 +565,54 @@ def delete_parametre_banque():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/banque/parametres/update', methods=['POST'])
+def update_parametre_banque():
+    try:
+        data = request.json
+        colonne = str(data.get('colonne', '')).strip()
+        ancienne_valeur = str(data.get('ancienne_valeur', '')).strip()
+        nouvelle_valeur = str(data.get('nouvelle_valeur', '')).strip()
+        if not colonne or not ancienne_valeur or not nouvelle_valeur:
+            return jsonify({"error": "Colonne, ancienne et nouvelle valeurs requises"}), 400
+
+        # Supabase
+        try:
+            from db import get_supabase
+            sb = get_supabase()
+            # Verifier doublon
+            existing = sb.table('parametres').select('id').eq(
+                'categorie', colonne).eq('valeur', nouvelle_valeur).execute()
+            if existing.data:
+                return jsonify({"message": "Doublon", "doublon": True}), 409
+            # Update
+            sb.table('parametres').update({
+                'valeur': nouvelle_valeur,
+            }).eq('categorie', colonne).eq('valeur', ancienne_valeur).execute()
+            return jsonify({"message": "Valeur modifiée", "colonne": colonne}), 200
+        except Exception:
+            pass
+
+        # Fallback Excel
+        wb = load_wb_safe(BANQUE_FILE)
+        if wb is None:
+            return jsonify({"error": "Fichier verrouillé."}), 503
+        ws = wb['Paramètres']
+        col_idx = next((i for i, c in enumerate(ws[1], 1) if c.value and str(c.value).strip().upper() == colonne.upper()), None)
+        if not col_idx:
+            wb.close(); return jsonify({"error": f"Colonne '{colonne}' introuvable"}), 404
+        cell_to_update = next(
+            (ws.cell(row=i, column=col_idx) for i in range(2, ws.max_row + 1)
+             if ws.cell(row=i, column=col_idx).value and str(ws.cell(row=i, column=col_idx).value).strip().upper() == ancienne_valeur.upper()), None)
+        if not cell_to_update:
+            wb.close(); return jsonify({"message": "Valeur non trouvée"}), 404
+        cell_to_update.value = nouvelle_valeur
+        wb.save(BANQUE_FILE); wb.close()
+        return jsonify({"message": "Valeur modifiée", "colonne": colonne}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/banque/projets/export', methods=['POST'])
 def export_projets():
     try:
