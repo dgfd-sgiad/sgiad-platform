@@ -1123,7 +1123,7 @@
         const TAB_FIELDS = [
             ['Code Projet', "Objet de l'accord", 'Objectif général', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Source vérifiable'],
             ['Zone'],
-            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date de clôture', 'Annee de cloture'],
+            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date de clôture', 'Annee de cloture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture'],
             ['Nature (Prêt/Don/Mixte)', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant_Total_FCFA', 'Devise', 'Montant total (devise)', 'Instrument de financement', 'APD Oui/non', 'TYPE DE FINANCEMENT'],
             ['TYPE DE CONTRIBUTEUR', 'AXE PAG', 'PILIER PAG', 'ODD', 'Cible_ODD', 'Pilier', 'STATUT (en cours, achevé, en approbation)'],
             [],
@@ -2186,7 +2186,12 @@
                     const yearFields = [];
                     if (i === 0 && fields.includes('Annee de signature')) yearFields.push('Annee de signature');
                     if (i === 2 && fields.includes('Annee de cloture')) yearFields.push('Annee de cloture');
-                    if (selectFields.length > 0 || yearFields.length > 0) {
+                    // Date range filters for tab 2 (Calendrier)
+                    const dateFields = [];
+                    if (i === 2) {
+                        dateFields.push('Date de signature', "Date d'approbation", 'Date de clôture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture');
+                    }
+                    if (selectFields.length > 0 || yearFields.length > 0 || dateFields.length > 0) {
                         html += `<div class="exp-filter-grid">`;
                         if (selectFields.length > 0) {
                             html += selectFields.map(k => `
@@ -2199,6 +2204,15 @@
                                 <select id="exp-filter-${yf}" multiple size="3"><option value="">-- Toutes --</option></select>
                             </div>`;
                         });
+                        dateFields.forEach(df => {
+                            html += `<div style="grid-column:1/-1; background:#f8f9fa; padding:6px 8px; border-radius:4px; margin-bottom:4px;">
+                                <label style="font-size:10px; font-weight:700; color:#444; margin-bottom:4px; display:block;">📅 ${df}</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <div style="flex:1;"><label style="font-size:9px; color:#666;">Du :</label><input type="date" id="exp-date-from-${df}" class="form-input" style="width:100%; padding:3px 5px; font-size:10px;"></div>
+                                    <div style="flex:1;"><label style="font-size:9px; color:#666;">Au :</label><input type="date" id="exp-date-to-${df}" class="form-input" style="width:100%; padding:3px 5px; font-size:10px;"></div>
+                                </div>
+                            </div>`;
+                        });
                         html += `</div>`;
                     }
                     html += `<div style="border-top:1px dashed #eee; padding-top:8px;">
@@ -2209,6 +2223,11 @@
                 html += `</div>`;
             });
             body.innerHTML = html;
+
+            // Add event listeners to date inputs
+            document.querySelectorAll('#export-tabs-body input[type="date"]').forEach(input => {
+                input.addEventListener('change', updateExportMatchCount);
+            });
         }
 
         function switchExportTab(index) {
@@ -2236,6 +2255,10 @@
             document.querySelectorAll('#export-tabs-body select[id^="exp-filter-"]').forEach(select => {
                 for (let i = 0; i < select.options.length; i++) select.options[i].selected = false;
             });
+            // Reset date range inputs
+            document.querySelectorAll('#export-tabs-body input[type="date"]').forEach(input => {
+                input.value = '';
+            });
             if (exportLocSelector) exportLocSelector.reset();
             updateExportMatchCount();
         }
@@ -2250,6 +2273,17 @@
                     if (option.selected && option.value && option.value.trim()) values.push(option.value.trim());
                 }
                 if (values.length > 0) filters[fieldName] = values;
+            });
+            // Date range filters
+            const dateFields = ['Date de signature', "Date d'approbation", 'Date de clôture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture'];
+            dateFields.forEach(df => {
+                const fromEl = getEl(`exp-date-from-${df}`);
+                const toEl = getEl(`exp-date-to-${df}`);
+                const fromVal = fromEl?.value || '';
+                const toVal = toEl?.value || '';
+                if (fromVal || toVal) {
+                    filters[`_dateRange_${df}`] = { from: fromVal, to: toVal };
+                }
             });
             if (exportLocSelector) {
                 const zoneNames = exportLocSelector.getFlatSelectionNames();
@@ -2267,6 +2301,30 @@
             allProjets.forEach(p => {
                 let match = true;
                 for (const [field, values] of Object.entries(filters)) {
+                    // Date range filter
+                    if (field.startsWith('_dateRange_')) {
+                        const dateField = field.replace('_dateRange_', '');
+                        const projDate = p[dateField];
+                        if (!projDate) { match = false; break; }
+                        const projDateStr = String(projDate).trim();
+                        // Try to parse the date (handle various formats)
+                        let projDateObj = null;
+                        // Try ISO format first (YYYY-MM-DD)
+                        if (/^\d{4}-\d{2}-\d{2}/.test(projDateStr)) {
+                            projDateObj = new Date(projDateStr.substring(0, 10));
+                        }
+                        // Try French format (DD/MM/YYYY)
+                        else if (/^\d{2}\/\d{2}\/\d{4}/.test(projDateStr)) {
+                            const parts = projDateStr.split('/');
+                            projDateObj = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                        }
+                        if (!projDateObj || isNaN(projDateObj.getTime())) { match = false; break; }
+                        const projDateIso = projDateObj.toISOString().substring(0, 10);
+                        const { from, to } = values;
+                        if (from && projDateIso < from) { match = false; break; }
+                        if (to && projDateIso > to) { match = false; break; }
+                        continue;
+                    }
                     if (field === 'Zone') {
                         if (!window.zoneInterventionMatches(p[field], values)) { match = false; break; }
                         continue;
