@@ -1219,20 +1219,22 @@
             '4. Financement',
             '5. Partenaires & Classification',
             '6. Coordination',
-            '7. Maturité'
+            '7. Maturité',
+            '8. Suivi mise en œuvre'
         ];
 
         const TAB_FIELDS = [
-            ['Code Projet', "Objet de l'accord", 'Objectif général', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Tutelle', 'Agence Exécution', 'Source vérifiable'],
-            ['Zone'],
-            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date de clôture', 'Annee de cloture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture'],
+            ['Code Projet', "Objet de l'accord", 'Objectif général', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Tutelle', 'Agence Exécution', 'Adresse partenaire', 'Contact partenaire', 'Site web partenaire', 'Source vérifiable'],
+            ['Zone', 'Departement', 'Commune', 'Niveau'],
+            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Annee de cloture', 'Duree_Initiale_Mois'],
             ['Nature (Prêt/Don/Mixte)', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant_Total_FCFA', 'Devise', 'Montant total (devise)', 'Instrument de financement', 'APD Oui/non', 'TYPE DE FINANCEMENT'],
             ['TYPE DE CONTRIBUTEUR', 'AXE PAG', 'PILIER PAG', 'ODD', 'Cible_ODD', 'Pilier', 'STATUT (en cours, achevé, en approbation)'],
             [],
-            []
+            [],
+            ['Taux execution physique', 'Taux de decaissement', 'Niveau de risque', 'Nb avenants', 'Nb prorogations', 'Responsable de suivi', 'Chef de projet', 'Coordonnees', 'Observations']
         ];
 
-        const TAB_ICONS = ['📋', '📍', '📅', '💰', '🤝', '👥', '📈'];
+        const TAB_ICONS = ['📋', '📍', '📅', '💰', '🤝', '👥', '📈', '📊'];
 
         // ============================================
         // UTILITAIRES
@@ -2142,7 +2144,7 @@
             if (col.type === 'number') {
                 return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}${readonly ? ' (Auto)' : ''}</label><input type="number" name="${key}" class="form-input" step="any"${required}${readonly}></div>`;
             }
-            if (key === "Objet de l'accord" || key === 'Objectif général') {
+            if (key === "Objet de l'accord" || key === 'Objectif général' || key === 'Observations') {
                 return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><textarea name="${key}" class="form-input" rows="2"${required}${readonly}></textarea></div>`;
             }
             return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><input type="text" name="${key}" class="form-input"${required}${readonly}></div>`;
@@ -2190,6 +2192,7 @@
                 if (i === 1) {
                     html +=
                         `<div class="form-full"><label class="section-label">ZONE D'INTERVENTION</label><div id="loc-selector-container" style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #e9ecef;"></div></div>`;
+                    html += fields.filter(f => f !== 'Zone').map(fieldInputHtml).join('');
                 } else if (i === 5) {
                     html += `<div class="form-full" style="background:#e8f4fd; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:11px; color:#1a5276;">
                         ℹ️ Ces champs sont en cours d'intégration dans la base de données. Les valeurs saisies seront stockées dans la colonne Notes.</div>`;

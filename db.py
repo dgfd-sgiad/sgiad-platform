@@ -11,6 +11,7 @@ Variables d'environnement requises :
 """
 
 import os
+import re
 import traceback
 from datetime import datetime, date
 from supabase import create_client, Client
@@ -476,6 +477,11 @@ def _display_to_db(data: dict) -> dict:
         db_col = ACCORDS_DISPLAY_TO_DB.get(key, key)
         # Nettoyer les valeurs vides
         if value is not None and str(value).strip() not in ('', 'nan', 'None'):
+            # Colonnes DATE : convertir le format francais JJ/MM/AAAA en ISO
+            if db_col.startswith('date_'):
+                m = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{4})$', str(value).strip())
+                if m:
+                    value = f"{m.group(3)}-{m.group(2).zfill(2)}-{m.group(1).zfill(2)}"
             result[db_col] = value
     return result
 
