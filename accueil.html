@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DGFD - Plateforme Nationale du Financement du Développement</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { font-family: 'Inter', sans-serif; background: #ffffff; color: #374151; }
+        a { transition: color 0.2s; }
+
+        /* ===== HEADER ===== */
+        .dgfd-header {
+            background-color: #ffffff; border-bottom: 1px solid #e5e7eb;
+            padding: 0.5rem 4rem; display: flex; align-items: center;
+            justify-content: space-between; position: sticky; top: 0; z-index: 1000;
+        }
+        .dgfd-logo-text { display: flex; align-items: center; gap: 12px; }
+        .dgfd-logo-badge {
+            width: 48px; height: 48px; background-color: #0a2540; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #f2c94c; font-size: 20px; font-weight: bold;
+        }
+        .dgfd-logo-title { font-size: 13px; font-weight: 700; color: #0a2540; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; }
+        .dgfd-logo-subtitle { font-size: 9px; color: #6b7280; font-weight: 500; }
+        .dgfd-nav { display: flex; gap: 2rem; align-items: center; }
+        .dgfd-nav a { text-decoration: none; color: #374151; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .dgfd-nav a:hover, .dgfd-nav a.active { color: #0a2540; font-weight: 600; }
+        .dgfd-btn-login {
+            background-color: #0a2540; color: white !important; padding: 8px 20px; border-radius: 6px;
+            font-size: 13px; font-weight: 500; text-decoration: none; border: none; cursor: pointer;
+        }
+
+        /* ===== HERO ===== */
+        .hero-section {
+            position: relative; min-height: 420px;
+            background: url('https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1400&h=600&fit=crop') center/cover no-repeat;
+            display: flex; align-items: center; padding: 2rem 4rem;
+        }
+        .hero-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.72); }
+        .hero-content {
+            position: relative; z-index: 2; display: flex; justify-content: space-between;
+            align-items: center; width: 100%; max-width: 1400px; margin: 0 auto; gap: 2rem;
+        }
+        .hero-left { max-width: 520px; }
+        .hero-title { font-size: 42px; font-weight: 800; color: #0a2540; line-height: 1.15; margin-bottom: 1rem; }
+        .hero-subtitle { font-size: 15px; color: #374151; line-height: 1.6; margin-bottom: 2rem; }
+        .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn-green {
+            background-color: #28a745; color: white; padding: 12px 24px; border-radius: 6px;
+            text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex;
+            align-items: center; gap: 8px; border: none; cursor: pointer;
+        }
+        .btn-white {
+            background-color: white; color: #0a2540; padding: 12px 24px; border-radius: 6px;
+            text-decoration: none; font-size: 14px; font-weight: 600; display: inline-flex;
+            align-items: center; gap: 8px; border: 1px solid #d1d5db; cursor: pointer;
+        }
+        .today-box { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); min-width: 280px; }
+        .today-title { font-size: 16px; font-weight: 700; color: #0a2540; margin-bottom: 16px; }
+        .today-item { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .today-icon { width: 36px; height: 36px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        .today-value { font-size: 22px; font-weight: 800; color: #0a2540; line-height: 1; }
+        .today-label { font-size: 11px; color: #6b7280; font-weight: 500; }
+        .today-link { display: flex; align-items: center; gap: 6px; color: #0a2540; font-size: 12px; font-weight: 600; text-decoration: none; margin-top: 8px; cursor: pointer; }
+
+        /* ===== STATS ROW ===== */
+        .stats-section { background: white; padding: 2rem 4rem; border-bottom: 1px solid #f3f4f6; }
+        .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.5rem; max-width: 1400px; margin: 0 auto; }
+        .stat-card { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 12px; transition: transform 0.2s; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .stat-icon.blue { background: #eff6ff; } .stat-icon.green { background: #f0fdf4; }
+        .stat-icon.purple { background: #faf5ff; } .stat-icon.yellow { background: #fefce8; }
+        .stat-icon.teal { background: #f0fdfa; } .stat-icon.gray { background: #f9fafb; }
+        .stat-value { font-size: 24px; font-weight: 800; color: #0a2540; line-height: 1; }
+        .stat-label { font-size: 12px; color: #6b7280; font-weight: 500; margin-top: 4px; line-height: 1.3; }
+        .stat-sublabel { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+        /* ===== SECTIONS ===== */
+        .section-wrapper { padding: 2.5rem 4rem; max-width: 1480px; margin: 0 auto; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .section-title { font-size: 20px; font-weight: 700; color: #0a2540; }
+        .section-link { color: #0a2540; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+        /* ===== NEWS ===== */
+        .news-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f3f4f6; }
+        .news-item:last-child { border-bottom: none; }
+        .news-thumb { width: 100px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+        .news-title { font-size: 14px; font-weight: 600; color: #0a2540; margin-bottom: 4px; line-height: 1.3; }
+        .news-date { font-size: 11px; color: #9ca3af; font-weight: 500; margin-bottom: 4px; }
+        .news-excerpt { font-size: 12px; color: #6b7280; line-height: 1.4; margin-bottom: 6px; }
+        .news-readmore { font-size: 12px; color: #0a2540; font-weight: 600; text-decoration: none; }
+
+        /* ===== PROJECT CARDS ===== */
+        .project-card { border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: white; height: 100%; display: flex; flex-direction: column; }
+        .project-image { width: 100%; height: 140px; object-fit: cover; }
+        .project-tag { position: absolute; bottom: 8px; left: 8px; padding: 4px 10px; border-radius: 4px; font-size: 9px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+        .project-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+        .project-title { font-size: 16px; font-weight: 700; color: #0a2540; margin-bottom: 6px; }
+        .project-partner { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .project-amount { font-size: 18px; font-weight: 800; color: #0a2540; margin-bottom: 12px; }
+        .project-link { margin-top: auto; font-size: 12px; color: #0a2540; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+        /* ===== MAP / DONUT / EVENTS ===== */
+        .map-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e5e7eb; height: 100%; }
+        .map-select select { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 13px; margin-bottom: 12px; font-family: inherit; }
+        .map-stats { display: flex; gap: 24px; margin: 12px 0; }
+        .map-stat-value { font-size: 22px; font-weight: 800; color: #0a2540; }
+        .map-stat-label { font-size: 11px; color: #6b7280; }
+        .map-partners-title { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+        .partner-item { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .partner-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .donut-wrap { position: relative; width: 240px; height: 240px; margin: 12px auto; }
+        .donut { width: 100%; height: 100%; border-radius: 50%; }
+        .donut-hole {
+            position: absolute; inset: 17.5%; background: white; border-radius: 50%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .donut-center-value { font-size: 28px; font-weight: 800; color: #0a2540; line-height: 1; }
+        .donut-center-label { font-size: 12px; color: #6b7280; }
+        .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 8px; }
+        .legend-row { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .legend-label { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .legend-pct { font-size: 11px; color: #0a2540; font-weight: 600; margin-left: auto; }
+        .toggle-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .toggle-btn { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; background: #f9fafb; font-size: 12px; font-weight: 600; color: #374151; cursor: pointer; font-family: inherit; }
+        .toggle-btn.active { background: #0a2540; color: white; border-color: #0a2540; }
+        .event-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .event-date-box { width: 44px; height: 44px; border: 2px solid #e5e7eb; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+        .event-day { font-size: 16px; font-weight: 800; color: #0a2540; line-height: 1; }
+        .event-month { font-size: 8px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+        .event-title { font-size: 13px; font-weight: 600; color: #0a2540; margin-bottom: 2px; }
+        .event-location { font-size: 11px; color: #9ca3af; }
+
+        /* ===== TABLE ===== */
+        .dgfd-table { width: 100%; border-collapse: collapse; }
+        .dgfd-table th { text-align: left; padding: 10px 8px; font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f3f4f6; }
+        .dgfd-table td { padding: 10px 8px; font-size: 12px; color: #374151; border-bottom: 1px solid #f9fafb; }
+        .dgfd-table tr:hover td { background: #f9fafb; }
+
+        /* ===== DOCS / SEARCH ===== */
+        .doc-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+        .doc-icon { width: 32px; height: 32px; background: #fef2f2; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #dc2626; font-size: 14px; flex-shrink: 0; }
+        .doc-title { font-size: 12px; font-weight: 600; color: #374151; line-height: 1.3; }
+        .doc-meta { font-size: 11px; color: #9ca3af; }
+        .search-box { width: 100%; padding: 10px 14px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #374151; background: #f9fafb; margin-bottom: 16px; font-family: inherit; }
+        .tags-title { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 10px; }
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag-item { padding: 6px 14px; background: white; border: 1px solid #e5e7eb; border-radius: 20px; font-size: 12px; color: #374151; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .tag-item:hover { background: #0a2540; color: white; border-color: #0a2540; }
+
+        /* ===== FOOTER ===== */
+        .dgfd-footer { background: #0a2540; color: white; padding: 3rem 4rem 1.5rem; margin-top: 3rem; }
+        .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 3rem; max-width: 1400px; margin: 0 auto 2rem; }
+        .footer-brand { display: flex; gap: 12px; margin-bottom: 12px; }
+        .footer-desc { font-size: 12px; color: #9ca3af; line-height: 1.6; }
+        .footer-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; color: white; }
+        .footer-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+        .footer-links a { color: #9ca3af; text-decoration: none; font-size: 12px; cursor: pointer; }
+        .footer-links a:hover { color: white; }
+        .footer-contact-item { display: flex; align-items: center; gap: 8px; color: #9ca3af; font-size: 12px; margin-bottom: 8px; }
+        .footer-social { display: flex; gap: 12px; margin-top: 12px; }
+        .footer-social-icon { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; text-decoration: none; }
+        .footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; font-size: 11px; color: #6b7280; }
+        .footer-bottom a { color: #9ca3af; text-decoration: none; margin-left: 20px; }
+
+        /* ===== LOGIN MODAL ===== */
+        .login-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(10,37,64,0.55);
+            z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(3px);
+        }
+        .login-overlay.open { display: flex; }
+        .login-box { background: white; border-radius: 14px; padding: 32px; width: 400px; max-width: 92vw; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+        .login-title { font-size: 18px; font-weight: 800; color: #0a2540; margin-bottom: 4px; }
+        .login-sub { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
+        .login-label { font-size: 12px; font-weight: 600; color: #374151; display: block; margin-bottom: 6px; }
+        .login-input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin-bottom: 14px; font-family: inherit; }
+        .login-input:focus { outline: 2px solid #0a2540; border-color: transparent; }
+        .login-btn { width: 100%; padding: 12px; background: #0a2540; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .login-btn:disabled { opacity: 0.6; cursor: wait; }
+        .login-error { display: none; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; padding: 8px 12px; font-size: 12px; margin-bottom: 14px; }
+        .login-note { font-size: 11px; color: #9ca3af; text-align: center; margin-top: 14px; }
+        .login-close { position: absolute; top: 10px; right: 12px; border: none; background: none; font-size: 18px; cursor: pointer; color: #6b7280; }
+        .login-box { position: relative; }
+
+        .loading-hint { color: #9ca3af; font-size: 12px; padding: 20px 0; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .hero-content { flex-direction: column; }
+            .dgfd-nav { display: none; }
+            .grid-3 { grid-template-columns: 1fr !important; }
+            .grid-2 { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .footer-grid { grid-template-columns: 1fr; }
+            .section-wrapper { padding: 1.5rem; }
+            .hero-section { padding: 2rem; }
+            .dgfd-header { padding: 0.5rem 1.5rem; }
+            .stats-section { padding: 1.5rem; }
+            .dgfd-footer { padding: 2rem 1.5rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <div class="dgfd-header">
+        <div class="dgfd-logo-text">
+            <div class="dgfd-logo-badge">🇧🇯</div>
+            <div>
+                <div class="dgfd-logo-title">DGFD</div>
+                <div class="dgfd-logo-subtitle">Direction Générale du Financement du Développement</div>
+                <div class="dgfd-logo-subtitle">RÉPUBLIQUE DU BÉNIN</div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 2rem;">
+            <div class="dgfd-nav">
+                <a class="active">Accueil</a>
+                <a onclick="openLogin('Projets')">Projets</a>
+                <a onclick="openLogin('Accords')">Accords</a>
+                <a onclick="openLogin('Partenaires')">Partenaires</a>
+                <a onclick="openLogin('Cartographie')">Cartographie</a>
+                <a onclick="openLogin('Rapports')">Rapports</a>
+                <a href="#actualites">Actualités</a>
+                <span style="color: #d1d5db;">🔍</span>
+            </div>
+            <button class="dgfd-btn-login" onclick="openLogin('Connexion')">🔒 Connexion</button>
+        </div>
+    </div>
+
+    <!-- ===== HERO ===== -->
+    <div class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-left">
+                <h1 class="hero-title">Plateforme Nationale du Financement du Développement</h1>
+                <p class="hero-subtitle">
+                    Une plateforme unique pour le suivi des accords, projets, partenaires techniques et financiers
+                    et indicateurs de développement du Bénin.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-green" onclick="openLogin('Gestion des projets')">📋 Consulter les projets</button>
+                    <button class="btn-white" onclick="openLogin('Tableau de bord')">📊 Tableau de bord</button>
+                </div>
+            </div>
+            <div class="today-box">
+                <div class="today-title">Aujourd'hui</div>
+                <div id="today-stats"><div class="loading-hint">Chargement…</div></div>
+                <a class="today-link" onclick="openLogin('Tableau de bord')">Voir le tableau de bord →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== STATS ===== -->
+    <div class="stats-section">
+        <div class="stats-grid" id="stats-grid">
+            <div class="loading-hint" style="grid-column:1/-1;">Chargement des statistiques…</div>
+        </div>
+    </div>
+
+    <!-- ===== ACTUALITES + PROJETS A LA UNE ===== -->
+    <div class="section-wrapper" id="actualites">
+        <div class="grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+            <div>
+                <div class="section-header">
+                    <div class="section-title">Actualités</div>
+                    <a class="section-link">Voir toutes →</a>
+                </div>
+                <div id="news-list"><div class="loading-hint">Chargement…</div></div>
+            </div>
+            <div>
+                <div class="section-header">
+                    <div class="section-title">Projets à la une</div>
+                    <a class="section-link" onclick="openLogin('Projets')">Voir tous →</a>
+                </div>
+                <div id="projects-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                    <div class="loading-hint" style="grid-column:1/-1;">Chargement…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CARTE + REPARTITION + CALENDRIER ===== -->
+    <div class="section-wrapper" style="padding-top: 1rem;">
+        <div class="grid-3" style="display: grid; grid-template-columns: 1.1fr 1fr 0.9fr; gap: 2rem;">
+            <div class="map-card">
+                <div class="section-title" style="margin-bottom: 8px; font-size: 16px;">Carte interactive</div>
+                <div style="font-size: 12px; color: #6b7280; margin-bottom: 10px;">Sélectionnez un département pour voir les projets</div>
+                <div class="map-select"><select id="dep-select"></select></div>
+                <div class="map-stats">
+                    <div><div class="map-stat-value" id="dep-projets">—</div><div class="map-stat-label">Projets</div></div>
+                    <div><div class="map-stat-value" id="dep-montant">—</div><div class="map-stat-label">Milliards FCFA</div></div>
+                </div>
+                <div class="map-partners-title">Principaux partenaires</div>
+                <div id="dep-partenaires"></div>
+                <br>
+                <a class="btn-white" style="padding: 8px 16px; font-size: 12px; display: inline-flex;" onclick="openLogin('Cartographie')">Voir tous les projets</a>
+            </div>
+            <div class="map-card">
+                <div class="section-title" style="margin-bottom: 8px; font-size: 16px;">Répartition des projets</div>
+                <div class="toggle-row">
+                    <button class="toggle-btn active">Par secteur</button>
+                    <button class="toggle-btn" onclick="openLogin('Rapports')">Par partenaire</button>
+                </div>
+                <div class="donut-wrap">
+                    <div class="donut" id="donut"></div>
+                    <div class="donut-hole">
+                        <div class="donut-center-value" id="donut-total">—</div>
+                        <div class="donut-center-label">Projets</div>
+                    </div>
+                </div>
+                <div class="legend-grid" id="donut-legend"></div>
+            </div>
+            <div class="map-card">
+                <div class="section-header" style="margin-bottom: 12px;">
+                    <div class="section-title" style="font-size: 16px;">Calendrier des événements</div>
+                    <a class="section-link">Voir tout →</a>
+                </div>
+                <div id="events-list"><div class="loading-hint">Chargement…</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ACCORDS + DOCUMENTS + RECHERCHE ===== -->
+    <div class="section-wrapper" style="padding-top: 1rem;">
+        <div class="grid-3" style="display: grid; grid-template-columns: 1.2fr 0.9fr 0.9fr; gap: 2rem;">
+            <div class="map-card">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <div class="section-title" style="font-size: 16px;">Derniers accords signés</div>
+                    <a class="section-link" onclick="openLogin('Accords')">Voir tous →</a>
+                </div>
+                <table class="dgfd-table">
+                    <thead><tr><th>Code Accord</th><th>Projet</th><th>Partenaire</th><th>Date</th></tr></thead>
+                    <tbody id="accords-body"><tr><td colspan="4" class="loading-hint">Chargement…</td></tr></tbody>
+                </table>
+            </div>
+            <div class="map-card">
+                <div class="section-header" style="margin-bottom: 8px;">
+                    <div class="section-title" style="font-size: 16px;">Documents récents</div>
+                    <a class="section-link">Voir tous →</a>
+                </div>
+                <div id="docs-list"><div class="loading-hint">Chargement…</div></div>
+            </div>
+            <div class="map-card">
+                <div class="section-title" style="margin-bottom: 12px; font-size: 16px;">Recherche rapide</div>
+                <input type="text" class="search-box" id="search-box" placeholder="Rechercher un projet, accord, partenaire...">
+                <div class="tags-title">Mots-clés populaires</div>
+                <div class="tag-list" id="tags-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <div class="dgfd-footer">
+        <div class="footer-grid">
+            <div>
+                <div class="footer-brand">
+                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🇧🇯</div>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 700; color: white;">DGFD</div>
+                        <div style="font-size: 10px; color: #9ca3af;">Direction Générale du Financement du Développement</div>
+                    </div>
+                </div>
+                <div class="footer-desc">Plateforme officielle de suivi des accords et projets de développement au Bénin.</div>
+            </div>
+            <div>
+                <div class="footer-title">Liens rapides</div>
+                <div class="footer-links">
+                    <a onclick="scrollTo({top:0,behavior:'smooth'})">Accueil</a>
+                    <a onclick="openLogin('Cartographie')">Cartographie</a>
+                    <a onclick="openLogin('Projets')">Projets</a>
+                    <a onclick="openLogin('Rapports')">Rapports</a>
+                    <a onclick="openLogin('Accords')">Accords</a>
+                    <a href="#actualites">Actualités</a>
+                    <a onclick="openLogin('Partenaires')">Partenaires</a>
+                    <a>Contact</a>
+                </div>
+            </div>
+            <div>
+                <div class="footer-title">Nous contacter</div>
+                <div class="footer-contact-item">📍 Palais de la Marina — 01 BP 302 Cotonou – Bénin</div>
+                <div class="footer-contact-item">📞 +229 21 30 10 20</div>
+                <div class="footer-contact-item">✉️ contact@dgfd.gov.bj</div>
+            </div>
+            <div>
+                <div class="footer-title">Suivez-nous</div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center;">🇧🇯</div>
+                    <div>
+                        <div style="font-size: 10px; font-weight: 700; color: white;">RÉPUBLIQUE DU BÉNIN</div>
+                        <div style="font-size: 9px; color: #9ca3af;">Fraternité - Justice - Travail</div>
+                    </div>
+                </div>
+                <div class="footer-social">
+                    <a class="footer-social-icon">f</a>
+                    <a class="footer-social-icon">in</a>
+                    <a class="footer-social-icon">▶</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div>© 2026 DGFD – Tous droits réservés</div>
+            <div>
+                <a>Mentions légales</a>
+                <a>Confidentialité</a>
+                <a>Plan du site</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== LOGIN MODAL ===== -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-box">
+            <button class="login-close" onclick="closeLogin()" title="Fermer">✕</button>
+            <div class="login-title">🔒 Connexion à l'espace de gestion</div>
+            <div class="login-sub" id="login-sub">Accédez à la gestion des projets et accords de la DGFD.</div>
+            <div class="login-error" id="login-error"></div>
+            <form id="login-form" onsubmit="return doLogin(event)">
+                <label class="login-label" for="login-id">Identifiant</label>
+                <input type="text" class="login-input" id="login-id" placeholder="Votre identifiant" autocomplete="username" required>
+                <label class="login-label" for="login-pwd">Mot de passe</label>
+                <input type="password" class="login-input" id="login-pwd" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                <button type="submit" class="login-btn" id="login-btn">Se connecter</button>
+            </form>
+            <div class="login-note">Accès libre pour le moment — tout identifiant est accepté.</div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // UTILITAIRES
+        // ============================================
+        function esc(v) {
+            return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function fetchWithRetry(url, options = {}, maxRetries = 3) {
+            for (let i = 0; i <= maxRetries; i++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.status === 502 && i < maxRetries) {
+                        await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+                        continue;
+                    }
+                    return res;
+                } catch (e) {
+                    if (i < maxRetries) {
+                        await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+                        continue;
+                    }
+                    throw e;
+                }
+            }
+        }
+
+        const ICON_CLASSES = { '📄': 'blue', '📁': 'green', '👥': 'purple', '🪙': 'yellow', '🏛️': 'teal', '✅': 'gray' };
+
+        // ============================================
+        // RENDU DES SECTIONS
+        // ============================================
+        function renderStats(STATS) {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = Object.values(STATS).map(s => `
+                <div class="stat-card">
+                    <div class="stat-icon ${ICON_CLASSES[s.icone] || 'blue'}">${esc(s.icone)}</div>
+                    <div>
+                        <div class="stat-value">${esc(s.valeur)}</div>
+                        <div class="stat-label">${esc(s.label)}</div>
+                        <div class="stat-sublabel">${esc(s.sublabel || '')}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderToday(TODAY_STATS) {
+            document.getElementById('today-stats').innerHTML = TODAY_STATS.map(t => `
+                <div class="today-item">
+                    <div class="today-icon">${esc(t.icone)}</div>
+                    <div>
+                        <div class="today-value">${esc(t.valeur)}</div>
+                        <div class="today-label">${esc(t.label)}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderNews(ACTUALITES) {
+            document.getElementById('news-list').innerHTML = (ACTUALITES || []).map(n => `
+                <div class="news-item">
+                    <img src="${esc(n.image)}" class="news-thumb" alt="" onerror="this.style.display='none'">
+                    <div>
+                        <div class="news-title">${esc(n.titre)}</div>
+                        <div class="news-date">${esc(n.date)}</div>
+                        <div class="news-excerpt">${esc(n.resume)}</div>
+                        <a class="news-readmore">Lire la suite →</a>
+                    </div>
+                </div>`).join('') || '<div class="loading-hint">Aucune actualité.</div>';
+        }
+
+        function renderProjets(PROJETS_UNE) {
+            document.getElementById('projects-grid').innerHTML = (PROJETS_UNE || []).map(p => `
+                <div class="project-card">
+                    <div style="position: relative;">
+                        <img src="${esc(p.image)}" class="project-image" alt="" onerror="this.style.display='none'">
+                        <span class="project-tag" style="background: ${esc(p.couleur)};">${esc(p.categorie)}</span>
+                    </div>
+                    <div class="project-body">
+                        <div class="project-title">${esc(p.titre)}</div>
+                        <div class="project-partner">${esc(p.partenaire)}</div>
+                        <div class="project-amount">${esc(p.montant)}</div>
+                        <a class="project-link" onclick="openLogin('Projets')">Voir le projet →</a>
+                    </div>
+                </div>`).join('') || '<div class="loading-hint" style="grid-column:1/-1;">Aucun projet.</div>';
+        }
+
+        let DEPARTEMENTS = {};
+        const PARTNER_COLORS = ['#28a745', '#1e5aa8', '#dc3545'];
+
+        function renderDepartements(deps) {
+            DEPARTEMENTS = deps || {};
+            const sel = document.getElementById('dep-select');
+            sel.innerHTML = Object.keys(DEPARTEMENTS).map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+            sel.onchange = () => showDepartement(sel.value);
+            if (Object.keys(DEPARTEMENTS).length) showDepartement(Object.keys(DEPARTEMENTS)[0]);
+        }
+
+        function showDepartement(dep) {
+            const d = DEPARTEMENTS[dep];
+            if (!d) return;
+            document.getElementById('dep-projets').textContent = d.projets;
+            document.getElementById('dep-montant').textContent = d.montant;
+            document.getElementById('dep-partenaires').innerHTML = (d.partenaires || []).map((p, i) =>
+                `<div class="partner-item"><span class="partner-dot" style="background:${PARTNER_COLORS[i % 3]}"></span>${esc(p)}</div>`).join('');
+        }
+
+        function renderDonut(REPARTITION) {
+            if (!REPARTITION) return;
+            const { Secteurs, Pourcentages, Couleurs, Total } = REPARTITION;
+            let acc = 0;
+            const stops = Secteurs.map((s, i) => {
+                const start = acc; acc += Pourcentages[i];
+                return `${Couleurs[i]} ${start}% ${acc}%`;
+            });
+            document.getElementById('donut').style.background = `conic-gradient(${stops.join(', ')})`;
+            document.getElementById('donut-total').textContent = Total;
+            document.getElementById('donut-legend').innerHTML = Secteurs.map((s, i) => `
+                <div class="legend-row">
+                    <span class="legend-dot" style="background:${Couleurs[i]}"></span>
+                    <span class="legend-label">${esc(s)}</span>
+                    <span class="legend-pct">${Pourcentages[i]}%</span>
+                </div>`).join('');
+        }
+
+        function renderEvents(EVENEMENTS) {
+            document.getElementById('events-list').innerHTML = (EVENEMENTS || []).map(e => `
+                <div class="event-item">
+                    <div class="event-date-box">
+                        <div class="event-day">${esc(e.jour)}</div>
+                        <div class="event-month">${esc(e.mois)}</div>
+                    </div>
+                    <div>
+                        <div class="event-title">${esc(e.titre)}</div>
+                        <div class="event-location">${esc(e.lieu)}</div>
+                    </div>
+                </div>`).join('') || '<div class="loading-hint">Aucun événement.</div>';
+        }
+
+        function renderAccords(ACCORDS) {
+            document.getElementById('accords-body').innerHTML = (ACCORDS || []).map(a => `
+                <tr>
+                    <td style="font-weight: 600; color: #0a2540;">${esc(a.code)}</td>
+                    <td>${esc(a.projet)}</td>
+                    <td>${esc(a.partenaire)}</td>
+                    <td style="white-space: nowrap;">${esc(a.date)}</td>
+                </tr>`).join('') || '<tr><td colspan="4" class="loading-hint">Aucun accord.</td></tr>';
+        }
+
+        function renderDocs(DOCUMENTS) {
+            document.getElementById('docs-list').innerHTML = (DOCUMENTS || []).map(d => `
+                <div class="doc-item">
+                    <div class="doc-icon">📄</div>
+                    <div>
+                        <div class="doc-title">${esc(d.titre)}</div>
+                        <div class="doc-meta">${esc(d.type)} · ${esc(d.taille)}</div>
+                    </div>
+                </div>`).join('') || '<div class="loading-hint">Aucun document.</div>';
+        }
+
+        function renderTags(MOTS_CLES) {
+            document.getElementById('tags-list').innerHTML = (MOTS_CLES || []).map(t =>
+                `<span class="tag-item" onclick="openLogin('Recherche')">${esc(t)}</span>`).join('');
+        }
+
+        // ============================================
+        // CHARGEMENT DES DONNEES
+        // ============================================
+        async function chargerAccueil() {
+            try {
+                const res = await fetchWithRetry('/api/accueil/data');
+                const data = await res.json();
+                if (data.STATS) renderStats(data.STATS);
+                if (data.TODAY_STATS) renderToday(data.TODAY_STATS);
+                renderNews(data.ACTUALITES);
+                renderProjets(data.PROJETS_UNE);
+                renderDepartements(data.DEPARTEMENTS);
+                renderDonut(data.REPARTITION);
+                renderEvents(data.EVENEMENTS);
+                if (data.ACCORDS) renderAccords(data.ACCORDS);
+                renderDocs(data.DOCUMENTS);
+                renderTags(data.MOTS_CLES);
+            } catch (e) {
+                document.getElementById('stats-grid').innerHTML =
+                    '<div class="loading-hint" style="grid-column:1/-1;">⚠️ Impossible de charger les données. Actualisez la page.</div>';
+            }
+        }
+
+        // Recherche rapide -> espace de gestion
+        document.getElementById('search-box').addEventListener('keydown', e => {
+            if (e.key === 'Enter') openLogin('Recherche');
+        });
+
+        // ============================================
+        // LOGIN (mode libre) -> /app
+        // ============================================
+        let loginContext = 'Connexion';
+
+        function openLogin(contexte) {
+            loginContext = contexte || 'Connexion';
+            document.getElementById('login-sub').textContent =
+                `Accédez à l'espace « ${loginContext} » de la plateforme DGFD.`;
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('login-overlay').classList.add('open');
+            setTimeout(() => document.getElementById('login-id').focus(), 100);
+        }
+
+        function closeLogin() {
+            document.getElementById('login-overlay').classList.remove('open');
+        }
+
+        document.getElementById('login-overlay').addEventListener('click', e => {
+            if (e.target.id === 'login-overlay') closeLogin();
+        });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogin(); });
+
+        async function doLogin(e) {
+            e.preventDefault();
+            const identifiant = document.getElementById('login-id').value.trim();
+            const mot_de_passe = document.getElementById('login-pwd').value;
+            const errBox = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            errBox.style.display = 'none';
+            if (!identifiant || !mot_de_passe) {
+                errBox.textContent = 'Veuillez saisir un identifiant et un mot de passe.';
+                errBox.style.display = 'block';
+                return false;
+            }
+            btn.disabled = true; btn.textContent = 'Connexion en cours…';
+            try {
+                const res = await fetchWithRetry('/api/accueil/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifiant, mot_de_passe })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(result.error || `Erreur serveur (HTTP ${res.status})`);
+                localStorage.setItem('sgiad_accueil_user', JSON.stringify({
+                    user: result.user || identifiant, connecte_le: new Date().toISOString()
+                }));
+                window.location.href = '/app';
+            } catch (err) {
+                errBox.textContent = 'Connexion impossible : ' + err.message;
+                errBox.style.display = 'block';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Se connecter';
+            }
+            return false;
+        }
+
+        chargerAccueil();
+    </script>
+</body>
+</html>

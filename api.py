@@ -26,6 +26,7 @@ from urllib.parse import unquote
 import pandas as pd
 import json
 import os
+import sys
 import time
 
 app = Flask(__name__)
@@ -49,7 +50,13 @@ ACCORDS_FILE  = os.path.join(BASE_DIR, 'Banque_Accords_V2.xlsx')
 
 # ── Servir les fichiers statiques (HTML, CSS, JS, assets) ──
 @app.route('/')
-def index():
+def accueil_public():
+    """Page d'accueil publique de la plateforme (visible par tous)."""
+    return send_file(os.path.join(BASE_DIR, 'accueil.html'))
+
+@app.route('/app')
+def app_interne():
+    """Application interne DGFD (accessible apres connexion depuis l'accueil)."""
     return send_file(os.path.join(BASE_DIR, 'index.html'))
 
 @app.route('/<path:filepath>')
@@ -62,6 +69,151 @@ def serve_static(filepath):
             resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         return resp
     return jsonify({"error": "Fichier introuvable"}), 404
+
+# ══════════════════════════════════════════════════════════════════════
+# PAGE D'ACCUEIL PUBLIQUE — DONNÉES DYNAMIQUES + LOGIN
+# ══════════════════════════════════════════════════════════════════════
+
+DGFD_PLATFORM_DIR = os.path.join(BASE_DIR, 'dgfd_platform_complete')
+
+
+def _load_accueil_content():
+    """Charge le contenu editorial (JSON) de la page d'accueil.
+    Le fichier dgfd_platform_complete/data/dgfd_data.json est cree avec
+    les valeurs par defaut s'il n'existe pas (meme logique que Streamlit)."""
+    if DGFD_PLATFORM_DIR not in sys.path:
+        sys.path.insert(0, DGFD_PLATFORM_DIR)
+    from data_manager import load_data
+    return load_data()
+
+
+def _compute_accueil_stats(rows):
+    """Calcule les statistiques dynamiques depuis les lignes accords_consolides."""
+    from datetime import date
+    annee_en_cours = date.today().year
+    premier_janvier = f'{annee_en_cours}-01-01'
+
+    def iso(v):
+        return str(v)[:10] if v else ''
+
+    total = len(rows)
+    actifs = 0
+    partenaires = set()
+    departements = set()
+    montant_fcfa = 0.0
+    annees_signature = []
+
+    for r in rows:
+        part = str(r.get('partenaire') or '').strip()
+        if part:
+            partenaires.add(part)
+        dep = str(r.get('departement') or '').strip()
+        if dep:
+            departements.add(dep)
+        try:
+            annees_signature.append(int(r.get('annee_signature')))
+        except (TypeError, ValueError):
+            pass
+        m = r.get('montant_total_fcfa')
+        if m is None:
+            m = r.get('cout_total_fcfa')
+        try:
+            montant_fcfa += float(m or 0)
+        except (TypeError, ValueError):
+            pass
+        # Projet actif = cloture (apres prorogation sinon initiale) >= 1er janvier
+        ref = iso(r.get('nouvelle_date_cloture')) or iso(r.get('date_cloture'))
+        if ref:
+            if ref >= premier_janvier:
+                actifs += 1
+            continue
+        try:
+            if int(r.get('annee_cloture')) >= annee_en_cours:
+                actifs += 1
+        except (TypeError, ValueError):
+            actifs += 1  # aucune cloture connue = actif
+
+    milliards = int(round(montant_fcfa / 1_000_000_000))
+    montant_str = f'{milliards:,}'.replace(',', ' ')
+    if annees_signature:
+        periode = f'{min(annees_signature)} - {max(annees_signature)}'
+    else:
+        periode = '2016 - 2025'
+
+    # Derniers accords signes (4 plus recents)
+    tries = sorted(
+        [r for r in rows if iso(r.get('date_signature'))],
+        key=lambda r: iso(r.get('date_signature')), reverse=True
+    )[:4]
+    accords_recents = []
+    for r in tries:
+        d = iso(r.get('date_signature'))
+        date_fr = f'{d[8:10]}/{d[5:7]}/{d[:4]}' if len(d) == 10 else d
+        objet = str(r.get('objet_accord') or r.get('code_projet') or '').strip()
+        if len(objet) > 70:
+            objet = objet[:67] + '...'
+        accords_recents.append({
+            'code': r.get('code_projet', ''),
+            'projet': objet,
+            'partenaire': str(r.get('partenaire') or '').strip(),
+            'date': date_fr,
+        })
+
+    stats = {
+        'accords_signes': {'valeur': total, 'label': 'Accords signés', 'sublabel': periode, 'icone': '📄'},
+        'projets_actifs': {'valeur': actifs, 'label': 'Projets actifs', 'sublabel': "En cours d'exécution", 'icone': '📁'},
+        'partenaires': {'valeur': len(partenaires), 'label': 'Partenaires techniques et financiers', 'sublabel': '', 'icone': '👥'},
+        'montant': {'valeur': montant_str, 'label': 'Milliards FCFA', 'sublabel': 'Montant total mobilisé', 'icone': '🪙'},
+        'departements': {'valeur': len(departements), 'label': 'Départements couverts', 'sublabel': '', 'icone': '🏛️'},
+        'projets_clotures': {'valeur': total - actifs, 'label': 'Projets clôturés', 'sublabel': 'Depuis 2016', 'icone': '✅'},
+    }
+    today_stats = [
+        {'icone': '📋', 'valeur': total, 'label': 'Accords enregistrés'},
+        {'icone': '🚀', 'valeur': actifs, 'label': 'Projets actifs'},
+        {'icone': '⚠️', 'valeur': montant_str, 'label': 'Montant mobilisé Milliards FCFA'},
+    ]
+    return {'STATS': stats, 'TODAY_STATS': today_stats, 'ACCORDS': accords_recents}
+
+
+@app.route('/api/accueil/data', methods=['GET'])
+def get_accueil_data():
+    """Donnees de la page d'accueil: contenu editorial (JSON) + stats reelles (Supabase)."""
+    try:
+        content = _load_accueil_content()
+    except Exception:
+        traceback.print_exc()
+        content = {}
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.table('accords_consolides').select(
+            'code_projet, partenaire, objet_accord, date_signature, annee_signature, '
+            'date_cloture, nouvelle_date_cloture, annee_cloture, '
+            'montant_total_fcfa, cout_total_fcfa, departement'
+        ).execute()
+        dyn = _compute_accueil_stats(resp.data or [])
+        content['STATS'] = dyn['STATS']
+        content['TODAY_STATS'] = dyn['TODAY_STATS']
+        if dyn['ACCORDS']:
+            content['ACCORDS'] = dyn['ACCORDS']
+        content['source'] = 'supabase'
+    except Exception:
+        traceback.print_exc()
+        content['source'] = 'defaut'  # valeurs par defaut du JSON
+    return jsonify(content)
+
+
+@app.route('/api/accueil/login', methods=['POST'])
+def accueil_login():
+    """Connexion depuis la page d'accueil — MODE LIBRE pour le moment :
+    tout identifiant/mot de passe non vide est accepte."""
+    data = request.get_json(force=True) or {}
+    identifiant = str(data.get('identifiant', '')).strip()
+    mot_de_passe = str(data.get('mot_de_passe', ''))
+    if not identifiant or not mot_de_passe:
+        return jsonify({'error': 'Identifiant et mot de passe requis'}), 400
+    return jsonify({'message': 'Connexion réussie', 'user': identifiant})
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # UTILITAIRES
