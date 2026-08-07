@@ -325,6 +325,29 @@
             overflow-y: auto;
         }
 
+        .export-widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            cursor: grab;
+            user-select: none;
+            padding: 4px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px dashed #ccc;
+        }
+
+        .export-widget-header:active {
+            cursor: grabbing;
+        }
+
+        .export-widget-header .drag-hint {
+            font-size: 10px;
+            color: #999;
+            margin-left: 8px;
+        }
+
         .exp-tab-content {
             display: none;
         }
@@ -978,9 +1001,10 @@
 
             <!-- EXPORT WIDGET -->
             <div id="export-widget" class="export-widget" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div class="export-widget-header" id="export-widget-drag-handle">
                     <h3 style="margin:0; font-size:13px; color:var(--secondary-green); font-weight:700;">
                         <i class="fas fa-file-export"></i> Export Personnalisé
+                        <span class="drag-hint">⋮⋮ glisser pour déplacer</span>
                     </h3>
                     <button onclick="document.getElementById('export-widget').style.display='none'" style="background:none; border:none; cursor:pointer; font-size:18px; color:#666;">✕</button>
                 </div>
@@ -1754,6 +1778,16 @@
             if (selAnneeCloture) {
                 selAnneeCloture.innerHTML = '<option value="">Toutes clôtures</option>' + yearsCloture.map(y => `<option value="${y}">${y}</option>`).join('');
             }
+
+            // Export widget year filters
+            const expFilterSig = getEl('exp-filter-Annee de signature');
+            if (expFilterSig) {
+                expFilterSig.innerHTML = '<option value="">-- Toutes --</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            }
+            const expFilterClot = getEl('exp-filter-Annee de cloture');
+            if (expFilterClot) {
+                expFilterClot.innerHTML = '<option value="">-- Toutes --</option>' + yearsCloture.map(y => `<option value="${y}">${y}</option>`).join('');
+            }
         }
 
         function updateStats() {
@@ -2148,11 +2182,24 @@
                         `<div id="exp-loc-selector-container" style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #e9ecef;"></div>`;
                 } else {
                     const selectFields = fields.filter(k => COLUMNS_BY_KEY[k] && COLUMNS_BY_KEY[k].type === 'select');
-                    if (selectFields.length > 0) {
-                        html += `<div class="exp-filter-grid">` + selectFields.map(k => `
-                            <div><label>Filtrer par ${k}</label>
-                                <select id="exp-filter-${k}" multiple size="3"><option value="">-- Tous --</option>${(COLUMNS_BY_KEY[k].options || []).map(o => `<option value="${o}">${o}</option>`).join('')}</select>
-                            </div>`).join('') + `</div>`;
+                    // Year filters for tabs 0 (signature) and 2 (closure)
+                    const yearFields = [];
+                    if (i === 0 && fields.includes('Annee de signature')) yearFields.push('Annee de signature');
+                    if (i === 2 && fields.includes('Annee de cloture')) yearFields.push('Annee de cloture');
+                    if (selectFields.length > 0 || yearFields.length > 0) {
+                        html += `<div class="exp-filter-grid">`;
+                        if (selectFields.length > 0) {
+                            html += selectFields.map(k => `
+                                <div><label>Filtrer par ${k}</label>
+                                    <select id="exp-filter-${k}" multiple size="3"><option value="">-- Tous --</option>${(COLUMNS_BY_KEY[k].options || []).map(o => `<option value="${o}">${o}</option>`).join('')}</select>
+                                </div>`).join('');
+                        }
+                        yearFields.forEach(yf => {
+                            html += `<div><label>Filtrer par ${yf}</label>
+                                <select id="exp-filter-${yf}" multiple size="3"><option value="">-- Toutes --</option></select>
+                            </div>`;
+                        });
+                        html += `</div>`;
                     }
                     html += `<div style="border-top:1px dashed #eee; padding-top:8px;">
                         <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
@@ -2532,6 +2579,48 @@ function resizeMap() {
         }, 300);
     }
 }
+
+// ============================================
+// DRAGGABLE EXPORT WIDGET
+// ============================================
+(function initDraggableExport() {
+    const widget = document.getElementById('export-widget');
+    const handle = document.getElementById('export-widget-drag-handle');
+    if (!widget || !handle) return;
+
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+
+    handle.addEventListener('mousedown', function(e) {
+        if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking the close button
+        isDragging = true;
+        const rect = widget.getBoundingClientRect();
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        widget.style.transition = 'none';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        widget.style.left = (initialLeft + dx) + 'px';
+        widget.style.top = (initialTop + dy) + 'px';
+        widget.style.right = 'auto';
+        widget.style.bottom = 'auto';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            widget.style.transition = '';
+            document.body.style.userSelect = '';
+        }
+    });
+})();
 
     </script>
 
