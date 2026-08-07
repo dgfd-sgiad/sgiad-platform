@@ -52,12 +52,16 @@ ACCORDS_FILE  = os.path.join(BASE_DIR, 'Banque_Accords_V2.xlsx')
 @app.route('/')
 def accueil_public():
     """Page d'accueil publique de la plateforme (visible par tous)."""
-    return send_file(os.path.join(BASE_DIR, 'accueil.html'))
+    resp = send_file(os.path.join(BASE_DIR, 'accueil.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/app')
 def app_interne():
     """Application interne DGFD (accessible apres connexion depuis l'accueil)."""
-    return send_file(os.path.join(BASE_DIR, 'index.html'))
+    resp = send_file(os.path.join(BASE_DIR, 'index.html'))
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
 
 @app.route('/<path:filepath>')
 def serve_static(filepath):
