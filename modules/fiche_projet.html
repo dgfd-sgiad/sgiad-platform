@@ -408,10 +408,10 @@ function chargerProjet(){
   var anneeSig=p['Annee de signature']||'';
   var anneeClot=p['Annee de cloture']||'...';
   $('kpi_duree').innerHTML=dureeMois+(anneeSig?'<small>('+anneeSig+'-'+anneeClot+')</small>':'');
-  /* Co-partenaires */
+  /* Co-partenaires : nom, montant engage, date de signature */
   var coparts=[];
-  for(var i=1;i<=7;i++){var cv=p['Co_Partenaire_'+i];if(cv&&cv.trim())coparts.push(cv);}
-  if(coparts.length)$('v_copartenaires').textContent=coparts.join(', ');
+  for(var i=1;i<=7;i++){var cv=p['Co_Partenaire_'+i];if(cv&&String(cv).trim()){var line='<b>'+String(cv)+'</b>';var m=p['Co_Partenaire_'+i+'_Montant'];if(m!==''&&m!=null&&!isNaN(Number(m)))line+=' — '+Number(m).toLocaleString('fr-FR')+' FCFA';var dt=p['Co_Partenaire_'+i+'_Date'];if(dt)line+=' <small>(signé le '+dt+')</small>';coparts.push('<div style="margin-bottom:3px">• '+line+'</div>');}}
+  if(coparts.length)$('v_copartenaires').innerHTML=coparts.join('');
   /* Tuiles ODD generees depuis la valeur en base */
   renderOddTiles(p['ODD']);
   /* 8. Suivi de la mise en œuvre */

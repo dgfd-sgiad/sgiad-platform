@@ -1041,9 +1041,9 @@
                         <div id="modal-tabs-body"></div>
 
                         <div style="grid-column:1/-1;margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
-                            <label style="font-weight:700;font-size:12px; display:block; margin-bottom:6px;">Co-partenaires (co-financiers) — 7 max</label>
+                            <label style="font-weight:700;font-size:12px; display:block; margin-bottom:6px;">Co-partenaires (co-financiers) — 7 max <span style="font-weight:400;font-size:10px;color:#888">(nom | montant engagé | date de signature)</span></label>
                             <div id="copartWrap" style="display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
-                            <button type="button" id="btnAddCopart" style="margin-top:8px;padding:6px 12px;border:1px solid #0e7a3a;color:#0e7a3a;background:#fff;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px;">
+                            <button type="button" id="btnAddCopart" onclick="addCopartRow('')" style="margin-top:8px;padding:6px 12px;border:1px solid #0e7a3a;color:#0e7a3a;background:#fff;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px;">
                                 + Ajouter un co-partenaire
                             </button>
                         </div>
@@ -1249,6 +1249,7 @@
 
         function frToIso(d) {
             if (!d) return '';
+            if (/^\d{4}-\d{2}-\d{2}/.test(String(d))) return String(d).substring(0, 10); // Deja en ISO
             const m = String(d).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
             if (!m) return '';
             return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
@@ -1339,11 +1340,7 @@
             applyFilters();
         });
 
-        // Bouton co-partenaire
-        const btnCopart = getEl('btnAddCopart');
-        if (btnCopart) {
-            btnCopart.addEventListener('click', () => addCopartRow(''));
-        }
+        // Bouton co-partenaire : onclick inline sur le bouton (robuste meme si le chargement initial echoue)
 
         console.log('✅ Banque de Projets initialisée');
 
@@ -2222,10 +2219,14 @@
         function addCopartRow(val) {
             const wrap = document.getElementById('copartWrap');
             if (!wrap || wrap.children.length >= 7) return;
+            const v = (val && typeof val === 'object') ? val : { nom: val || '' };
+            const safe = s => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
             const d = document.createElement('div');
-            d.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;';
+            d.style.cssText = 'display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;';
             d.innerHTML =
-                `<input type="text" name="Co_Partenaire_1" value="${(val||'').replace(/"/g,'&quot;')}" placeholder="Nom du co-partenaire" style="flex:1;padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
+                `<input type="text" value="${safe(v.nom)}" placeholder="Nom du co-partenaire" style="flex:2;min-width:160px;padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
+                `<input type="number" step="any" value="${safe(v.montant ?? '')}" placeholder="Montant engagé (FCFA)" style="flex:1;min-width:130px;padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
+                `<input type="date" value="${safe(v.date ?? '')}" title="Date de signature" style="padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
                 `<button type="button" title="Retirer" style="border:none;background:#d5251f;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;">✕</button>`;
             d.querySelector('button').onclick = function() { d.remove();
                 renumCopart(); };
@@ -2237,8 +2238,10 @@
             const wrap = document.getElementById('copartWrap');
             if (!wrap) return;
             Array.from(wrap.children).forEach((d, i) => {
-                const inp = d.querySelector('input');
-                if (inp) inp.name = `Co_Partenaire_${i + 1}`;
+                const inputs = d.querySelectorAll('input');
+                if (inputs[0]) inputs[0].name = `Co_Partenaire_${i + 1}`;
+                if (inputs[1]) inputs[1].name = `Co_Partenaire_${i + 1}_Montant`;
+                if (inputs[2]) inputs[2].name = `Co_Partenaire_${i + 1}_Date`;
             });
         }
 
@@ -2246,10 +2249,18 @@
             const wrap = document.getElementById('copartWrap');
             if (!wrap) return;
             wrap.innerHTML = '';
+            if (Array.isArray(p._copartners)) {
+                p._copartners.forEach(c => addCopartRow(c));
+                return;
+            }
             for (let i = 1; i <= 7; i++) {
                 const val = p[`Co_Partenaire_${i}`];
                 if (val && String(val).trim()) {
-                    addCopartRow(String(val));
+                    addCopartRow({
+                        nom: String(val),
+                        montant: p[`Co_Partenaire_${i}_Montant`] ?? '',
+                        date: frToIso(p[`Co_Partenaire_${i}_Date`] || '')
+                    });
                 }
             }
         };
@@ -2395,9 +2406,14 @@
                 const wrap = document.getElementById('copartWrap');
                 if (wrap) {
                     Array.from(wrap.children).forEach((d, i) => {
-                        const inp = d.querySelector('input');
-                        if (inp && inp.value.trim()) {
-                            payload[`Co_Partenaire_${i + 1}`] = inp.value.trim();
+                        const inputs = d.querySelectorAll('input');
+                        const nom = (inputs[0]?.value || '').trim();
+                        if (nom) {
+                            payload[`Co_Partenaire_${i + 1}`] = nom;
+                            const montant = (inputs[1]?.value || '').trim();
+                            if (montant) payload[`Co_Partenaire_${i + 1}_Montant`] = montant;
+                            const dte = (inputs[2]?.value || '').trim();
+                            if (dte) payload[`Co_Partenaire_${i + 1}_Date`] = dte; // ISO direct
                         }
                     });
                 }
@@ -3191,8 +3207,13 @@ function saveFormState() {
     const copartWrap = getEl('copartWrap');
     if (copartWrap) {
         formStateBeforeParamEdit._copartners = [];
-        copartWrap.querySelectorAll('input').forEach(inp => {
-            formStateBeforeParamEdit._copartners.push(inp.value);
+        copartWrap.querySelectorAll(':scope > div').forEach(d => {
+            const inputs = d.querySelectorAll('input');
+            formStateBeforeParamEdit._copartners.push({
+                nom: inputs[0]?.value || '',
+                montant: inputs[1]?.value || '',
+                date: inputs[2]?.value || ''
+            });
         });
     }
 }

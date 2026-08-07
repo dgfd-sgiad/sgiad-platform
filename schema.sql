@@ -93,6 +93,20 @@ CREATE TABLE accords_consolides (
     co_partenaire_5         TEXT,
     co_partenaire_6         TEXT,
     co_partenaire_7         TEXT,
+    co_partenaire_1_montant NUMERIC,
+    co_partenaire_1_date    DATE,
+    co_partenaire_2_montant NUMERIC,
+    co_partenaire_2_date    DATE,
+    co_partenaire_3_montant NUMERIC,
+    co_partenaire_3_date    DATE,
+    co_partenaire_4_montant NUMERIC,
+    co_partenaire_4_date    DATE,
+    co_partenaire_5_montant NUMERIC,
+    co_partenaire_5_date    DATE,
+    co_partenaire_6_montant NUMERIC,
+    co_partenaire_6_date    DATE,
+    co_partenaire_7_montant NUMERIC,
+    co_partenaire_7_date    DATE,
 
     -- Partenaire (coordonnees)
     adresse_partenaire      TEXT,
@@ -435,6 +449,20 @@ ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_4 TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_5 TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6 TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7 TEXT;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_1_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_1_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_2_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_2_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_3_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_3_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_4_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_4_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_5_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_5_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7_montant NUMERIC;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7_date DATE;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS adresse_partenaire TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS contact_partenaire TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS site_web_partenaire TEXT;

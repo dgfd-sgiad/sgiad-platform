@@ -100,6 +100,20 @@ ACCORDS_DISPLAY_TO_DB = {
     "Co_Partenaire_5": "co_partenaire_5",
     "Co_Partenaire_6": "co_partenaire_6",
     "Co_Partenaire_7": "co_partenaire_7",
+    "Co_Partenaire_1_Montant": "co_partenaire_1_montant",
+    "Co_Partenaire_1_Date": "co_partenaire_1_date",
+    "Co_Partenaire_2_Montant": "co_partenaire_2_montant",
+    "Co_Partenaire_2_Date": "co_partenaire_2_date",
+    "Co_Partenaire_3_Montant": "co_partenaire_3_montant",
+    "Co_Partenaire_3_Date": "co_partenaire_3_date",
+    "Co_Partenaire_4_Montant": "co_partenaire_4_montant",
+    "Co_Partenaire_4_Date": "co_partenaire_4_date",
+    "Co_Partenaire_5_Montant": "co_partenaire_5_montant",
+    "Co_Partenaire_5_Date": "co_partenaire_5_date",
+    "Co_Partenaire_6_Montant": "co_partenaire_6_montant",
+    "Co_Partenaire_6_Date": "co_partenaire_6_date",
+    "Co_Partenaire_7_Montant": "co_partenaire_7_montant",
+    "Co_Partenaire_7_Date": "co_partenaire_7_date",
     "Adresse partenaire": "adresse_partenaire",
     "Contact partenaire": "contact_partenaire",
     "Site web partenaire": "site_web_partenaire",
@@ -313,9 +327,17 @@ def _generate_columns_meta_fallback() -> list[dict]:
         'montant_don_fcfa', 'montant_total_fcfa', 'montant_total_devise',
         'duree_initiale_mois', 'nb_avenants', 'nb_prorogations',
         'taux_execution_physique', 'taux_decaissement',
+        'co_partenaire_1_montant', 'co_partenaire_2_montant',
+        'co_partenaire_3_montant', 'co_partenaire_4_montant',
+        'co_partenaire_5_montant', 'co_partenaire_6_montant',
+        'co_partenaire_7_montant',
     }
     DATE_FIELDS = {'date_signature', 'date_approbation', 'date_cloture',
-                   'date_demarrage', 'date_entree_vigueur'}
+                   'date_demarrage', 'date_entree_vigueur',
+                   'co_partenaire_1_date', 'co_partenaire_2_date',
+                   'co_partenaire_3_date', 'co_partenaire_4_date',
+                   'co_partenaire_5_date', 'co_partenaire_6_date',
+                   'co_partenaire_7_date'}
     READONLY_FIELDS = {'annee_cloture'}
     SELECT_FIELDS = {
         'modalite_intervention', 'secteur_principal', 'sous_secteur',
@@ -478,7 +500,7 @@ def _display_to_db(data: dict) -> dict:
         # Nettoyer les valeurs vides
         if value is not None and str(value).strip() not in ('', 'nan', 'None'):
             # Colonnes DATE : convertir le format francais JJ/MM/AAAA en ISO
-            if db_col.startswith('date_'):
+            if db_col.startswith('date_') or db_col.endswith('_date'):
                 m = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{4})$', str(value).strip())
                 if m:
                     value = f"{m.group(3)}-{m.group(2).zfill(2)}-{m.group(1).zfill(2)}"
@@ -503,7 +525,7 @@ def _db_to_display(row: dict) -> dict:
             continue
         display_key = ACCORDS_DB_TO_DISPLAY.get(db_col, db_col)
         # Convertir les dates
-        if isinstance(value, str) and 'T' in value and db_col.startswith('date_'):
+        if isinstance(value, str) and 'T' in value and (db_col.startswith('date_') or db_col.endswith('_date')):
             try:
                 dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
                 value = dt.strftime('%d/%m/%Y')
