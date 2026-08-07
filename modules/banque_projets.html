@@ -1228,17 +1228,21 @@
 
         const TAB_LABELS = [
             '1. Identification',
-            '2. Localisation',
-            '3. Calendrier',
-            '4. Financement',
-            '5. Partenaires & Classification',
-            '6. Coordination',
-            '7. Maturité',
-            '8. Suivi mise en œuvre'
+            '2. Description',
+            '3. Adresse partenaire',
+            '4. Localisation',
+            '5. Calendrier',
+            '6. Financement',
+            '7. Partenaires & Classification',
+            '8. Coordination',
+            '9. Maturité',
+            '10. Suivi mise en œuvre'
         ];
 
         const TAB_FIELDS = [
-            ['Code Projet', "Objet de l'accord", 'Objectif général', 'Objectifs spécifiques', 'Resultats attendues', 'Principales composantes', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Tutelle', 'Agence Exécution', 'Adresse partenaire', 'Contact partenaire', 'Site web partenaire', 'Source vérifiable'],
+            ['Code Projet', "Objet de l'accord", 'Partenaire', 'Sigle_Part', 'Tutelle', 'Agence Exécution', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention"],
+            ['Objectif général', 'Objectifs spécifiques', 'Resultats attendues', 'Principales composantes'],
+            ['Adresse partenaire', 'Contact partenaire', 'Site web partenaire', 'Source vérifiable'],
             ['Zone', 'Departement', 'Commune', 'Niveau'],
             ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Nouvelle date de clôture', 'Annee de cloture', 'Duree_Initiale_Mois'],
             ['Nature (Prêt/Don/Mixte)', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant_Total_FCFA', 'Devise', 'Montant total (devise)', 'Instrument de financement', 'APD Oui/non', 'TYPE DE FINANCEMENT'],
@@ -1248,7 +1252,7 @@
             ['Taux execution physique', 'Taux de decaissement', 'Niveau de risque', 'Nb avenants', 'Nb prorogations', 'Responsable de suivi', 'Chef de projet', 'Coordonnees', 'Observations']
         ];
 
-        const TAB_ICONS = ['📋', '📍', '📅', '💰', '🤝', '👥', '📈', '📊'];
+        const TAB_ICONS = ['📋', '📝', '🏢', '📍', '📅', '💰', '🤝', '👥', '📈', '📊'];
 
         // ============================================
         // UTILITAIRES
@@ -2265,17 +2269,13 @@
             TAB_FIELDS.forEach((fields, i) => {
                 html +=
                     `<div id="tab-${i}" class="tab-content form-grid${i === 0 ? ' active' : ''}">`;
-                if (i === 1) {
+                if (i === 3) {
                     html +=
                         `<div class="form-full"><label class="section-label">ZONE D'INTERVENTION</label><div id="loc-selector-container" style="background:#f8f9fa; padding:10px; border-radius:6px; border:1px solid #e9ecef;"></div></div>`;
                     html += fields.filter(f => f !== 'Zone').map(fieldInputHtml).join('');
-                } else if (i === 5) {
-                    html += `<div class="form-full" style="background:#e8f4fd; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:11px; color:#1a5276;">
-                        ℹ️ Ces champs sont en cours d'intégration dans la base de données. Les valeurs saisies seront stockées dans la colonne Notes.</div>`;
+                } else if (i === 7) {
                     html += COORDINATION_FIELDS.map(customFieldHtml).join('');
-                } else if (i === 6) {
-                    html += `<div class="form-full" style="background:#fef3c7; padding:8px 12px; border-radius:6px; margin-bottom:8px; font-size:11px; color:#92400e;">
-                        ℹ️ Ces champs sont en cours d'intégration dans la base de données. Les valeurs saisies seront stockées dans la colonne Notes.</div>`;
+                } else if (i === 8) {
                     html += MATURITE_FIELDS.map(customFieldHtml).join('');
                 } else {
                     html += fields.map(fieldInputHtml).join('');
