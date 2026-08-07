@@ -1901,15 +1901,10 @@
                 return;
             }
             const codes = Array.from(selectedCodes);
-            if (codes.length === 1) {
-                // Single project: open print directly
-                const w = window.open('fiche_projet.html?code=' + encodeURIComponent(codes[0]), '_blank');
-                if (w) { setTimeout(() => w.print(), 1500); }
-            } else {
-                // Multiple: open fiche modal with navigation
-                openBulkFiches();
-                showToast('Utilisez le bouton PDF pour chaque fiche', 'info');
-            }
+            // Un seul PDF avec toutes les fiches sélectionnées (1 fiche = 1 page)
+            const w = window.open('fiches_multi.html?codes=' + codes.map(encodeURIComponent).join(','), '_blank');
+            if (!w) showToast('Autorisez les fenêtres pop-up pour exporter', 'error');
+            else showToast(`${codes.length} fiche(s) en préparation - cliquez sur Imprimer dans la nouvelle page`, 'info');
         }
 
         async function bulkDelete() {
