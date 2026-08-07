@@ -145,13 +145,84 @@ def accords_delete(code_projet: str) -> bool:
 # METADATA COLONNES (remplace get_columns_meta())
 # ══════════════════════════════════════════════════════════════════════
 
+# ── Sync des valeurs depuis accords_consolides vers parametres ──
+_SYNCED = False
+
+def sync_parametres_from_data():
+    """Synchronise les valeurs distinctes de accords_consolides vers parametres.
+    Assure que chaque valeur d'un champ select dans les donnees existe dans
+    parametres, pour que la gestion (ajout/modif/suppr) fonctionne toujours.
+    Ne s'execute qu'une seule fois par demarrage.
+    """
+    global _SYNCED
+    if _SYNCED:
+        return
+    _SYNCED = True
+
+    SELECT_DISPLAY_TO_DB = {
+        'Secteur principal': 'secteur_principal',
+        'SOUS SECTEUR': 'sous_secteur',
+        "Modalit\u00e9 d'intervention": 'modalite_intervention',
+        'Nature (Pr\u00eat/Don/Mixte)': 'nature_pret_don_mixte',
+        'Devise': 'devise',
+        'APD Oui/non': 'apd_oui_non',
+        'TYPE DE FINANCEMENT': 'type_financement',
+        'TYPE DE CONTRIBUTEUR': 'type_contributeur',
+        'Instrument de financement': 'instrument_financement',
+        'Cible_ODD': 'cible_odd',
+        'AXE PAG': 'axe_pag',
+        'PILIER PAG': 'pilier_pag',
+        'ODD': 'odd',
+        'Pilier': 'pilier',
+        'STATUT (en cours, achev\u00e9, en approbation)': 'statut',
+        'Tutelle': 'tutelle',
+        'Agence Ex\u00e9cution': 'agence_execution',
+        'Partenaire': 'partenaire',
+    }
+
+    try:
+        sb = get_supabase()
+        # Recuperer toutes les valeurs existantes dans parametres
+        param_resp = sb.table('parametres').select('categorie', 'valeur').execute()
+        existing = set()
+        for row in (param_resp.data or []):
+            existing.add((str(row.get('categorie','')).strip(), str(row.get('valeur','')).strip()))
+
+        to_insert = []
+        for display_name, db_col in SELECT_DISPLAY_TO_DB.items():
+            try:
+                resp = sb.table('accords_consolides').select(db_col).execute()
+                for row in (resp.data or []):
+                    val = str(row.get(db_col, '')).strip()
+                    if val and (display_name, val) not in existing:
+                        to_insert.append({'categorie': display_name, 'valeur': val})
+                        existing.add((display_name, val))  # eviter doublon dans le batch
+            except Exception:
+                pass
+
+        if to_insert:
+            # Inserer par batch de 100
+            for i in range(0, len(to_insert), 100):
+                batch = to_insert[i:i+100]
+                sb.table('parametres').insert(batch).execute()
+            print(f"[sync_parametres] {len(to_insert)} valeurs synchronisees vers parametres")
+    except Exception as e:
+        print(f"[sync_parametres] Erreur: {e}")
+
+
 def get_columns_meta() -> list[dict]:
     """Retourne la metadata des colonnes pour le frontend.
     Remplace l'ancienne fonction qui lisait les en-tetes Excel.
     Lit depuis la table colonnes_meta si peuplee, sinon genere depuis
     ACCORDS_DISPLAY_TO_DB.
-    Fusionne ensuite avec les valeurs de la table parametres.
+    Synchronise puis utilise parametres comme source unique des options select.
     """
+    # Synchroniser les valeurs de accords_consolides vers parametres (one-time)
+    try:
+        sync_parametres_from_data()
+    except Exception:
+        pass
+
     sb = get_supabase()
     columns = None
     try:
@@ -164,7 +235,7 @@ def get_columns_meta() -> list[dict]:
                     'col_letter': '',
                     'type': r['col_type'],
                     'readonly': r['readonly'],
-                    'options': r['options'] or [],
+                    'options': [],  # sera rempli depuis parametres
                 }
                 for r in resp.data
             ]
@@ -175,11 +246,10 @@ def get_columns_meta() -> list[dict]:
         # Fallback: generer depuis le mapping statique
         columns = _generate_columns_meta_fallback()
 
-    # Fusionner avec les valeurs de la table parametres
+    # Utiliser parametres comme source unique des options pour les champs select
     try:
         param_resp = sb.table('parametres').select('categorie', 'valeur').execute()
         if param_resp.data:
-            # Grouper les valeurs par categorie
             from collections import defaultdict
             param_by_cat = defaultdict(set)
             for row in param_resp.data:
@@ -187,12 +257,10 @@ def get_columns_meta() -> list[dict]:
                 val = str(row.get('valeur', '')).strip()
                 if cat and val:
                     param_by_cat[cat].add(val)
-            # Fusionner dans les options des colonnes
+            # Remplacer les options des colonnes select par les valeurs de parametres
             for col in columns:
                 if col['type'] == 'select' and col['key'] in param_by_cat:
-                    existing = set(col.get('options') or [])
-                    merged = sorted(existing | param_by_cat[col['key']])
-                    col['options'] = merged
+                    col['options'] = sorted(param_by_cat[col['key']])
     except Exception:
         pass
 
