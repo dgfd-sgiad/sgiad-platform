@@ -2144,6 +2144,9 @@
             if (col.type === 'number') {
                 return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}${readonly ? ' (Auto)' : ''}</label><input type="number" name="${key}" class="form-input" step="any"${required}${readonly}></div>`;
             }
+            if (LIST_FIELD_LABELS[key]) {
+                return `<div class="form-full"><label class="section-label">${labelText} <span style="font-weight:400;font-size:10px;color:#888">(une ligne = une puce sur la fiche)</span></label><div class="dyn-list-wrap" data-list-field="${key}" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div><button type="button" class="btn-add-list-item" data-list-field="${key}" style="margin-top:8px;padding:6px 12px;border:1px solid #0e7a3a;color:#0e7a3a;background:#fff;border-radius:6px;cursor:pointer;font-weight:700;font-size:11px;">+ Ajouter un ${LIST_FIELD_LABELS[key]}</button></div>`;
+            }
             if (key === "Objet de l'accord" || key === 'Objectif général' || key === 'Observations') {
                 return `<div class="form-full"><label class="section-label${required ? ' required' : ''}">${labelText}</label><textarea name="${key}" class="form-input" rows="2"${required}${readonly}></textarea></div>`;
             }
@@ -2251,6 +2254,53 @@
             }
         };
 
+        // ── Listes dynamiques "une ligne = une puce" (objectifs, resultats, composantes) ──
+        const LIST_FIELD_LABELS = {
+            'Objectifs spécifiques': 'objectif spécifique',
+            'Resultats attendues': 'résultat attendu',
+            'Principales composantes': 'composante'
+        };
+
+        function addListItemRow(field, val) {
+            const wrap = document.querySelector(`.dyn-list-wrap[data-list-field="${field}"]`);
+            if (!wrap) return;
+            const d = document.createElement('div');
+            d.style.cssText = 'display:flex;gap:6px;align-items:center;';
+            const safeVal = String(val || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            d.innerHTML =
+                `<span style="color:#0e7a3a;font-weight:700;">•</span>` +
+                `<input type="text" value="${safeVal}" placeholder="${LIST_FIELD_LABELS[field] || ''}" class="form-input" style="flex:1;padding:7px 9px;border:1px solid #ccc;border-radius:6px;">` +
+                `<button type="button" title="Retirer" style="border:none;background:#d5251f;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;">✕</button>`;
+            d.querySelector('button').onclick = function() { d.remove(); };
+            wrap.appendChild(d);
+        }
+
+        function prefillListField(field, rawVal) {
+            const wrap = document.querySelector(`.dyn-list-wrap[data-list-field="${field}"]`);
+            if (!wrap) return;
+            wrap.innerHTML = '';
+            const items = String(rawVal || '').split(/\s*;\s*/).map(s => s.trim()).filter(Boolean);
+            if (items.length) {
+                items.forEach(x => addListItemRow(field, x));
+            } else {
+                addListItemRow(field, '');
+            }
+        }
+
+        function collectListField(field) {
+            const wrap = document.querySelector(`.dyn-list-wrap[data-list-field="${field}"]`);
+            if (!wrap) return '';
+            return Array.from(wrap.querySelectorAll('input'))
+                .map(inp => inp.value.trim())
+                .filter(Boolean)
+                .join('; ');
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-add-list-item');
+            if (btn) addListItemRow(btn.getAttribute('data-list-field'), '');
+        });
+
         let _scrollBeforeModal = 0; // Position scroll avant ouverture de la modal
 
         function openModal(code) {
@@ -2261,6 +2311,9 @@
 
             const wrap = document.getElementById('copartWrap');
             if (wrap) wrap.innerHTML = '';
+
+            // Listes a puces : vider puis remplir depuis les valeurs ';'
+            Object.keys(LIST_FIELD_LABELS).forEach(field => prefillListField(field, ''));
 
             switchTab(0);
 
@@ -2285,6 +2338,7 @@
                 });
                 if (p['Zone'] && modalLocSelector) modalLocSelector.loadEncodedString(p['Zone']);
                 if (window.prefillCopartenaires) window.prefillCopartenaires(p);
+                Object.keys(LIST_FIELD_LABELS).forEach(field => prefillListField(field, p[field]));
             } else {
                 getEl('modal-title').textContent = 'NOUVEL ACCORD';
             }
@@ -2347,6 +2401,11 @@
                         }
                     });
                 }
+
+                // Listes a puces : rejoindre les lignes avec '; ' (rendu en puces sur la fiche)
+                Object.keys(LIST_FIELD_LABELS).forEach(field => {
+                    payload[field] = collectListField(field);
+                });
 
                 payload['Zone'] = modalLocSelector ? modalLocSelector.getEncodedString() : '';
 
