@@ -150,13 +150,15 @@ def get_columns_meta() -> list[dict]:
     Remplace l'ancienne fonction qui lisait les en-tetes Excel.
     Lit depuis la table colonnes_meta si peuplee, sinon genere depuis
     ACCORDS_DISPLAY_TO_DB.
+    Fusionne ensuite avec les valeurs de la table parametres.
     """
     sb = get_supabase()
+    columns = None
     try:
         resp = sb.table('colonnes_meta').select('*').eq(
             'table_name', 'accords_consolides').order('col_order').execute()
         if resp.data:
-            return [
+            columns = [
                 {
                     'key': r['column_key'],
                     'col_letter': '',
@@ -169,8 +171,32 @@ def get_columns_meta() -> list[dict]:
     except Exception:
         pass
 
-    # Fallback: generer depuis le mapping statique
-    return _generate_columns_meta_fallback()
+    if columns is None:
+        # Fallback: generer depuis le mapping statique
+        columns = _generate_columns_meta_fallback()
+
+    # Fusionner avec les valeurs de la table parametres
+    try:
+        param_resp = sb.table('parametres').select('categorie', 'valeur').execute()
+        if param_resp.data:
+            # Grouper les valeurs par categorie
+            from collections import defaultdict
+            param_by_cat = defaultdict(set)
+            for row in param_resp.data:
+                cat = str(row.get('categorie', '')).strip()
+                val = str(row.get('valeur', '')).strip()
+                if cat and val:
+                    param_by_cat[cat].add(val)
+            # Fusionner dans les options des colonnes
+            for col in columns:
+                if col['type'] == 'select' and col['key'] in param_by_cat:
+                    existing = set(col.get('options') or [])
+                    merged = sorted(existing | param_by_cat[col['key']])
+                    col['options'] = merged
+    except Exception:
+        pass
+
+    return columns
 
 
 def _generate_columns_meta_fallback() -> list[dict]:
