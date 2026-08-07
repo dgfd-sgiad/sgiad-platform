@@ -911,6 +911,17 @@
                 </div>
             </header>
 
+            <!-- BARRE PORTEFEUILLE ACTIF -->
+            <div id="portfolio-bar" style="background:white; padding:10px 20px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                <label style="font-weight:800; font-size:12px; color:var(--primary-blue); white-space:nowrap;">📁 Portefeuille actif</label>
+                <select id="portfolio-select" class="form-input" style="min-width:280px; height:32px; font-size:11px;">
+                    <option value="">— Choisir un partenaire —</option>
+                </select>
+                <button onclick="openPortfolio()" style="height:32px; padding:0 14px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:11px;">📂 Ouvrir le portefeuille</button>
+                <button id="btn-close-portfolio" onclick="closePortfolio()" style="display:none; height:32px; padding:0 14px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:700; font-size:11px;">✕ Tous les projets</button>
+                <span id="portfolio-badge" style="display:none; background:#e8f5ee; color:#0e7a3a; font-weight:700; font-size:11px; padding:6px 12px; border-radius:20px; border:1px solid #0e7a3a;"></span>
+            </div>
+
             <!-- IMPORT ZONE -->
             <div id="import-zone" style="display:none; background:white; padding:12px 20px; margin-bottom:12px; border-left:4px solid #f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -1226,7 +1237,7 @@
         const TAB_FIELDS = [
             ['Code Projet', "Objet de l'accord", 'Objectif général', 'Objectifs spécifiques', 'Resultats attendues', 'Principales composantes', 'Secteur principal', 'SOUS SECTEUR', "Modalité d'intervention", 'Partenaire', 'Sigle_Part', 'Tutelle', 'Agence Exécution', 'Adresse partenaire', 'Contact partenaire', 'Site web partenaire', 'Source vérifiable'],
             ['Zone', 'Departement', 'Commune', 'Niveau'],
-            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Annee de cloture', 'Duree_Initiale_Mois'],
+            ['Annee de signature', 'Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Nouvelle date de clôture', 'Annee de cloture', 'Duree_Initiale_Mois'],
             ['Nature (Prêt/Don/Mixte)', 'Montant_Pret_FCFA', 'Montant_Don_FCFA', 'Montant_Total_FCFA', 'Devise', 'Montant total (devise)', 'Instrument de financement', 'APD Oui/non', 'TYPE DE FINANCEMENT'],
             ['TYPE DE CONTRIBUTEUR', 'AXE PAG', 'PILIER PAG', 'ODD', 'Cible_ODD', 'Pilier', 'STATUT (en cours, achevé, en approbation)'],
             [],
@@ -1387,6 +1398,7 @@
         selectedCodes.clear();
     }
     buildQuickFilters();
+    populatePortfolioOptions();
     applyFilters();
     updateStats();
     if (preserveState) {
@@ -1603,7 +1615,7 @@
             const departement = getEl('filter-departement')?.value || '';
             const commune = getEl('filter-commune')?.value || '';
 
-            return allProjets.filter(p => {
+            return getScopedProjets().filter(p => {
                 const matchTexte = !texte ||
                     (p['Code Projet'] || '').toLowerCase().includes(texte) ||
                     (p["Objet de l'accord"] || '').toLowerCase().includes(texte) ||
@@ -1633,7 +1645,67 @@
         }
 
         function applyFilters() {
-            renderFilteredTable(getFilteredProjets());
+            const rows = getFilteredProjets();
+            renderFilteredTable(rows);
+            if (window.activePortfolio) {
+                const badge = getEl('portfolio-badge');
+                if (badge) badge.textContent = `📂 ${window.activePortfolio} — ${rows.length} projet(s) actif(s)`;
+            }
+        }
+
+        // ============================================
+        // PORTEFEUILLE ACTIF (vue par partenaire)
+        // ============================================
+        window.activePortfolio = null;
+
+        // Un projet est actif si sa cloture (apres prorogation sinon date/annee de cloture)
+        // est posterieure au 1er janvier de l'annee en cours, ou inconnue.
+        function projetActif(p) {
+            const anneeEnCours = new Date().getFullYear();
+            const premierJanvier = anneeEnCours + '-01-01';
+            const dProrog = frToIso(p['Nouvelle date de clôture'] || '');
+            const dCloture = frToIso(p['Date de clôture'] || '');
+            const ref = dProrog || dCloture;
+            if (ref) return ref >= premierJanvier;
+            const anneeClot = parseInt(p['Annee de cloture'], 10);
+            if (!isNaN(anneeClot)) return anneeClot >= anneeEnCours;
+            return true; // aucune cloture connue = actif
+        }
+
+        function getScopedProjets() {
+            if (!window.activePortfolio) return allProjets;
+            return allProjets.filter(p => String(p['Partenaire'] || '').trim() === window.activePortfolio && projetActif(p));
+        }
+
+        function populatePortfolioOptions() {
+            const sel = getEl('portfolio-select');
+            if (!sel) return;
+            const current = window.activePortfolio || sel.value;
+            const partners = [...new Set(allProjets.map(p => String(p['Partenaire'] || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+            sel.innerHTML = '<option value="">— Choisir un partenaire —</option>';
+            partners.forEach(x => { const o = document.createElement('option'); o.value = x; o.textContent = x; sel.appendChild(o); });
+            if (current) sel.value = current;
+        }
+
+        function openPortfolio() {
+            const sel = getEl('portfolio-select');
+            const partner = sel ? sel.value : '';
+            if (!partner) { showToast('Sélectionnez d\'abord un partenaire', 'error'); return; }
+            window.activePortfolio = partner;
+            getEl('btn-close-portfolio').style.display = 'inline-block';
+            getEl('portfolio-badge').style.display = 'inline-block';
+            applyFilters();
+            updateStats();
+            showToast(`Portefeuille « ${partner} » ouvert (projets actifs uniquement)`, 'success');
+        }
+
+        function closePortfolio() {
+            window.activePortfolio = null;
+            if (getEl('portfolio-select')) getEl('portfolio-select').value = '';
+            getEl('btn-close-portfolio').style.display = 'none';
+            getEl('portfolio-badge').style.display = 'none';
+            applyFilters();
+            updateStats();
         }
 
         function resetFilters() {
@@ -1998,7 +2070,8 @@
         }
 
         function updateStats() {
-            if (!allProjets || allProjets.length === 0) {
+            const scopedProjets = getScopedProjets();
+            if (!scopedProjets || scopedProjets.length === 0) {
                 ['stat-total', 'stat-montant', 'stat-encours', 'stat-secteur'].forEach(id => {
                     if (getEl(id)) getEl(id).textContent = id === 'stat-montant' ? '0 FCFA' : (id === 'stat-secteur' ? '-' : '0');
                 });
@@ -2009,9 +2082,9 @@
                 return;
             }
 
-            const total = allProjets.length;
-            const montantTotal = allProjets.reduce((sum, p) => sum + parseNum(p['Montant_Total_FCFA']), 0);
-            const encours = allProjets.filter(p => (p['STATUT (en cours, achevé, en approbation)'] || '').toLowerCase().includes('cours')).length;
+            const total = scopedProjets.length;
+            const montantTotal = scopedProjets.reduce((sum, p) => sum + parseNum(p['Montant_Total_FCFA']), 0);
+            const encours = scopedProjets.filter(p => (p['STATUT (en cours, achevé, en approbation)'] || '').toLowerCase().includes('cours')).length;
 
             if (getEl('stat-total')) getEl('stat-total').textContent = total.toLocaleString('fr-BJ');
             if (getEl('stat-montant')) getEl('stat-montant').textContent =
@@ -2019,7 +2092,7 @@
             if (getEl('stat-encours')) getEl('stat-encours').textContent = encours.toLocaleString('fr-BJ');
 
             const secteurs = {};
-            allProjets.forEach(p => {
+            scopedProjets.forEach(p => {
                 const s = p[window._secteurKey || 'Secteur principal'] || 'Non défini';
                 secteurs[s] = (secteurs[s] || 0) + 1;
             });
@@ -2030,7 +2103,7 @@
             }
 
             const anneesData = {};
-            allProjets.forEach(p => {
+            scopedProjets.forEach(p => {
                 const a = p['Annee de signature'] || 'N/A';
                 if (!anneesData[a]) anneesData[a] = { count: 0, fcfa: 0 };
                 anneesData[a].count++;
@@ -2059,7 +2132,7 @@
             }
 
             const anneeFiltre = getEl('filter-annee-ptf')?.value || '';
-            const projetsFiltres = anneeFiltre ? allProjets.filter(p => String(p['Annee de signature']) === anneeFiltre) : allProjets;
+            const projetsFiltres = anneeFiltre ? scopedProjets.filter(p => String(p['Annee de signature']) === anneeFiltre) : scopedProjets;
             const ptfMontants = {};
             projetsFiltres.forEach(p => {
                 const ptf = p['Partenaire'] || 'Non défini';
@@ -2091,7 +2164,7 @@
             }
 
             const statutData = {};
-            allProjets.forEach(p => {
+            scopedProjets.forEach(p => {
                 const s = p['STATUT (en cours, achevé, en approbation)'] || 'Non défini';
                 statutData[s] = (statutData[s] || 0) + 1;
             });
@@ -2103,7 +2176,7 @@
             const refYear = parseInt(getEl('annee-reference')?.value);
             if (refYear && getEl('chart-encours')) {
                 let enCoursN = 0, cloturesN = 0, nonDemarresN = 0;
-                allProjets.forEach(p => {
+                scopedProjets.forEach(p => {
                     const sig = parseInt(p['Annee de signature']);
                     const clo = parseInt(p['Annee de cloture']);
                     if (!sig) return;

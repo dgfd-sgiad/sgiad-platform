@@ -90,6 +90,7 @@ ACCORDS_DISPLAY_TO_DB = {
     "Duree_Initiale_Mois": "duree_initiale_mois",
     "Date_Demarrage": "date_demarrage",
     "Date entree en vigueur": "date_entree_vigueur",
+    "Nouvelle date de clôture": "nouvelle_date_cloture",
     "Departement": "departement",
     "Commune": "commune",
     "Niveau": "niveau_intervention",
@@ -333,7 +334,7 @@ def _generate_columns_meta_fallback() -> list[dict]:
         'co_partenaire_7_montant',
     }
     DATE_FIELDS = {'date_signature', 'date_approbation', 'date_cloture',
-                   'date_demarrage', 'date_entree_vigueur',
+                   'date_demarrage', 'date_entree_vigueur', 'nouvelle_date_cloture',
                    'co_partenaire_1_date', 'co_partenaire_2_date',
                    'co_partenaire_3_date', 'co_partenaire_4_date',
                    'co_partenaire_5_date', 'co_partenaire_6_date',

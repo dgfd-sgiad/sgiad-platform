@@ -54,6 +54,7 @@ CREATE TABLE accords_consolides (
     date_signature          DATE,
     date_approbation        DATE,
     date_cloture            DATE,
+    nouvelle_date_cloture   DATE,
 
     -- Localisation
     zone                    TEXT,
@@ -463,6 +464,7 @@ ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6_montant 
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_6_date DATE;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7_montant NUMERIC;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS co_partenaire_7_date DATE;
+ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS nouvelle_date_cloture DATE;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS adresse_partenaire TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS contact_partenaire TEXT;
 ALTER TABLE accords_consolides ADD COLUMN IF NOT EXISTS site_web_partenaire TEXT;
@@ -499,5 +501,6 @@ VALUES
     ('accords_consolides', 'Responsable de suivi', 'responsable_suivi', 'text', FALSE, 114),
     ('accords_consolides', 'Chef de projet', 'chef_projet', 'text', FALSE, 115),
     ('accords_consolides', 'Coordonnees', 'coordonnees_chef', 'text', FALSE, 116),
-    ('accords_consolides', 'Observations', 'observations', 'text', FALSE, 117)
+    ('accords_consolides', 'Observations', 'observations', 'text', FALSE, 117),
+('accords_consolides', 'Nouvelle date de clôture', 'nouvelle_date_cloture', 'date', FALSE, 118)
 ON CONFLICT (table_name, column_key) DO NOTHING;
