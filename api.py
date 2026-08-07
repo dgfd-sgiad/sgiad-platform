@@ -534,38 +534,16 @@ def add_parametre_banque():
 @app.route('/api/banque/parametres/delete', methods=['POST'])
 def delete_parametre_banque():
     try:
-        data = request.json
+        data = request.get_json(force=True)
         colonne = str(data.get('colonne', '')).strip()
         valeur  = str(data.get('valeur', '')).strip()
         if not colonne or not valeur:
             return jsonify({"error": "Colonne et valeur requises"}), 400
 
-        # Supabase
-        try:
-            from db import get_supabase
-            sb = get_supabase()
-            sb.table('parametres').delete().eq(
-                'categorie', colonne).eq('valeur', valeur).execute()
-            return jsonify({"message": "Valeur supprimée"}), 200
-        except Exception as sb_err:
-            traceback.print_exc()
-            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
-
-        # Fallback Excel
-        wb = load_wb_safe(BANQUE_FILE)
-        if wb is None:
-            return jsonify({"error": "Fichier verrouillé."}), 503
-        ws = wb['Paramètres']
-        col_idx = next((i for i, c in enumerate(ws[1], 1) if c.value and str(c.value).strip().upper() == colonne.upper()), None)
-        if not col_idx:
-            wb.close(); return jsonify({"error": f"Colonne '{colonne}' introuvable"}), 404
-        row_to_delete = next(
-            (i for i, r in enumerate(ws.iter_rows(min_row=2, min_col=col_idx, max_col=col_idx, values_only=True), 2)
-             if r[0] and str(r[0]).strip().upper() == valeur.upper()), None)
-        if not row_to_delete:
-            wb.close(); return jsonify({"message": "Valeur non trouvée"}), 404
-        ws.delete_rows(row_to_delete, 1)
-        wb.save(BANQUE_FILE); wb.close()
+        from db import get_supabase
+        sb = get_supabase()
+        sb.table('parametres').delete().eq(
+            'categorie', colonne).eq('valeur', valeur).execute()
         return jsonify({"message": "Valeur supprimée"}), 200
     except Exception as e:
         traceback.print_exc()
