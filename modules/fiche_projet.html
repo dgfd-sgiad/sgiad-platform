@@ -125,7 +125,7 @@ footer .fb span{flex:1}
 </svg>
 
 <div class="actions-bar">
-  <button style="background:#6b7280" onclick="history.back()">← Retour</button>
+  <button style="background:#6b7280" onclick="fermerOuRetour()">← Retour</button>
   <button style="background:#0e7a3a" onclick="enregistrerHTML()">💾 Enregistrer</button>
   <button style="background:#d5251f" onclick="window.print()">📄 Télécharger PDF</button>
 </div>
@@ -335,6 +335,16 @@ if(code){fetch(API+'/api/accords-financiers/list?t='+Date.now()).then(function(r
   if(coparts.length)$('v_copartenaires').textContent=coparts.join(', ');
 }).catch(function(e){console.warn('API injoignable',e)});}
 function enregistrerHTML(){var c=document.documentElement.cloneNode(true);var b=c.querySelector('.actions-bar');if(b)b.remove();var blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FICHE_'+(code||'PROJET')+'.html';a.click();URL.revokeObjectURL(a.href);}
+/* ── Bouton Retour : ferme la modale si la fiche est ouverte dans l'iframe de banque_projets, sinon navigation classique ── */
+function fermerOuRetour(){
+  try {
+    if (window.self !== window.top && window.parent && typeof window.parent.closeFicheModal === 'function') {
+      window.parent.closeFicheModal();
+      return;
+    }
+  } catch(e) { /* cross-origin : fallback */ }
+  if (history.length > 1) { history.back(); } else { window.close(); }
+}
 </script>
 </body>
 </html>
