@@ -528,3 +528,19 @@ VALUES
     ('accords_consolides', 'Observations', 'observations', 'text', FALSE, 117),
 ('accords_consolides', 'Nouvelle date de clôture', 'nouvelle_date_cloture', 'date', FALSE, 118)
 ON CONFLICT (table_name, column_key) DO NOTHING;
+
+-- ══════════════════════════════════════════════════════════════════
+-- VEILLE DES ACCORDS : alertes détectées en ligne (GDELT / Google News)
+-- ══════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS veille_alertes (
+    id BIGSERIAL PRIMARY KEY,
+    url TEXT UNIQUE NOT NULL,
+    titre TEXT,
+    source TEXT,
+    date_article TEXT,
+    resume TEXT,
+    partenaire TEXT,
+    montant TEXT,
+    statut TEXT DEFAULT 'nouveau',
+    detecte_le TIMESTAMPTZ DEFAULT now()
+);

@@ -75,6 +75,13 @@ const modules = [
         icon: '📊',
         file: 'modules/rapports.html',
         actif: false
+    },
+    {
+        id: 'veille_accords',
+        title: 'Veille des Accords Signés',
+        icon: '📡',
+        file: 'modules/veille.html',
+        actif: true
     }
 ];
 const SECTEURS_SOUS_SECTEURS = {

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIAD - Veille des Accords Signés</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-blue: #0f4c81; --secondary-green: #27ae60; --bg-light: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-light); margin: 0; }
+        .top-header-tools { background: white; padding: 12px 20px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .btn-tool { height: 34px; padding: 0 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 11px; color: white; }
+        .stats-dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0 20px 14px; }
+        .stat-card { background: white; padding: 12px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-blue); }
+        .stat-card .lbl { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+        .stat-card .val { font-size: 20px; font-weight: 800; color: var(--primary-blue); }
+        .alertes-wrap { padding: 0 20px 30px; display: flex; flex-direction: column; gap: 10px; }
+        .alerte-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 14px 16px; border-left: 4px solid var(--secondary-green); }
+        .alerte-card .titre { font-weight: 700; font-size: 13px; color: #111827; margin-bottom: 6px; }
+        .alerte-card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .bg-blue { background: #dbeafe; color: #1e40af; } .bg-green { background: #dcfce7; color: #166534; }
+        .bg-gold { background: #fef3c7; color: #92400e; } .bg-gray { background: #f3f4f6; color: #374151; }
+        .alerte-card .resume { font-size: 12px; color: #374151; white-space: pre-line; margin-bottom: 8px; }
+        .alerte-card .infos { font-size: 11px; color: #6b7280; margin-bottom: 8px; }
+        .alerte-card a.lire { font-size: 11px; font-weight: 700; color: var(--secondary-green); text-decoration: none; }
+        .vide { text-align: center; color: #6b7280; padding: 40px; background: white; border-radius: 8px; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <aside class="sidebar-benin">
+            <div class="flag-stripes"><div class="stripe green"></div><div class="stripe yellow"></div><div class="stripe red"></div></div>
+            <div class="user-info-vertical"><p>Superviseur DGFD</p><button class="btn-disconnect" onclick="window.location.href='/'">Déconnexion</button></div>
+        </aside>
+
+        <main class="content-area">
+            <header class="top-header-tools">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">📡 Veille des Accords Signés</h1>
+                    <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="font-size:10px; color:#6b7280;">Scan automatique toutes les 6 h (GDELT + Google News)</span>
+                    <button class="btn-tool" style="background:var(--secondary-green);" onclick="scanner()">🔄 Scanner maintenant</button>
+                </div>
+            </header>
+
+            <div class="stats-dashboard">
+                <div class="stat-card"><div class="lbl">Alertes détectées</div><div class="val" id="st-total">—</div></div>
+                <div class="stat-card" style="border-left-color:var(--secondary-green)"><div class="lbl">Sources</div><div class="val" style="font-size:13px; padding-top:4px;">GDELT · Google News</div></div>
+                <div class="stat-card" style="border-left-color:#f28c00"><div class="lbl">IA / Notification</div><div class="val" style="font-size:12px; padding-top:4px;" id="st-ia">—</div></div>
+            </div>
+
+            <div class="alertes-wrap" id="alertes-list">
+                <div class="vide">Chargement des alertes…</div>
+            </div>
+        </main>
+    </div>
+
+<script>
+function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function chargerAlertes() {
+    const box = document.getElementById('alertes-list');
+    try {
+        const res = await fetch('/api/veille/alertes');
+        const json = await res.json();
+        const list = json.data || [];
+        document.getElementById('st-total').textContent = list.length;
+        document.getElementById('st-ia').textContent =
+            'Gemini : ' + ((window._cfg && window._cfg.gemini) ? 'active' : 'selon clé serveur') +
+            ' · Telegram : selon clé serveur';
+        if (!list.length) {
+            box.innerHTML = '<div class="vide">Aucune alerte pour le moment.<br>Cliquez sur « 🔄 Scanner maintenant » pour lancer une première détection des accords signés partagés en ligne.</div>';
+            return;
+        }
+        box.innerHTML = list.map(a => `
+            <div class="alerte-card">
+                <div class="titre">${esc(a.titre)}</div>
+                <div class="meta">
+                    <span class="badge bg-blue">${esc(a.source || 'source')}</span>
+                    <span class="badge bg-gray">${esc(a.date_article || '')}</span>
+                    <span class="badge bg-green">${esc(a.statut || 'nouveau')}</span>
+                </div>
+                ${a.resume ? `<div class="resume">🤖 ${esc(a.resume)}</div>` : ''}
+                <div class="infos">${a.partenaire ? '<b>Partenaire :</b> ' + esc(a.partenaire) + ' · ' : ''}${a.montant ? '<b>Montant :</b> ' + esc(a.montant) + ' · ' : ''}<b>Détecté le :</b> ${esc(String(a.detecte_le || '').substring(0, 16).replace('T', ' '))}</div>
+                <a class="lire" href="${esc(a.url)}" target="_blank" rel="noopener">Lire l'article source →</a>
+            </div>`).join('');
+    } catch (e) {
+        box.innerHTML = '<div class="vide">⚠️ Impossible de charger les alertes (serveur en démarrage ?). Réessayez dans quelques secondes.</div>';
+    }
+}
+
+async function scanner() {
+    const box = document.getElementById('alertes-list');
+    box.innerHTML = '<div class="vide">⏳ Scan en cours (presse en ligne)… cela prend quelques secondes.</div>';
+    try {
+        const res = await fetch('/api/veille/scan', { method: 'POST' });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
+        box.innerHTML = '<div class="vide">✅ ' + esc(json.message) + ' — chargement de la liste…</div>';
+        setTimeout(chargerAlertes, 800);
+    } catch (e) {
+        box.innerHTML = '<div class="vide">⚠️ Échec du scan : ' + esc(e.message) + '</div>';
+    }
+}
+
+chargerAlertes();
+</script>
+</body>
+</html>

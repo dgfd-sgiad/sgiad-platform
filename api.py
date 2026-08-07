@@ -28,6 +28,8 @@ import json
 import os
 import sys
 import time
+import threading
+import tempfile
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -229,6 +231,61 @@ def get_accueil_data():
 def api_ping():
     """Point de ping leger pour keep-alive (aucun effet de bord)."""
     return jsonify({'ok': True})
+
+
+# ══════════════════════════════════════════════════════════════════════
+# VEILLE DES ACCORDS SIGNÉS — détection en ligne gratuite (GDELT/Google News)
+# ══════════════════════════════════════════════════════════════════════
+
+@app.route('/api/veille/alertes', methods=['GET'])
+def veille_alertes():
+    """Liste des alertes de veille (accords signés détectés en ligne)."""
+    from db import get_supabase
+    sb = get_supabase()
+    resp = sb.table('veille_alertes').select('*').order('detecte_le', desc=True).limit(100).execute()
+    return jsonify({'data': resp.data or []})
+
+
+@app.route('/api/veille/scan', methods=['POST'])
+def veille_scan():
+    """Déclenche un scan manuel de la veille."""
+    from services import veille_service
+    try:
+        n = veille_service.scan_and_notify()
+        return jsonify({'message': f'{n} nouvelle(s) alerte(s) enregistrée(s)', 'nouvelles': n})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+def _veille_loop():
+    """Scan périodique (toutes les 6 h)."""
+    time.sleep(30)  # laisse le serveur démarrer
+    while True:
+        try:
+            from services import veille_service
+            n = veille_service.scan_and_notify()
+            print(f'[veille] scan terminé : {n} nouvelle(s) alerte(s)')
+        except Exception:
+            traceback.print_exc()
+        time.sleep(6 * 3600)
+
+
+def _demarrer_veille():
+    """Démarre le scan périodique dans un seul worker/processus."""
+    if app.debug and os.environ.get('WERKZEUG_RUN_MAIN') != 'true':
+        return  # processus parent du reloader local
+    try:
+        fd = os.open(os.path.join(tempfile.gettempdir(), 'sgiad_veille.lock'),
+                     os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        return  # un autre worker possède déjà la veille
+    threading.Thread(target=_veille_loop, daemon=True).start()
+    print('[veille] planificateur démarré (scan toutes les 6 h)')
+
+
+_demarrer_veille()
 
 
 @app.route('/api/accueil/login', methods=['POST'])
