@@ -9,6 +9,7 @@ gunicorn>=21.2
 # Base de donnees Supabase (PostgreSQL)
 supabase>=2.0
 python-dotenv>=1.0
+psycopg2-binary>=2.9
 
 # Excel (import/export, fallback)
 openpyxl>=3.1

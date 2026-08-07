@@ -14,6 +14,7 @@ DROP TRIGGER IF EXISTS trg_projets_updated_at ON projets;
 DROP TABLE IF EXISTS suivi_trimestriel CASCADE;
 DROP TABLE IF EXISTS colonnes_meta CASCADE;
 DROP TABLE IF EXISTS taux_change_historique CASCADE;
+DROP TABLE IF EXISTS secteur_sous_secteur CASCADE;
 DROP TABLE IF EXISTS session_log CASCADE;
 DROP TABLE IF EXISTS accords_consolides CASCADE;
 DROP TABLE IF EXISTS projets CASCADE;
@@ -284,6 +285,21 @@ CREATE TABLE projets (
     created_at  TIMESTAMPTZ DEFAULT NOW(),
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ============================================================
+-- TABLE: secteur_sous_secteur (relation secteurs -> sous-secteurs)
+-- Permet de lier des sous-secteurs à un secteur principal
+-- ============================================================
+CREATE TABLE secteur_sous_secteur (
+    id              SERIAL PRIMARY KEY,
+    secteur         TEXT NOT NULL,
+    sous_secteur    TEXT NOT NULL,
+    created_at      TIMESTAMPTZ DEFAULT NOW(),
+
+    UNIQUE(secteur, sous_secteur)
+);
+
+CREATE INDEX idx_secteur_sous ON secteur_sous_secteur(secteur);
 
 -- ============================================================
 -- TABLE: session_log (historique de connexions)

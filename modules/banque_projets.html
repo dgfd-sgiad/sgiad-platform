@@ -1079,6 +1079,28 @@
                         <div id="param-values-list" style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px;"></div>
                     </div>
                     
+                    <!-- Section sous-secteurs liés (visible seulement pour Secteur principal) -->
+                    <div id="secteur-sous-secteur-section" style="display:none; margin-top:15px; padding-top:12px; border-top:2px solid #e0e7ff;">
+                        <label style="font-size:12px; font-weight:700; color:#3730a3; display:block; margin-bottom:8px;">🔗 Sous-secteurs liés au secteur sélectionné</label>
+                        <div style="background:#eef2ff; padding:10px; border-radius:6px; border:1px solid #c7d2fe; margin-bottom:10px;">
+                            <div style="display:flex; gap:6px; align-items:end;">
+                                <div style="flex:1;">
+                                    <label style="font-size:10px; color:#4338ca; display:block; margin-bottom:3px;">Sélectionner un secteur :</label>
+                                    <select id="secteur-link-select" class="form-input" style="width:100%; height:30px; font-size:11px;" onchange="loadLinkedSousSecteurs()">
+                                        <option value="">-- Choisir --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="linked-sous-secteurs-container" style="margin-top:10px; display:none;">
+                                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                                    <input type="text" id="new-sous-secteur-input" class="form-input" placeholder="Nouveau sous-secteur..." style="flex:1; height:28px; font-size:11px;">
+                                    <button onclick="addLinkedSousSecteur()" style="padding:0 10px; background:#4f46e5; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px; height:28px;">Lier</button>
+                                </div>
+                                <div id="linked-sous-secteurs-list" style="max-height:150px; overflow-y:auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div style="margin-top:15px; padding-top:12px; border-top:1px solid #eee; text-align:right;">
                         <button onclick="closeParamManager()" style="padding:8px 15px; background:#6b7280; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Fermer</button>
                     </div>
@@ -2923,6 +2945,15 @@ function openParamManager(fieldKey, fieldLabel) {
     getEl('modal-param-manager').style.display = 'flex';
     
     loadParamValues(fieldKey);
+    
+    // Show secteur-sous-secteur section if managing Secteur principal
+    const secteurSection = getEl('secteur-sous-secteur-section');
+    if (fieldKey === 'Secteur principal') {
+        secteurSection.style.display = 'block';
+        populateSecteurLinkSelect();
+    } else {
+        secteurSection.style.display = 'none';
+    }
 }
 
 function closeParamManager() {
@@ -3111,6 +3142,152 @@ function updateSelectOptions(fieldKey) {
         }
     }
 }
+
+// ============================================
+// SECTEUR -> SOUS-SECTEUR LINKED MANAGEMENT
+// ============================================
+
+function populateSecteurLinkSelect() {
+    const select = getEl('secteur-link-select');
+    if (!select) return;
+    const col = COLUMNS_BY_KEY['Secteur principal'];
+    const options = col?.options || [];
+    select.innerHTML = '<option value="">-- Choisir --</option>' + options.map(o => `<option value="${o}">${o}</option>`).join('');
+    getEl('linked-sous-secteurs-container').style.display = 'none';
+}
+
+async function loadLinkedSousSecteurs() {
+    const secteur = getEl('secteur-link-select')?.value;
+    const container = getEl('linked-sous-secteurs-container');
+    const listEl = getEl('linked-sous-secteurs-list');
+    
+    if (!secteur) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    listEl.innerHTML = '<div style="text-align:center; padding:10px; color:#999; font-size:11px;">Chargement...</div>';
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
+        if (!res.ok) throw new Error('Erreur serveur');
+        const sousSecteurs = await res.json();
+        
+        if (sousSecteurs.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; padding:10px; color:#999; font-size:11px;">Aucun sous-secteur lié. Ajoutez-en un ci-dessus.</div>';
+            return;
+        }
+        
+        listEl.innerHTML = sousSecteurs.map(ss => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px; background:white; border-radius:3px; margin-bottom:3px; border:1px solid #e0e7ff;">
+                <span style="font-size:11px; color:#333;">${ss}</span>
+                <button onclick="deleteLinkedSousSecteur('${ss.replace(/'/g, "\\'")}')" title="Délier" style="padding:2px 5px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:9px;">✕</button>
+            </div>
+        `).join('');
+    } catch (e) {
+        listEl.innerHTML = `<div style="text-align:center; padding:10px; color:#dc2626; font-size:11px;">Erreur: ${e.message}</div>`;
+    }
+}
+
+async function addLinkedSousSecteur() {
+    const secteur = getEl('secteur-link-select')?.value;
+    const inputEl = getEl('new-sous-secteur-input');
+    const newSousSecteur = inputEl?.value.trim();
+    
+    if (!secteur) {
+        showToast('Veuillez sélectionner un secteur', 'error');
+        return;
+    }
+    if (!newSousSecteur) {
+        showToast('Veuillez saisir un sous-secteur', 'error');
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secteur, sous_secteur: newSousSecteur })
+        });
+        const data = await res.json();
+        
+        if (data.doublon) {
+            showToast(data.message || 'Ce sous-secteur est déjà lié', 'error');
+            return;
+        }
+        
+        if (res.ok) {
+            showToast('Sous-secteur lié avec succès', 'success');
+            inputEl.value = '';
+            loadLinkedSousSecteurs();
+            // Also update the sous-secteur filter options
+            updateSousSecteurFilterForSecteur(secteur);
+        } else {
+            showToast(data.error || 'Erreur', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    }
+}
+
+async function deleteLinkedSousSecteur(sousSecteur) {
+    const secteur = getEl('secteur-link-select')?.value;
+    if (!secteur) return;
+    if (!confirm(`Délier le sous-secteur "${sousSecteur}" de "${secteur}" ?`)) return;
+    
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ secteur, sous_secteur })
+        });
+        
+        if (res.ok) {
+            showToast('Liaison supprimée', 'success');
+            loadLinkedSousSecteurs();
+        } else {
+            const data = await res.json();
+            showToast(data.error || 'Erreur', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    }
+}
+
+// Update sous-secteur dropdown when secteur changes in the form
+async function updateSousSecteurFilterForSecteur(secteur) {
+    if (!secteur) return;
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
+        if (!res.ok) return;
+        const sousSecteurs = await res.json();
+        
+        // Update the sous-secteur select in the form
+        const ssKey = window._sousSecteurKey || 'SOUS SECTEUR';
+        const ssSelect = document.querySelector(`#form-projet select[data-field-key="${ssKey}"]`);
+        if (ssSelect && sousSecteurs.length > 0) {
+            const currentVal = ssSelect.value;
+            // Merge with existing options (from database column)
+            const col = COLUMNS_BY_KEY[ssKey];
+            const allOptions = [...new Set([...sousSecteurs, ...(col?.options || [])])].sort();
+            ssSelect.innerHTML = '<option value="">-- Sélectionner --</option>' + allOptions.map(o => `<option value="${o}">${o}</option>`).join('');
+            if (allOptions.includes(currentVal)) ssSelect.value = currentVal;
+        }
+    } catch (e) {
+        console.error('Error updating sous-secteur filter:', e);
+    }
+}
+
+// Listen for secteur changes in the form to update sous-secteur dropdown
+document.addEventListener('change', function(e) {
+    if (e.target.matches('#form-projet select[data-field-key="Secteur principal"]')) {
+        const secteur = e.target.value;
+        if (secteur) {
+            updateSousSecteurFilterForSecteur(secteur);
+        }
+    }
+});
 
     </script>
 

@@ -773,6 +773,95 @@ def reload_secteurs_sous_secteurs():
         return jsonify({"error": str(e)}), 500
 
 
+# ── CRUD: secteur_sous_secteur (table de relation explicite) ──
+
+@app.route('/api/banque/secteur_sous_secteur/list', methods=['GET'])
+def list_secteur_sous_secteur():
+    """Retourne toutes les relations secteur -> sous-secteur."""
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.table('secteur_sous_secteur').select('*').order('secteur').order('sous_secteur').execute()
+        return jsonify(resp.data or [])
+    except Exception as e:
+        # Table may not exist yet - return empty
+        if 'relation' in str(e) and 'does not exist' in str(e):
+            return jsonify([])
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/secteur_sous_secteur/by_secteur', methods=['GET'])
+def get_sous_secteurs_by_secteur():
+    """Retourne les sous-secteurs liés à un secteur donné."""
+    secteur = request.args.get('secteur', '').strip()
+    if not secteur:
+        return jsonify({"error": "Parametre 'secteur' requis"}), 400
+    try:
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.table('secteur_sous_secteur').select('sous_secteur').eq('secteur', secteur).order('sous_secteur').execute()
+        sous_secteurs = [r['sous_secteur'] for r in (resp.data or [])]
+        return jsonify(sous_secteurs)
+    except Exception as e:
+        if 'relation' in str(e) and 'does not exist' in str(e):
+            return jsonify([])
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/secteur_sous_secteur/add', methods=['POST'])
+def add_secteur_sous_secteur():
+    """Ajoute une relation secteur -> sous-secteur."""
+    try:
+        data = request.json
+        secteur = str(data.get('secteur', '')).strip()
+        sous_secteur = str(data.get('sous_secteur', '')).strip()
+        if not secteur or not sous_secteur:
+            return jsonify({"error": "Secteur et sous-secteur requis"}), 400
+
+        from db import get_supabase
+        sb = get_supabase()
+        # Verifier doublon
+        existing = sb.table('secteur_sous_secteur').select('id').eq(
+            'secteur', secteur).eq('sous_secteur', sous_secteur).execute()
+        if existing.data:
+            return jsonify({"message": f"Ce sous-secteur est déjà lié à '{secteur}'", "doublon": True}), 409
+        # Inserer
+        sb.table('secteur_sous_secteur').insert({
+            'secteur': secteur,
+            'sous_secteur': sous_secteur,
+        }).execute()
+        # Recharger le cache
+        get_secteurs_sous_secteurs(force_reload=True)
+        return jsonify({"message": "Sous-secteur lié", "secteur": secteur, "sous_secteur": sous_secteur}), 201
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/banque/secteur_sous_secteur/delete', methods=['POST'])
+def delete_secteur_sous_secteur():
+    """Supprime une relation secteur -> sous-secteur."""
+    try:
+        data = request.json
+        secteur = str(data.get('secteur', '')).strip()
+        sous_secteur = str(data.get('sous_secteur', '')).strip()
+        if not secteur or not sous_secteur:
+            return jsonify({"error": "Secteur et sous-secteur requis"}), 400
+
+        from db import get_supabase
+        sb = get_supabase()
+        sb.table('secteur_sous_secteur').delete().eq(
+            'secteur', secteur).eq('sous_secteur', sous_secteur).execute()
+        # Recharger le cache
+        get_secteurs_sous_secteurs(force_reload=True)
+        return jsonify({"message": "Liaison supprimée"}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # MODULE ACCORDS (Banque_Accords_V2.xlsx) - NON MIGRE
 # ══════════════════════════════════════════════════════════════════════════════
@@ -882,6 +971,54 @@ def get_coop_dec_echanges():
         df = df.replace({np.nan: None})
         return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTO-MIGRATION: Création des tables si elles n'existent pas
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _get_pg_connection():
+    """Connexion directe PostgreSQL via psycopg2 pour DDL."""
+    import psycopg2
+    url = os.environ.get('SUPABASE_URL', '')
+    # Extraire le project_ref de l'URL Supabase
+    # https://xxxxx.supabase.co -> xxxxx
+    project_ref = url.replace('https://', '').replace('.supabase.co', '').split('/')[0]
+    db_password = os.environ.get('SUPABASE_DB_PASSWORD', '')
+    if not db_password:
+        raise RuntimeError("SUPABASE_DB_PASSWORD manquant dans l'environnement")
+    return psycopg2.connect(
+        host=f'db.{project_ref}.supabase.co',
+        port=5432,
+        dbname='postgres',
+        user='postgres',
+        password=db_password
+    )
+
+
+@app.route('/api/setup/create-tables', methods=['POST'])
+def setup_create_tables():
+    """Crée les tables manquantes dans Supabase (one-time setup)."""
+    try:
+        conn = _get_PG_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS secteur_sous_secteur (
+                id              SERIAL PRIMARY KEY,
+                secteur         TEXT NOT NULL,
+                sous_secteur    TEXT NOT NULL,
+                created_at      TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(secteur, sous_secteur)
+            );
+            CREATE INDEX IF NOT EXISTS idx_secteur_sous ON secteur_sous_secteur(secteur);
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({"message": "Tables créées avec succès"}), 200
+    except Exception as e:
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
