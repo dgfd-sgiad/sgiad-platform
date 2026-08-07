@@ -534,7 +534,7 @@ def add_parametre_banque():
 @app.route('/api/banque/parametres/delete', methods=['POST'])
 def delete_parametre_banque():
     try:
-        data = request.get_json(force=True)
+        data = request.get_json(force=True) or {}
         colonne = str(data.get('colonne', '')).strip()
         valeur  = str(data.get('valeur', '')).strip()
         if not colonne or not valeur:
@@ -542,9 +542,46 @@ def delete_parametre_banque():
 
         from db import get_supabase
         sb = get_supabase()
+
+        # Mapping nom affiche -> colonne DB
+        DISPLAY_TO_DB = {
+            'Secteur principal': 'secteur_principal',
+            'SOUS SECTEUR': 'sous_secteur',
+            "Modalit\u00e9 d'intervention": 'modalite_intervention',
+            'Nature (Pr\u00eat/Don/Mixte)': 'nature_pret_don_mixte',
+            'Devise': 'devise',
+            'APD Oui/non': 'apd_oui_non',
+            'TYPE DE FINANCEMENT': 'type_financement',
+            'TYPE DE CONTRIBUTEUR': 'type_contributeur',
+            'Instrument de financement': 'instrument_financement',
+            'Cible_ODD': 'cible_odd',
+            'AXE PAG': 'axe_pag',
+            'PILIER PAG': 'pilier_pag',
+            'ODD': 'odd',
+            'Pilier': 'pilier',
+            'STATUT (en cours, achev\u00e9, en approbation)': 'statut',
+            'Tutelle': 'tutelle',
+            'Agence Ex\u00e9cution': 'agence_execution',
+            'Partenaire': 'partenaire',
+        }
+
+        # Verifier si la valeur est utilisee dans un projet
+        db_col = DISPLAY_TO_DB.get(colonne)
+        if db_col:
+            try:
+                check = sb.table('accords_consolides').select('id').eq(db_col, valeur).limit(1).execute()
+                if check.data and len(check.data) > 0:
+                    return jsonify({
+                        "error": f"Impossible de supprimer '{valeur}' : cette valeur est utilis\u00e9e dans un projet existant. Veuillez d'abord supprimer ou modifier le projet concern\u00e9.",
+                        "used_in_project": True
+                    }), 409
+            except Exception:
+                pass  # Si la verification echoue, on proceed quand meme
+
+        # Supprimer de parametres
         sb.table('parametres').delete().eq(
             'categorie', colonne).eq('valeur', valeur).execute()
-        return jsonify({"message": "Valeur supprimée"}), 200
+        return jsonify({"message": "Valeur supprim\u00e9e"}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500

@@ -1153,9 +1153,10 @@
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
-            toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+            toast.innerHTML = `<span>${icon}</span><span style="max-width:400px;">${message}</span>`;
             container.appendChild(toast);
-            setTimeout(() => { toast.remove(); }, 3200);
+            const duration = type === 'error' ? 6000 : 3200;
+            setTimeout(() => { toast.remove(); }, duration);
         }
 
         // Auth check
