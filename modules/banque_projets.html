@@ -971,6 +971,8 @@
             <!-- BULK BAR -->
             <div id="bulk-bar" class="bulk-bar">
                 <span class="bulk-count">0 sélectionné(s)</span>
+                <button onclick="openBulkFiches()" style="background:#0e7a3a;color:white;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:11px;">📄 Voir les fiches</button>
+                <button onclick="exportBulkPDF()" style="background:#d5251f;color:white;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:600;font-size:11px;">📥 Export PDF</button>
                 <button onclick="selectedCodes.clear(); renderFilteredTable(filteredData);">Désélectionner tout</button>
                 <button class="danger" onclick="bulkDelete()">🗑️ Supprimer la sélection</button>
             </div>
@@ -1106,6 +1108,26 @@
                     
                     <div style="margin-top:15px; padding-top:12px; border-top:1px solid #eee; text-align:right;">
                         <button onclick="closeParamManager()" style="padding:8px 15px; background:#6b7280; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px;">Fermer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL FICHE PROJET -->
+            <div id="modal-fiche-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:350;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+                <div style="background:white; border-radius:10px; width:95%; height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-bottom:2px solid var(--primary-blue); flex-shrink:0;">
+                        <h3 style="margin:0; color:var(--primary-blue); font-size:14px;">
+                            <i class="fas fa-file-alt"></i> <span id="fiche-modal-title">Fiche du Projet</span>
+                        </h3>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <button onclick="navigateFiche(-1)" id="btn-fiche-prev" title="Fiche précédente" style="padding:4px 10px; background:#e5e7eb; border:none; border-radius:4px; cursor:pointer; font-size:12px; display:none;">◀ Précédent</button>
+                            <button onclick="navigateFiche(1)" id="btn-fiche-next" title="Fiche suivante" style="padding:4px 10px; background:#e5e7eb; border:none; border-radius:4px; cursor:pointer; font-size:12px; display:none;">Suivant ▶</button>
+                            <button onclick="printCurrentFiche()" title="Imprimer / PDF" style="padding:4px 10px; background:#d5251f; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">📄 PDF</button>
+                            <button onclick="closeFicheModal()" style="background:none; border:none; cursor:pointer; font-size:20px; color:#666;">✕</button>
+                        </div>
+                    </div>
+                    <div style="flex:1; overflow:hidden; position:relative;">
+                        <iframe id="fiche-iframe" style="width:100%; height:100%; border:none;"></iframe>
                     </div>
                 </div>
             </div>
@@ -1673,6 +1695,11 @@
                 const code = p['Code Projet'];
                 const checked = selectedCodes.has(code) ? 'checked' : '';
                 const tr = document.createElement('tr');
+                tr.style.cursor = 'pointer';
+                tr.addEventListener('click', function(e) {
+                    if (e.target.closest('input,button')) return;
+                    openFicheModal(code);
+                });
                 tr.innerHTML = `
                     <td><input type="checkbox" class="bulk-check" data-code="${code}" ${checked} onclick="event.stopPropagation(); toggleBulkSelect('${code}')"></td>
                     <td><strong>${code || ''}</strong></td>
@@ -1683,7 +1710,7 @@
                     <td style="font-weight:bold;text-align:right">${montant}</td>
                     <td><span class="badge ${bc}">${statut}</span></td>
                     <td style="white-space:nowrap;">
-                        <button class="action-btn btn-fiche" onclick="event.stopPropagation(); window.open('fiche_projet.html?code=' + encodeURIComponent('${code}'), '_blank')" style="border:none;background:none;cursor:pointer;color:#0e7a3a;margin-right:8px;" title="Voir la Fiche Projet"><i class="fas fa-file-alt"></i></button>
+                        <button class="action-btn btn-fiche" onclick="event.stopPropagation(); openFicheModal('${code}')" style="border:none;background:none;cursor:pointer;color:#0e7a3a;margin-right:8px;" title="Voir la Fiche Projet"><i class="fas fa-file-alt"></i></button>
                         <button class="action-btn btn-edit" onclick="event.stopPropagation(); openModal('${code}')" style="border:none;background:none;cursor:pointer;color:#f59e0b;margin-right:8px;" title="Modifier"><i class="fas fa-edit"></i></button>
                         <button class="action-btn btn-delete" onclick="event.stopPropagation(); deleteProjet('${code}')" style="border:none;background:none;cursor:pointer;color:#ef4444;" title="Supprimer"><i class="fas fa-trash-alt"></i></button>
                     </td>`;
@@ -1763,6 +1790,96 @@
                 bar.classList.remove('visible');
             }
         }
+
+        // ============================================
+        // FICHE PROJET MODAL
+        // ============================================
+        let ficheList = []; // List of codes to navigate through
+        let ficheIndex = 0; // Current index in ficheList
+
+        function openFicheModal(code) {
+            ficheList = [code];
+            ficheIndex = 0;
+            const iframe = getEl('fiche-iframe');
+            iframe.src = 'fiche_projet.html?code=' + encodeURIComponent(code);
+            getEl('fiche-modal-title').textContent = 'Fiche - ' + code;
+            getEl('modal-fiche-projet').style.display = 'flex';
+            getEl('btn-fiche-prev').style.display = 'none';
+            getEl('btn-fiche-next').style.display = 'none';
+            document.addEventListener('keydown', ficheKeyHandler);
+        }
+
+        function openBulkFiches() {
+            if (selectedCodes.size === 0) {
+                showToast('Sélectionnez au moins un projet', 'error');
+                return;
+            }
+            ficheList = Array.from(selectedCodes);
+            ficheIndex = 0;
+            const iframe = getEl('fiche-iframe');
+            iframe.src = 'fiche_projet.html?code=' + encodeURIComponent(ficheList[0]);
+            getEl('fiche-modal-title').textContent = 'Fiche ' + (ficheIndex+1) + '/' + ficheList.length + ' - ' + ficheList[0];
+            getEl('modal-fiche-projet').style.display = 'flex';
+            updateFicheNavButtons();
+            document.addEventListener('keydown', ficheKeyHandler);
+        }
+
+        function navigateFiche(dir) {
+            ficheIndex += dir;
+            if (ficheIndex < 0) ficheIndex = ficheList.length - 1;
+            if (ficheIndex >= ficheList.length) ficheIndex = 0;
+            const code = ficheList[ficheIndex];
+            const iframe = getEl('fiche-iframe');
+            iframe.src = 'fiche_projet.html?code=' + encodeURIComponent(code);
+            getEl('fiche-modal-title').textContent = 'Fiche ' + (ficheIndex+1) + '/' + ficheList.length + ' - ' + code;
+            updateFicheNavButtons();
+        }
+
+        function updateFicheNavButtons() {
+            const show = ficheList.length > 1;
+            getEl('btn-fiche-prev').style.display = show ? 'inline-block' : 'none';
+            getEl('btn-fiche-next').style.display = show ? 'inline-block' : 'none';
+        }
+
+        function ficheKeyHandler(e) {
+            if (getEl('modal-fiche-projet').style.display === 'none') return;
+            if (e.key === 'Escape') closeFicheModal();
+            else if (e.key === 'ArrowLeft') navigateFiche(-1);
+            else if (e.key === 'ArrowRight') navigateFiche(1);
+        }
+
+        function closeFicheModal() {
+            getEl('modal-fiche-projet').style.display = 'none';
+            getEl('fiche-iframe').src = 'about:blank';
+            document.removeEventListener('keydown', ficheKeyHandler);
+        }
+
+        function printCurrentFiche() {
+            const iframe = getEl('fiche-iframe');
+            try {
+                iframe.contentWindow.print();
+            } catch(e) {
+                window.open(iframe.src, '_blank');
+            }
+        }
+
+        function exportBulkPDF() {
+            if (selectedCodes.size === 0) {
+                showToast('Sélectionnez au moins un projet', 'error');
+                return;
+            }
+            const codes = Array.from(selectedCodes);
+            if (codes.length === 1) {
+                // Single project: open print directly
+                const w = window.open('fiche_projet.html?code=' + encodeURIComponent(codes[0]), '_blank');
+                if (w) { setTimeout(() => w.print(), 1500); }
+            } else {
+                // Multiple: open fiche modal with navigation
+                openBulkFiches();
+                showToast('Utilisez le bouton PDF pour chaque fiche', 'info');
+            }
+        }
+
         async function bulkDelete() {
             if (selectedCodes.size === 0) return;
             if (!confirm(`Supprimer ${selectedCodes.size} accord(s) ?`)) return;
