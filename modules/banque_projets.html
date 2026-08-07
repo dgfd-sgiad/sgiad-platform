@@ -861,6 +861,9 @@
                     <select id="filter-annee" class="form-input" style="width:110px; height:32px; font-size:11px;">
                         <option value="">Toutes années</option>
                     </select>
+                    <select id="filter-annee-cloture" class="form-input" style="width:130px; height:32px; font-size:11px;">
+                        <option value="">Toutes clôtures</option>
+                    </select>
                     <select id="filter-departement" class="form-input" style="width:150px; height:32px; font-size:11px;">
                         <option value="">📍 Tous départements</option>
                     </select>
@@ -1178,7 +1181,8 @@
             'filter-type-contributeur',
             'filter-modalite',
             'filter-nature',
-            'filter-annee'
+            'filter-annee',
+            'filter-annee-cloture'
         ].forEach(id => {
             const el = getEl(id);
             if (el) el.addEventListener('change', () => {
@@ -1338,6 +1342,7 @@
             { id: 'filter-modalite',          keyFn: () => 'Modalité d\'intervention',                 placeholder: 'Toutes modalités' },
             { id: 'filter-nature',            keyFn: () => 'Nature (Prêt/Don/Mixte)',                   placeholder: 'Toutes natures' },
             { id: 'filter-annee',             keyFn: () => 'Annee de signature',                         placeholder: 'Toutes années' },
+            { id: 'filter-annee-cloture',     keyFn: () => 'Annee de cloture',                           placeholder: 'Toutes clôtures' },
         ];
 
         function updateAllFilterOptions() {
@@ -1456,6 +1461,7 @@
             const modalite = getEl('filter-modalite')?.value || '';
             const nature = getEl('filter-nature')?.value || '';
             const annee = getEl('filter-annee')?.value || '';
+            const anneeCloture = getEl('filter-annee-cloture')?.value || '';
             const departement = getEl('filter-departement')?.value || '';
             const commune = getEl('filter-commune')?.value || '';
 
@@ -1477,12 +1483,13 @@
                 const matchModalite = !modalite || p["Modalité d'intervention"] === modalite;
                 const matchNature = !nature || p['Nature (Prêt/Don/Mixte)'] === nature;
                 const matchAnnee = !annee || String(p['Annee de signature']) === annee;
+                const matchAnneeCloture = !anneeCloture || String(p['Annee de cloture']) === anneeCloture;
 
                 const matchZone = (!departement && !commune) ||
                     (commune ? window.zoneInterventionMatches(p['Zone'], [commune]) : window.zoneInterventionMatches(p['Zone'], [departement]));
 
                 return matchTexte && matchSecteur && matchSousSecteur && matchPtf && matchStatut && matchApd &&
-                    matchTypeFinancement && matchTypeContributeur && matchModalite && matchNature && matchAnnee && matchZone;
+                    matchTypeFinancement && matchTypeContributeur && matchModalite && matchNature && matchAnnee && matchAnneeCloture && matchZone;
             });
         }
 
@@ -1493,7 +1500,7 @@
         function resetFilters() {
             ['filter-texte'].forEach(id => { if (getEl(id)) getEl(id).value = ''; });
             ['filter-secteur', 'filter-sous-secteur', 'filter-ptf', 'filter-statut', 'filter-apd', 'filter-type-financement',
-                'filter-type-contributeur', 'filter-modalite', 'filter-nature', 'filter-annee'
+                'filter-type-contributeur', 'filter-modalite', 'filter-nature', 'filter-annee', 'filter-annee-cloture'
             ].forEach(id => { if (getEl(id)) getEl(id).value = ''; });
             if (getEl('filter-departement')) getEl('filter-departement').value = '';
             populateCommuneOptions();
@@ -1739,6 +1746,13 @@
             const selAnnee = getEl('filter-annee');
             if (selAnnee) {
                 selAnnee.innerHTML = '<option value="">Toutes années</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            }
+
+            // filter-annee-cloture (table filter)
+            const yearsCloture = [...new Set(allProjets.map(p => parseInt(p['Annee de cloture'])).filter(y => y && y > 1990 && y < 2100))].sort((a, b) => a - b);
+            const selAnneeCloture = getEl('filter-annee-cloture');
+            if (selAnneeCloture) {
+                selAnneeCloture.innerHTML = '<option value="">Toutes clôtures</option>' + yearsCloture.map(y => `<option value="${y}">${y}</option>`).join('');
             }
         }
 
