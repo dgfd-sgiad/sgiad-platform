@@ -1829,6 +1829,7 @@
             getEl('modal-fiche-projet').style.display = 'flex';
             getEl('btn-fiche-prev').style.display = 'none';
             getEl('btn-fiche-next').style.display = 'none';
+            document.removeEventListener('keydown', ficheKeyHandler);
             document.addEventListener('keydown', ficheKeyHandler);
         }
 
@@ -1844,6 +1845,7 @@
             getEl('fiche-modal-title').textContent = 'Fiche ' + (ficheIndex+1) + '/' + ficheList.length + ' - ' + ficheList[0];
             getEl('modal-fiche-projet').style.display = 'flex';
             updateFicheNavButtons();
+            document.removeEventListener('keydown', ficheKeyHandler);
             document.addEventListener('keydown', ficheKeyHandler);
         }
 
@@ -2705,13 +2707,14 @@
             };
 
             // Clic sur une ligne du tableau → ouvre la fiche
-            document.addEventListener('click', (e) => {
-                if (e.target.closest('button, a, input, select, textarea, label, #ficheOverlay')) return;
-                const row = e.target.closest('tbody tr');
-                if (!row || !row.cells || !row.cells[1] || !row.querySelector('button')) return;
-                const code = row.cells[1].textContent.trim();
-                if (code && code.trim()) ouvrirFicheProjet(code);
-            });
+            // (Désactivé : remplacé par openFicheModal via addEventListener sur chaque <tr>)
+            // document.addEventListener('click', (e) => {
+            //     if (e.target.closest('button, a, input, select, textarea, label, #ficheOverlay')) return;
+            //     const row = e.target.closest('tbody tr');
+            //     if (!row || !row.cells || !row.cells[1] || !row.querySelector('button')) return;
+            //     const code = row.cells[1].textContent.trim();
+            //     if (code && code.trim()) ouvrirFicheProjet(code);
+            // });
 
             // Barre du bas : réutilise les boutons de la ligne
             function clicBoutonLigne(code, type) {
@@ -2728,7 +2731,7 @@
             // Les boutons ficheBtnEdit/ficheBtnDelete sont attachés après le HTML (voir plus bas)
 
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') fermerFiche();
+                if (e.key === 'Escape' && document.getElementById('ficheOverlay').classList.contains('open')) fermerFiche();
             });
         })();
 
