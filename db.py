@@ -186,7 +186,7 @@ def _generate_columns_meta_fallback() -> list[dict]:
         'nature_pret_don_mixte', 'devise', 'apd_oui_non', 'type_financement',
         'type_contributeur', 'instrument_financement', 'cible_odd',
         'axe_pag', 'pilier_pag', 'odd', 'pilier', 'statut',
-        'tutelle', 'agence_execution',
+        'tutelle', 'agence_execution', 'partenaire',
     }
 
     # Pre-fetch distinct values for select fields

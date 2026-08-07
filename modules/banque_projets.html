@@ -1069,7 +1069,7 @@
                         <label style="font-size:11px; font-weight:700; color:#166534; display:block; margin-bottom:6px;">➕ Ajouter une valeur</label>
                         <div style="display:flex; gap:8px;">
                             <input type="text" id="param-new-value" class="form-input" placeholder="Nouvelle valeur..." style="flex:1; height:32px; font-size:12px;">
-                            <button onclick="addParamValue()" style="padding:0 15px; background:#16a34a; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px; height:32px;">Ajouter</button>
+                            <button onclick="handleAddParamValue()" style="padding:0 15px; background:#16a34a; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:11px; height:32px;">Ajouter</button>
                         </div>
                     </div>
                     
@@ -1998,7 +1998,7 @@
             const { key, label, type, options } = field;
             if (type === 'select') {
                 const opts = (options || []).map(o => `<option value="${o}">${o}</option>`).join('');
-                return `<div class="form-full"><label class="section-label">${label}</label><select name="${key}" class="form-input"><option value="">-- Sélectionner --</option>${opts}</select></div>`;
+                return `<div class="form-full"><div style="display:flex; gap:4px; align-items:end;"><div style="flex:1;"><label class="section-label">${label}</label><select name="${key}" class="form-input" data-custom-field="${key}" data-field-label="${label}"><option value="">-- Sélectionner --</option>${opts}</select></div><button type="button" class="btn-manage-custom-param" data-field-key="${key}" data-field-label="${label}" title="Gérer les valeurs" style="padding:4px 8px; background:#e0e7ff; color:#3730a3; border:1px solid #a5b4fc; border-radius:4px; cursor:pointer; font-size:11px; height:28px;">⚙️</button></div></div>`;
             }
             if (type === 'textarea') {
                 return `<div class="form-full"><label class="section-label">${label}</label><textarea name="${key}" class="form-input" rows="2"></textarea></div>`;
@@ -2722,6 +2722,7 @@ function resizeMap() {
 // PARAMETER MANAGER (Gestion des valeurs combobox)
 // ============================================
 let currentParamField = null; // Field being managed
+let isCustomParamField = false; // Whether it's a custom field (localStorage) or database field
 let formStateBeforeParamEdit = null; // Save form state
 
 // Event delegation for parameter management buttons
@@ -2731,7 +2732,144 @@ document.addEventListener('click', function(e) {
         const fieldLabel = e.target.dataset.fieldLabel;
         openParamManager(fieldKey, fieldLabel);
     }
+    // Custom field parameter management (Maturite, etc.)
+    if (e.target.classList.contains('btn-manage-custom-param')) {
+        const fieldKey = e.target.dataset.fieldKey;
+        const fieldLabel = e.target.dataset.fieldLabel;
+        openCustomParamManager(fieldKey, fieldLabel);
+    }
 });
+
+// Custom field parameter storage (localStorage for fields not in database)
+function getCustomParamOptions(fieldKey) {
+    const stored = localStorage.getItem(`sgiad_custom_params_${fieldKey}`);
+    if (stored) return JSON.parse(stored);
+    // Default options from MATURITE_FIELDS
+    const field = [...MATURITE_FIELDS, ...COORDINATION_FIELDS].find(f => f.key === fieldKey);
+    return field?.options || [];
+}
+
+function setCustomParamOptions(fieldKey, options) {
+    localStorage.setItem(`sgiad_custom_params_${fieldKey}`, JSON.stringify(options));
+}
+
+function openCustomParamManager(fieldKey, fieldLabel) {
+    currentParamField = fieldKey;
+    isCustomParamField = true;
+    saveFormState();
+    
+    getEl('param-manager-title').textContent = `Gérer : ${fieldLabel}`;
+    getEl('modal-param-manager').style.display = 'flex';
+    
+    loadCustomParamValues(fieldKey);
+}
+
+// Dispatcher for add button
+function handleAddParamValue() {
+    if (isCustomParamField) {
+        addCustomParamValue();
+    } else {
+        addParamValue();
+    }
+}
+
+function loadCustomParamValues(fieldKey) {
+    const listEl = getEl('param-values-list');
+    const countEl = getEl('param-count');
+    const values = getCustomParamOptions(fieldKey);
+    
+    countEl.textContent = values.length;
+    
+    if (values.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur. Ajoutez-en une ci-dessus.</div>';
+        return;
+    }
+    
+    listEl.innerHTML = values.map(v => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
+            <span style="font-size:12px; color:#333;">${v}</span>
+            <div style="display:flex; gap:4px;">
+                <button onclick="editCustomParamValue('${v.replace(/'/g, "\\'")}')" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                <button onclick="deleteCustomParamValue('${v.replace(/'/g, "\\'")}')" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function addCustomParamValue() {
+    const inputEl = getEl('param-new-value');
+    const newValue = inputEl.value.trim();
+    if (!newValue) {
+        showToast('Veuillez saisir une valeur', 'error');
+        return;
+    }
+    if (!currentParamField) return;
+    
+    const values = getCustomParamOptions(currentParamField);
+    
+    // Check duplicate (case-insensitive)
+    const exists = values.some(o => o.toLowerCase() === newValue.toLowerCase());
+    if (exists) {
+        showToast(`Cette valeur existe déjà : '${newValue}'`, 'error');
+        inputEl.focus();
+        inputEl.select();
+        return;
+    }
+    
+    values.push(newValue);
+    setCustomParamOptions(currentParamField, values);
+    
+    showToast('Valeur ajoutée', 'success');
+    inputEl.value = '';
+    loadCustomParamValues(currentParamField);
+    updateCustomSelectOptions(currentParamField, values);
+}
+
+function editCustomParamValue(oldValue) {
+    const newValue = prompt('Modifier la valeur :', oldValue);
+    if (!newValue || newValue.trim() === '' || newValue.trim() === oldValue) return;
+    
+    const values = getCustomParamOptions(currentParamField);
+    
+    // Check duplicate
+    const exists = values.some(o => o.toLowerCase() === newValue.trim().toLowerCase() && o !== oldValue);
+    if (exists) {
+        showToast(`Cette valeur existe déjà : '${newValue.trim()}'`, 'error');
+        return;
+    }
+    
+    const idx = values.indexOf(oldValue);
+    if (idx !== -1) {
+        values[idx] = newValue.trim();
+        setCustomParamOptions(currentParamField, values);
+        showToast('Valeur modifiée', 'success');
+        loadCustomParamValues(currentParamField);
+        updateCustomSelectOptions(currentParamField, values);
+    }
+}
+
+function deleteCustomParamValue(value) {
+    if (!confirm(`Supprimer la valeur "${value}" ?`)) return;
+    
+    const values = getCustomParamOptions(currentParamField);
+    const newValues = values.filter(v => v !== value);
+    setCustomParamOptions(currentParamField, newValues);
+    
+    showToast('Valeur supprimée', 'success');
+    loadCustomParamValues(currentParamField);
+    updateCustomSelectOptions(currentParamField, newValues);
+}
+
+function updateCustomSelectOptions(fieldKey, options) {
+    document.querySelectorAll(`#form-projet select[data-custom-field="${fieldKey}"]`).forEach(select => {
+        const currentValue = select.value;
+        const opts = options.map(o => `<option value="${o}">${o}</option>`).join('');
+        select.innerHTML = `<option value="">-- Sélectionner --</option>${opts}`;
+        if (options.includes(currentValue)) {
+            select.value = currentValue;
+        }
+    });
+}
 
 function saveFormState() {
     const form = getEl('form-projet');
@@ -2778,6 +2916,7 @@ function restoreFormState() {
 
 function openParamManager(fieldKey, fieldLabel) {
     currentParamField = fieldKey;
+    isCustomParamField = false;
     saveFormState();
     
     getEl('param-manager-title').textContent = `Gérer : ${fieldLabel}`;
