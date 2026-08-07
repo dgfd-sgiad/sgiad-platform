@@ -3005,15 +3005,27 @@ async function loadParamValues(fieldKey) {
     listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Chargement...</div>';
     
     try {
-        // Get values from COLUMNS_BY_KEY
-        const col = COLUMNS_BY_KEY[fieldKey];
-        if (!col || !col.options) {
-            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#999;">Aucune valeur disponible</div>';
-            countEl.textContent = '0';
-            return;
+        // Fetch directly from parametres table via API
+        const res = await fetch(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
+        let values = [];
+        if (res.ok) {
+            const data = await res.json();
+            // data is either a list (if categorie filter) or an object grouped by categorie
+            if (Array.isArray(data)) {
+                values = data;
+            } else if (data[fieldKey]) {
+                values = data[fieldKey];
+            }
         }
         
-        const values = col.options || [];
+        // Fallback to COLUMNS_BY_KEY if API returns nothing
+        if (values.length === 0) {
+            const col = COLUMNS_BY_KEY[fieldKey];
+            if (col && col.options) {
+                values = col.options;
+            }
+        }
+        
         countEl.textContent = values.length;
         
         if (values.length === 0) {
@@ -3200,6 +3212,19 @@ async function refreshColumnOptions(fieldKey) {
         }
     } catch (e) {
         console.error('Error refreshing column options:', e);
+    }
+    // Also directly fetch from parametres to ensure the field options are up-to-date
+    try {
+        const res = await fetch(`${window.location.origin}/api/banque/parametres?categorie=${encodeURIComponent(fieldKey)}&_t=${Date.now()}`);
+        if (res.ok) {
+            const data = await res.json();
+            const values = Array.isArray(data) ? data : (data[fieldKey] || []);
+            if (values.length > 0 && COLUMNS_BY_KEY[fieldKey]) {
+                COLUMNS_BY_KEY[fieldKey].options = values;
+            }
+        }
+    } catch (e) {
+        console.error('Error refreshing parametres options:', e);
     }
 }
 

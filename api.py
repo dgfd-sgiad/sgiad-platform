@@ -458,10 +458,12 @@ def delete_projet_banque(code):
 
 @app.route('/api/banque/parametres', methods=['GET'])
 def get_parametres_banque():
-    """Retourne les parametres (Supabase avec fallback Excel)."""
+    """Retourne les parametres (Supabase avec fallback Excel).
+    Supporte ?categorie=XXX pour filtrer par categorie."""
+    categorie = request.args.get('categorie', '').strip() or None
     try:
         from db import get_parametres
-        params = get_parametres()
+        params = get_parametres(categorie=categorie)
         return jsonify(params)
     except Exception:
         # Fallback Excel
@@ -470,6 +472,8 @@ def get_parametres_banque():
             params = {}
             for col in df.columns:
                 params[col] = [x for x in df[col].dropna().unique().tolist() if str(x).strip() != '']
+            if categorie and categorie in params:
+                return jsonify(params[categorie])
             return jsonify(params)
         except Exception as e2:
             return jsonify({"error": str(e2)}), 500
