@@ -2837,6 +2837,18 @@ async function addParamValue() {
     }
     if (!currentParamField) return;
     
+    // Client-side duplicate check (case-insensitive)
+    const col = COLUMNS_BY_KEY[currentParamField];
+    if (col && col.options) {
+        const exists = col.options.some(o => o.toLowerCase() === newValue.toLowerCase());
+        if (exists) {
+            showToast(`Cette valeur existe déjà : '${newValue}'`, 'error');
+            inputEl.focus();
+            inputEl.select();
+            return;
+        }
+    }
+    
     try {
         const res = await fetch(`${window.location.origin}/api/banque/parametres/add`, {
             method: 'POST',
@@ -2846,7 +2858,7 @@ async function addParamValue() {
         const data = await res.json();
         
         if (data.doublon) {
-            showToast('Cette valeur existe déjà', 'error');
+            showToast(data.message || `La valeur '${newValue}' existe déjà`, 'error');
             return;
         }
         
