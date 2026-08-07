@@ -1075,7 +1075,10 @@
                     
                     <!-- Liste des valeurs -->
                     <div>
-                        <label style="font-size:11px; font-weight:700; color:#333; display:block; margin-bottom:8px;">📋 Valeurs existantes (<span id="param-count">0</span>)</label>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <label style="font-size:11px; font-weight:700; color:#333;">📋 Valeurs existantes (<span id="param-count">0</span>)</label>
+                            <button id="btn-refresh-params" onclick="refreshParamManager()" title="Actualiser la liste" style="padding:3px 10px; background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:4px; cursor:pointer; font-size:10px; font-weight:600;">🔄 Actualiser</button>
+                        </div>
                         <div id="param-values-list" style="max-height:300px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px; padding:8px;"></div>
                     </div>
                     
@@ -3017,6 +3020,25 @@ function openParamManager(fieldKey, fieldLabel) {
         populateSecteurLinkSelect();
     } else {
         secteurSection.style.display = 'none';
+    }
+}
+
+async function refreshParamManager() {
+    if (!currentParamField) return;
+    const btn = getEl('btn-refresh-params');
+    if (btn) { btn.textContent = '⏳ Actualisation...'; btn.disabled = true; }
+    try {
+        if (isCustomParamField) {
+            loadCustomParamValues(currentParamField);
+        } else {
+            await loadParamValues(currentParamField);
+        }
+        updateSelectOptions(currentParamField);
+        showToast('Liste actualisée', 'success');
+    } catch (e) {
+        showToast('Erreur: ' + e.message, 'error');
+    } finally {
+        if (btn) { btn.textContent = '🔄 Actualiser'; btn.disabled = false; }
     }
 }
 
