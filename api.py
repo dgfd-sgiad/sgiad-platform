@@ -225,6 +225,12 @@ def get_accueil_data():
     return jsonify(content)
 
 
+@app.route('/api/ping')
+def api_ping():
+    """Point de ping leger pour keep-alive (aucun effet de bord)."""
+    return jsonify({'ok': True})
+
+
 @app.route('/api/accueil/login', methods=['POST'])
 def accueil_login():
     """Connexion depuis la page d'accueil — MODE LIBRE pour le moment :

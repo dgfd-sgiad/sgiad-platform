@@ -698,6 +698,9 @@
         }
 
         chargerAccueil();
+        
+        // Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render
+        setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
     </script>
 </body>
 </html>

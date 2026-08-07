@@ -1,6 +1,9 @@
 // js/app.js
 document.addEventListener('DOMContentLoaded', () => {
 
+    // --- Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render ---
+    setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
+
     // --- Infos de session réelles (remplace les valeurs figées) ---
     fetch('/api/session/info')
         .then(res => res.json())

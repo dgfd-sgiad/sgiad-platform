@@ -1290,8 +1290,8 @@
         // Auth check
         checkAuth();
 
-        // Keep-alive ping toutes les 10 min pour éviter le cold start Render
-        setInterval(() => { fetch(`${FLASK_BASE}/api/accords-financiers/columns`, { cache: 'no-store' }).catch(() => {}); }, 600000);
+        // Keep-alive ping toutes les 5 min pour éviter le cold start Render
+        setInterval(() => { fetch(`${FLASK_BASE}/api/ping`, { cache: 'no-store' }).catch(() => {}); }, 300000);
 
         // Chargement des colonnes
         const colsRes = await fetchWithRetry(`${API_BASE}/columns`);
