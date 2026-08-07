@@ -2808,14 +2808,26 @@ function loadCustomParamValues(fieldKey) {
     }
     
     listEl.innerHTML = values.map(v => `
-        <div id="param-row-${CSS.escape(v)}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
+        <div class="param-row" data-value="${v.replace(/"/g, '&quot;')}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
             <span class="param-value-label" style="font-size:12px; color:#333;">${v}</span>
             <div style="display:flex; gap:4px;">
-                <button onclick="startEditCustomParamValue('${v.replace(/'/g, "\\'")}')" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
-                <button onclick="startDeleteCustomParamValue('${v.replace(/'/g, "\\'")}')" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+                <button class="btn-edit-custom" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                <button class="btn-delete-custom" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
             </div>
         </div>
     `).join('');
+    
+    // Attach event listeners
+    listEl.querySelectorAll('.btn-edit-custom').forEach(btn => {
+        btn.addEventListener('click', function() {
+            startEditCustomParamValue(this.closest('.param-row').dataset.value);
+        });
+    });
+    listEl.querySelectorAll('.btn-delete-custom').forEach(btn => {
+        btn.addEventListener('click', function() {
+            startDeleteCustomParamValue(this.closest('.param-row').dataset.value);
+        });
+    });
 }
 
 async function addCustomParamValue() {
@@ -2848,22 +2860,29 @@ async function addCustomParamValue() {
 }
 
 function startEditCustomParamValue(oldValue) {
-    const row = getEl(`param-row-${CSS.escape(oldValue)}`);
+    const row = document.querySelector(`.param-row[data-value="${CSS.escape(oldValue)}"]`);
     if (!row) return;
     row.style.background = '#fffbeb';
     row.style.borderColor = '#f59e0b';
+    row.dataset.editOldValue = oldValue;
     row.innerHTML = `
-        <input type="text" id="edit-param-input" class="form-input" value="${oldValue}" style="flex:1; height:28px; font-size:12px;">
+        <input type="text" id="edit-param-input" class="form-input" value="${oldValue.replace(/"/g, '&quot;')}" style="flex:1; height:28px; font-size:12px;">
         <div style="display:flex; gap:4px;">
-            <button onclick="confirmEditCustomParamValue('${oldValue.replace(/'/g, "\\'")}')" title="Enregistrer" style="padding:2px 8px; background:#16a34a; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">✓</button>
-            <button onclick="loadCustomParamValues(currentParamField)" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+            <button class="btn-confirm-edit-custom" title="Enregistrer" style="padding:2px 8px; background:#16a34a; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">✓</button>
+            <button class="btn-cancel-edit-custom" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
         </div>
     `;
     const input = getEl('edit-param-input');
     input.focus();
     input.select();
+    row.querySelector('.btn-confirm-edit-custom').addEventListener('click', function() {
+        confirmEditCustomParamValue(row.dataset.editOldValue);
+    });
+    row.querySelector('.btn-cancel-edit-custom').addEventListener('click', function() {
+        loadCustomParamValues(currentParamField);
+    });
     input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') confirmEditCustomParamValue(oldValue);
+        if (e.key === 'Enter') confirmEditCustomParamValue(row.dataset.editOldValue);
         if (e.key === 'Escape') loadCustomParamValues(currentParamField);
     });
 }
@@ -2896,17 +2915,24 @@ function confirmEditCustomParamValue(oldValue) {
 }
 
 function startDeleteCustomParamValue(value) {
-    const row = getEl(`param-row-${CSS.escape(value)}`);
+    const row = document.querySelector(`.param-row[data-value="${CSS.escape(value)}"]`);
     if (!row) return;
     row.style.background = '#fef2f2';
     row.style.borderColor = '#fca5a5';
+    row.dataset.deleteValue = value;
     row.innerHTML = `
         <span style="font-size:11px; color:#991b1b; flex:1;">Supprimer « <strong>${value}</strong> » ?</span>
         <div style="display:flex; gap:4px;">
-            <button onclick="confirmDeleteCustomParamValue('${value.replace(/'/g, "\\'")}')" title="Confirmer" style="padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">Oui</button>
-            <button onclick="loadCustomParamValues(currentParamField)" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">Non</button>
+            <button class="btn-confirm-delete-custom" title="Confirmer" style="padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">Oui</button>
+            <button class="btn-cancel-delete-custom" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">Non</button>
         </div>
     `;
+    row.querySelector('.btn-confirm-delete-custom').addEventListener('click', function() {
+        confirmDeleteCustomParamValue(row.dataset.deleteValue);
+    });
+    row.querySelector('.btn-cancel-delete-custom').addEventListener('click', function() {
+        loadCustomParamValues(currentParamField);
+    });
 }
 
 function confirmDeleteCustomParamValue(value) {
@@ -3010,12 +3036,16 @@ async function loadParamValues(fieldKey) {
         let values = [];
         if (res.ok) {
             const data = await res.json();
-            // data is either a list (if categorie filter) or an object grouped by categorie
             if (Array.isArray(data)) {
                 values = data;
             } else if (data[fieldKey]) {
                 values = data[fieldKey];
             }
+        }
+        
+        // Also update COLUMNS_BY_KEY with fresh data
+        if (values.length > 0 && COLUMNS_BY_KEY[fieldKey]) {
+            COLUMNS_BY_KEY[fieldKey].options = values;
         }
         
         // Fallback to COLUMNS_BY_KEY if API returns nothing
@@ -3033,15 +3063,30 @@ async function loadParamValues(fieldKey) {
             return;
         }
         
-        listEl.innerHTML = values.map(v => `
-            <div id="param-row-${CSS.escape(v)}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
+        // Use data-attributes instead of onclick to handle special characters
+        listEl.innerHTML = values.map((v, i) => `
+            <div class="param-row" data-value="${v.replace(/"/g, '&quot;')}" style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:#f9fafb; border-radius:4px; margin-bottom:4px; border:1px solid #e5e7eb;">
                 <span class="param-value-label" style="font-size:12px; color:#333;">${v}</span>
                 <div style="display:flex; gap:4px;">
-                    <button onclick="startEditParamValue('${v.replace(/'/g, "\\'")}')" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
-                    <button onclick="startDeleteParamValue('${v.replace(/'/g, "\\'")}')" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
+                    <button class="btn-edit-param" title="Modifier" style="padding:2px 6px; background:#fef3c7; color:#92400e; border:1px solid #f59e0b; border-radius:3px; cursor:pointer; font-size:10px;">✏️</button>
+                    <button class="btn-delete-param" title="Supprimer" style="padding:2px 6px; background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:3px; cursor:pointer; font-size:10px;">🗑️</button>
                 </div>
             </div>
         `).join('');
+        
+        // Attach event listeners via data-attributes
+        listEl.querySelectorAll('.btn-edit-param').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const value = this.closest('.param-row').dataset.value;
+                startEditParamValue(value);
+            });
+        });
+        listEl.querySelectorAll('.btn-delete-param').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const value = this.closest('.param-row').dataset.value;
+                startDeleteParamValue(value);
+            });
+        });
     } catch (e) {
         listEl.innerHTML = `<div style="text-align:center; padding:20px; color:#dc2626;">Erreur: ${e.message}</div>`;
     }
@@ -3084,9 +3129,8 @@ async function addParamValue() {
         if (res.ok) {
             showToast('Valeur ajoutée', 'success');
             inputEl.value = '';
-            // Refresh column options
-            await refreshColumnOptions(currentParamField);
-            loadParamValues(currentParamField);
+            // Reload list (also updates COLUMNS_BY_KEY)
+            await loadParamValues(currentParamField);
             // Update the select in the form
             updateSelectOptions(currentParamField);
         } else {
@@ -3099,23 +3143,30 @@ async function addParamValue() {
 
 // Inline edit: transform row into edit form
 function startEditParamValue(oldValue) {
-    const row = getEl(`param-row-${CSS.escape(oldValue)}`);
+    const row = document.querySelector(`.param-row[data-value="${CSS.escape(oldValue)}"]`);
     if (!row) return;
     row.style.background = '#fffbeb';
     row.style.borderColor = '#f59e0b';
     row.innerHTML = `
-        <input type="text" id="edit-param-input" class="form-input" value="${oldValue}" style="flex:1; height:28px; font-size:12px;">
+        <input type="text" id="edit-param-input" class="form-input" value="${oldValue.replace(/"/g, '&quot;')}" style="flex:1; height:28px; font-size:12px;">
         <div style="display:flex; gap:4px;">
-            <button onclick="confirmEditParamValue('${oldValue.replace(/'/g, "\\'")}')" title="Enregistrer" style="padding:2px 8px; background:#16a34a; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">✓</button>
-            <button onclick="loadParamValues(currentParamField)" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
+            <button class="btn-confirm-edit" title="Enregistrer" style="padding:2px 8px; background:#16a34a; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">✓</button>
+            <button class="btn-cancel-edit" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">✕</button>
         </div>
     `;
     const input = getEl('edit-param-input');
     input.focus();
     input.select();
-    // Allow Enter to confirm
+    // Store oldValue in a data attribute for the confirm button
+    row.dataset.editOldValue = oldValue;
+    row.querySelector('.btn-confirm-edit').addEventListener('click', function() {
+        confirmEditParamValue(row.dataset.editOldValue);
+    });
+    row.querySelector('.btn-cancel-edit').addEventListener('click', function() {
+        loadParamValues(currentParamField);
+    });
     input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') confirmEditParamValue(oldValue);
+        if (e.key === 'Enter') confirmEditParamValue(row.dataset.editOldValue);
         if (e.key === 'Escape') loadParamValues(currentParamField);
     });
 }
@@ -3153,8 +3204,7 @@ async function confirmEditParamValue(oldValue) {
         
         if (res.ok) {
             showToast('Valeur modifiée', 'success');
-            await refreshColumnOptions(currentParamField);
-            loadParamValues(currentParamField);
+            await loadParamValues(currentParamField);
             updateSelectOptions(currentParamField);
         } else {
             showToast(data.error || 'Erreur lors de la modification', 'error');
@@ -3166,17 +3216,24 @@ async function confirmEditParamValue(oldValue) {
 
 // Inline delete confirm: transform row into confirmation
 function startDeleteParamValue(value) {
-    const row = getEl(`param-row-${CSS.escape(value)}`);
+    const row = document.querySelector(`.param-row[data-value="${CSS.escape(value)}"]`);
     if (!row) return;
     row.style.background = '#fef2f2';
     row.style.borderColor = '#fca5a5';
+    row.dataset.deleteValue = value;
     row.innerHTML = `
         <span style="font-size:11px; color:#991b1b; flex:1;">Supprimer « <strong>${value}</strong> » ?</span>
         <div style="display:flex; gap:4px;">
-            <button onclick="confirmDeleteParamValue('${value.replace(/'/g, "\\'")}')" title="Confirmer" style="padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">Oui</button>
-            <button onclick="loadParamValues(currentParamField)" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">Non</button>
+            <button class="btn-confirm-delete" title="Confirmer" style="padding:2px 8px; background:#dc2626; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px; font-weight:600;">Oui</button>
+            <button class="btn-cancel-delete" title="Annuler" style="padding:2px 8px; background:#6b7280; color:white; border:none; border-radius:3px; cursor:pointer; font-size:10px;">Non</button>
         </div>
     `;
+    row.querySelector('.btn-confirm-delete').addEventListener('click', function() {
+        confirmDeleteParamValue(row.dataset.deleteValue);
+    });
+    row.querySelector('.btn-cancel-delete').addEventListener('click', function() {
+        loadParamValues(currentParamField);
+    });
 }
 
 async function confirmDeleteParamValue(value) {
@@ -3190,8 +3247,7 @@ async function confirmDeleteParamValue(value) {
         
         if (res.ok) {
             showToast('Valeur supprimée', 'success');
-            await refreshColumnOptions(currentParamField);
-            loadParamValues(currentParamField);
+            await loadParamValues(currentParamField);
             updateSelectOptions(currentParamField);
         } else {
             showToast(data.error || 'Erreur lors de la suppression', 'error');
