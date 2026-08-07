@@ -188,23 +188,35 @@ def sync_parametres_from_data():
         for row in (param_resp.data or []):
             existing.add((str(row.get('categorie','')).strip(), str(row.get('valeur','')).strip()))
 
+        # Recuperer TOUTES les colonnes select d'un seul coup (plus rapide)
+        db_cols = list(SELECT_DISPLAY_TO_DB.values())
+        try:
+            resp = sb.table('accords_consolides').select(','.join(db_cols)).execute()
+            rows_data = resp.data or []
+        except Exception:
+            rows_data = []
+
         to_insert = []
-        for display_name, db_col in SELECT_DISPLAY_TO_DB.items():
-            try:
-                resp = sb.table('accords_consolides').select(db_col).execute()
-                for row in (resp.data or []):
-                    val = str(row.get(db_col, '')).strip()
-                    if val and (display_name, val) not in existing:
-                        to_insert.append({'categorie': display_name, 'valeur': val})
-                        existing.add((display_name, val))  # eviter doublon dans le batch
-            except Exception:
-                pass
+        for row in rows_data:
+            for display_name, db_col in SELECT_DISPLAY_TO_DB.items():
+                val = str(row.get(db_col, '')).strip()
+                if val and (display_name, val) not in existing:
+                    to_insert.append({'categorie': display_name, 'valeur': val})
+                    existing.add((display_name, val))
 
         if to_insert:
             # Inserer par batch de 100
             for i in range(0, len(to_insert), 100):
                 batch = to_insert[i:i+100]
-                sb.table('parametres').insert(batch).execute()
+                try:
+                    sb.table('parametres').insert(batch).execute()
+                except Exception:
+                    # Inserer un par un si le batch echoue
+                    for item in batch:
+                        try:
+                            sb.table('parametres').insert(item).execute()
+                        except Exception:
+                            pass
             print(f"[sync_parametres] {len(to_insert)} valeurs synchronisees vers parametres")
     except Exception as e:
         print(f"[sync_parametres] Erreur: {e}")
