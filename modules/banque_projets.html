@@ -1721,7 +1721,7 @@
                 tr.style.cursor = 'pointer';
                 tr.addEventListener('click', function(e) {
                     if (e.target.closest('input,button')) return;
-                    openFicheModal(code);
+                    openModal(code); // Ouvre la fiche avec champs modifiables
                 });
                 tr.innerHTML = `
                     <td><input type="checkbox" class="bulk-check" data-code="${code}" ${checked} onclick="event.stopPropagation(); toggleBulkSelect('${code}')"></td>
