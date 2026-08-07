@@ -87,6 +87,20 @@ def _load_accueil_content():
     return load_data()
 
 
+# Les 12 departements officiels du Benin (pour filtrer les zones en texte libre)
+DEPARTEMENTS_BENIN = ['ALIBORI', 'ATACORA', 'ATLANTIQUE', 'BORGOU', 'COLLINES',
+                      'COUFFO', 'DONGA', 'LITTORAL', 'MONO', 'OUEME', 'PLATEAU', 'ZOU']
+
+
+def _extract_departements_zone(zone_str):
+    """Extrait les departements officiels cites dans une zone (texte libre ou arbre)."""
+    if not zone_str or not str(zone_str).strip():
+        return set()
+    texte = strip_accents(str(zone_str)).upper()
+    return {dep for dep in DEPARTEMENTS_BENIN
+            if re.search(r'\b' + dep + r'\b', texte)}
+
+
 def _compute_accueil_stats(rows):
     """Calcule les statistiques dynamiques depuis les lignes accords_consolides."""
     from datetime import date
@@ -107,16 +121,19 @@ def _compute_accueil_stats(rows):
         part = str(r.get('partenaire') or '').strip()
         if part:
             partenaires.add(part)
-        dep = str(r.get('departement') or '').strip()
-        if dep:
-            departements.add(dep)
+        # Departements: extraits de la zone (texte libre/arbre), sinon colonne departement
+        deps_zone = _extract_departements_zone(r.get('zone'))
+        if deps_zone:
+            departements.update(deps_zone)
+        else:
+            dep = strip_accents(str(r.get('departement') or '').strip()).upper()
+            if dep in DEPARTEMENTS_BENIN:
+                departements.add(dep)
         try:
             annees_signature.append(int(r.get('annee_signature')))
         except (TypeError, ValueError):
             pass
         m = r.get('montant_total_fcfa')
-        if m is None:
-            m = r.get('cout_total_fcfa')
         try:
             montant_fcfa += float(m or 0)
         except (TypeError, ValueError):
@@ -189,7 +206,7 @@ def get_accueil_data():
         resp = sb.table('accords_consolides').select(
             'code_projet, partenaire, objet_accord, date_signature, annee_signature, '
             'date_cloture, nouvelle_date_cloture, annee_cloture, '
-            'montant_total_fcfa, cout_total_fcfa, departement'
+            'montant_total_fcfa, departement, zone'
         ).execute()
         dyn = _compute_accueil_stats(resp.data or [])
         content['STATS'] = dyn['STATS']
@@ -197,9 +214,10 @@ def get_accueil_data():
         if dyn['ACCORDS']:
             content['ACCORDS'] = dyn['ACCORDS']
         content['source'] = 'supabase'
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
         content['source'] = 'defaut'  # valeurs par defaut du JSON
+        content['erreur'] = str(e)
     return jsonify(content)
 
 
