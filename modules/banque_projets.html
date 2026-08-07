@@ -2505,20 +2505,21 @@
                 try {
                     let res;
                     if (oldCode) {
-                        res = await fetch(`${API_BASE}/update/${encodeURIComponent(oldCode)}`, {
+                        res = await fetchWithRetry(`${API_BASE}/update/${encodeURIComponent(oldCode)}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                     } else {
-                        res = await fetch(`${API_BASE}/add`, {
+                        res = await fetchWithRetry(`${API_BASE}/add`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
                     }
-                    const result = await res.json();
-                    if (!res.ok) throw new Error(result.error || 'Erreur serveur');
+                    let result = {};
+                    try { result = await res.json(); } catch (e) { /* corps non-JSON (page d'erreur Render) */ }
+                    if (!res.ok) throw new Error(result.error || `Erreur serveur (HTTP ${res.status})`);
                     closeModal();
                     showToast(oldCode ? `Accord ${oldCode} modifié avec succès` : `Nouvel accord ${result.code || payload['Code Projet'] || ''} ajouté`, 'success');
                     try {
