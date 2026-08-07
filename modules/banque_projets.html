@@ -1361,6 +1361,7 @@
         // Bouton co-partenaire : onclick inline sur le bouton (robuste meme si le chargement initial echoue)
 
         console.log('✅ Banque de Projets initialisée');
+        sessionStorage.removeItem('banque_retries');
 
         // Initialiser la carte APRÈS le chargement
         setTimeout(initMap, 300);
@@ -1369,16 +1370,38 @@
         console.error('❌ Erreur critique:', e);
 
         const tbody = getEl('table-body');
+        const essais = parseInt(sessionStorage.getItem('banque_retries') || '0', 10);
 
         if (tbody) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="9" style="color:red;text-align:center;padding:30px;">
-                        Impossible de charger les données.<br>
-                        <small>${e.message}</small>
-                    </td>
-                </tr>
-            `;
+            if (essais < 6) {
+                // Serveur en réveil (cold start Render) : rechargement automatique avec compte à rebours
+                sessionStorage.setItem('banque_retries', String(essais + 1));
+                let reste = 8;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="color:#b45309;text-align:center;padding:30px;">
+                            ⏳ Serveur en cours de démarrage…<br>
+                            <small>Rechargement automatique dans <b id="banque-countdown">${reste}</b> s (tentative ${essais + 1}/6)</small>
+                        </td>
+                    </tr>
+                `;
+                const t = setInterval(() => {
+                    reste--;
+                    const el = getEl('banque-countdown');
+                    if (reste <= 0) { clearInterval(t); location.reload(); }
+                    else if (el) el.textContent = reste;
+                }, 1000);
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="color:red;text-align:center;padding:30px;">
+                            Impossible de charger les données.<br>
+                            <small>${e.message}</small><br>
+                            <button onclick="sessionStorage.removeItem('banque_retries');location.reload()" style="margin-top:10px;background:#0e7a3a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer">🔄 Réessayer</button>
+                        </td>
+                    </tr>
+                `;
+            }
         }
     }
 });

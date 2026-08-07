@@ -133,7 +133,7 @@ footer .fb span{flex:1}
 </div>
 <div id="load-banner" class="no-print" style="display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#fff;border:2px solid #f28c00;border-radius:8px;padding:14px 22px;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.25);font-size:13px;font-weight:600;text-align:center">
   <span id="load-msg">Chargement des données…</span>
-  <button id="retry-btn" onclick="chargerProjet()" style="display:none;margin-left:12px;background:#0e7a3a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px">🔄 Réessayer</button>
+  <button id="retry-btn" onclick="ficheEssai=0;chargerProjet()" style="display:none;margin-left:12px;background:#0e7a3a;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px">🔄 Réessayer</button>
 </div>
 <input type="file" id="doc-file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" onchange="prepareUpload(this)">
 <div id="doc-upload-panel" class="no-print" style="display:none;position:fixed;top:60px;right:10px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.2)">
@@ -358,11 +358,13 @@ function ul(a){return '<ul>'+a.map(function(x){return '<li>'+x+'</li>'}).join(''
 function setGauge(gid,tid,val){var g=$(gid),t=$(tid);var has=(val!==''&&val!=null&&!isNaN(Number(val)));var n=has?Math.max(0,Math.min(100,Number(val))):0;if(g)g.setAttribute('stroke-dasharray',n+' 100');if(t)t.textContent=has?Math.round(n)+'%':'—';}
 var ODD_INFO={1:['#E5243B','PAS DE PAUVRETÉ'],2:['#DDA63A','FAIM «ZÉRO»'],3:['#4C9F38','BONNE SANTÉ ET BIEN-ÊTRE'],4:['#C5192D','ÉDUCATION DE QUALITÉ'],5:['#FF3A21','ÉGALITÉ ENTRE LES SEXES'],6:['#26BDE2','EAU PROPRE ET ASSAINISSEMENT'],7:['#FCC30B','ÉNERGIE PROPRE ET ABORDABLE'],8:['#A21942','TRAVAIL DÉCENT ET CROISSANCE ÉCONOMIQUE'],9:['#FD6925','INDUSTRIE, INNOVATION ET INFRASTRUCTURE'],10:['#DD1367','INÉGALITÉS RÉDUITES'],11:['#FD9D24','VILLES ET COMMUNAUTÉS DURABLES'],12:['#BF8B2E','CONSOMMATION ET PRODUCTION RESPONSABLES'],13:['#3F7E44','LUTTE CONTRE LES CHANGEMENTS CLIMATIQUES'],14:['#0A97D9','VIE AQUATIQUE'],15:['#56C02B','VIE TERRESTRE'],16:['#00689D','PAIX, JUSTICE ET INSTITUTIONS EFFICACES'],17:['#19486A','PARTENARIATS POUR LES OBJECTIFS']};
 function renderOddTiles(oddStr){var box=$('odds');if(!box)return;var nums=[],seen={};String(oddStr||'').split(/[;,\/]/).forEach(function(tok){var m=tok.match(/\d{1,2}/g);if(m)m.forEach(function(x){var n=parseInt(x,10);if(n>=1&&n<=17&&!seen[n]){seen[n]=1;nums.push(n);}});});box.innerHTML=nums.length?nums.map(function(n){var i=ODD_INFO[n];return '<div class="odd" style="background:'+i[0]+'"><div class="n">'+n+'</div><div class="t">'+i[1]+'</div></div>';}).join(''):'';}
+var ficheEssai=0,ficheTimer=null;
 if(code){chargerProjet();}
 function chargerProjet(){
   var banner=$('load-banner');banner.style.display='block';
   $('load-msg').textContent='Chargement des données…';$('retry-btn').style.display='none';
   fetch(API+'/api/accords-financiers/list?t='+Date.now()).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(data){
+  ficheEssai=0;if(ficheTimer){clearInterval(ficheTimer);ficheTimer=null;}
   banner.style.display='none';
   var list=data.data||data||[];
   var p=list.find(function(x){return (x['Code Projet']||'').trim()===code.trim()});
@@ -435,7 +437,23 @@ function chargerProjet(){
   $('v_coord').textContent=p['Coordonnees']||'—';
   /* 9. Observations */
   $('obs_txt').textContent=p['Observations']||'—';
-}).catch(function(e){console.warn('API injoignable',e);$('load-msg').textContent='⚠️ Données non chargées (serveur en cours de démarrage, erreur '+e.message+') — cliquez pour réessayer dans quelques secondes.';$('retry-btn').style.display='inline-block';});
+}).catch(function(e){
+  console.warn('API injoignable',e);
+  ficheEssai++;
+  $('retry-btn').style.display='inline-block';
+  if(ficheEssai<=15){
+    var reste=6;
+    $('load-msg').textContent='⏳ Serveur en cours de démarrage (erreur '+e.message+') — tentative automatique '+ficheEssai+'/15 dans '+reste+' s…';
+    if(ficheTimer)clearInterval(ficheTimer);
+    ficheTimer=setInterval(function(){
+      reste--;
+      if(reste<=0){clearInterval(ficheTimer);ficheTimer=null;chargerProjet();}
+      else{$('load-msg').textContent='⏳ Serveur en cours de démarrage (erreur '+e.message+') — tentative automatique '+ficheEssai+'/15 dans '+reste+' s…';}
+    },1000);
+  }else{
+    $('load-msg').textContent='⚠️ Données non chargées (serveur injoignable, erreur '+e.message+') — cliquez sur Réessayer.';
+  }
+});
 }
 function enregistrerHTML(){var c=document.documentElement.cloneNode(true);var b=c.querySelector('.actions-bar');if(b)b.remove();var blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='FICHE_'+(code||'PROJET')+'.html';a.click();URL.revokeObjectURL(a.href);}
 /* ── Bouton Retour : ferme la modale si la fiche est ouverte dans l'iframe de banque_projets, sinon navigation classique ── */

@@ -604,6 +604,7 @@
             try {
                 const res = await fetchWithRetry('/api/accueil/data');
                 const data = await res.json();
+                sessionStorage.removeItem('accueil_retries');
                 if (data.STATS) renderStats(data.STATS);
                 if (data.TODAY_STATS) renderToday(data.TODAY_STATS);
                 renderNews(data.ACTUALITES);
@@ -615,8 +616,22 @@
                 renderDocs(data.DOCUMENTS);
                 renderTags(data.MOTS_CLES);
             } catch (e) {
-                document.getElementById('stats-grid').innerHTML =
-                    '<div class="loading-hint" style="grid-column:1/-1;">⚠️ Impossible de charger les données. Actualisez la page.</div>';
+                const grid = document.getElementById('stats-grid');
+                const essais = parseInt(sessionStorage.getItem('accueil_retries') || '0', 10);
+                if (essais < 6) {
+                    // Serveur en réveil (cold start Render) : rechargement automatique avec compte à rebours
+                    sessionStorage.setItem('accueil_retries', String(essais + 1));
+                    let reste = 8;
+                    grid.innerHTML = `<div class="loading-hint" style="grid-column:1/-1;">⏳ Serveur en cours de démarrage… rechargement automatique dans <b id="accueil-countdown">${reste}</b> s (tentative ${essais + 1}/6)</div>`;
+                    const t = setInterval(() => {
+                        reste--;
+                        const el = document.getElementById('accueil-countdown');
+                        if (reste <= 0) { clearInterval(t); location.reload(); }
+                        else if (el) el.textContent = reste;
+                    }, 1000);
+                } else {
+                    grid.innerHTML = '<div class="loading-hint" style="grid-column:1/-1;">⚠️ Impossible de charger les données. <a onclick="sessionStorage.removeItem(\'accueil_retries\');location.reload()" style="cursor:pointer;text-decoration:underline;">Actualiser la page</a></div>';
+                }
             }
         }
 
