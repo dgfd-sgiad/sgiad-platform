@@ -207,6 +207,26 @@
             .stats-section { padding: 1.5rem; }
             .dgfd-footer { padding: 2rem 1.5rem 1.5rem; }
         }
+        /* ===== BANDE D'ACTUALITES DEFILANTE ===== */
+        .ticker-band { display: flex; align-items: stretch; background: #0a2540; color: #fff; height: 42px; overflow: hidden; border-bottom: 2px solid #f2c94c; }
+        .ticker-label {
+            display: flex; align-items: center; gap: 8px; background: #0e7a3a; color: #fff;
+            padding: 0 18px; font-size: 12px; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; white-space: nowrap; z-index: 2; flex-shrink: 0;
+        }
+        .ticker-label .pulse { width: 8px; height: 8px; border-radius: 50%; background: #f2c94c; animation: ticker-pulse 1.6s ease-in-out infinite; }
+        @keyframes ticker-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
+        .ticker-viewport { flex: 1; overflow: hidden; display: flex; align-items: center; }
+        .ticker-track { display: inline-flex; align-items: center; white-space: nowrap; will-change: transform; animation: ticker-scroll linear infinite; }
+        .ticker-viewport:hover .ticker-track { animation-play-state: paused; }
+        .ticker-item { display: inline-flex; align-items: center; font-size: 13px; font-weight: 500; color: #e5e7eb; padding: 0 1.4rem; }
+        .ticker-item b { color: #f2c94c; font-weight: 700; margin-right: 6px; }
+        .ticker-sep { color: #f2c94c; font-size: 9px; }
+        @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @media (max-width: 768px) {
+            .ticker-label { padding: 0 12px; font-size: 10px; }
+            .ticker-item { font-size: 12px; }
+        }
     </style>
 </head>
 <body>
@@ -233,6 +253,19 @@
                 <span style="color: #d1d5db;">🔍</span>
             </div>
             <button class="dgfd-btn-login" onclick="openLogin('Connexion')">🔒 Connexion</button>
+        </div>
+    </div>
+
+    <!-- ===== BANDE D'ACTUALITES DEFILANTE ===== -->
+    <div class="ticker-band" role="marquee" aria-label="Actualités du financement du développement">
+        <div class="ticker-label"><span class="pulse"></span> En direct</div>
+        <div class="ticker-viewport">
+            <div class="ticker-track" id="ticker-track" style="animation-duration: 40s;">
+                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale du Financement du Développement…</span>
+                <span class="ticker-sep">◆</span>
+                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale du Financement du Développement…</span>
+                <span class="ticker-sep">◆</span>
+            </div>
         </div>
     </div>
 
@@ -499,6 +532,31 @@
                 </div>`).join('');
         }
 
+        // ============================================
+        // BANDE DEFILANTE : actualites + accords reels + chiffres cles
+        // ============================================
+        function renderTicker(data) {
+            const items = [];
+            (data.ACTUALITES || []).forEach(n => {
+                if (n.titre) items.push(`<span class="ticker-item">📰 <b>${esc(n.titre)}</b>${n.date ? '· ' + esc(n.date) : ''}</span>`);
+            });
+            (data.ACCORDS || []).forEach(a => {
+                if (a.partenaire || a.projet) {
+                    items.push(`<span class="ticker-item">🤝 <b>${esc(a.partenaire || '')}</b> ${esc(a.projet || '')}${a.date ? ' · signé le ' + esc(a.date) : ''}</span>`);
+                }
+            });
+            const statsListe = Array.isArray(data.STATS) ? data.STATS : Object.values(data.STATS || {});
+            statsListe.forEach(s => {
+                if (s && s.valeur) items.push(`<span class="ticker-item">${esc(s.icone || '📊')} <b>${esc(s.valeur)}</b> ${esc(s.label || '')}</span>`);
+            });
+            if (!items.length) return; // garde le message d'accueil par defaut
+            const sep = '<span class="ticker-sep">◆</span>';
+            const block = items.join(sep) + sep;
+            const track = document.getElementById('ticker-track');
+            track.innerHTML = block + block; // contenu dupliqué pour une boucle sans coupure
+            track.style.animationDuration = Math.max(30, items.length * 6) + 's';
+        }
+
         function renderNews(ACTUALITES) {
             document.getElementById('news-list').innerHTML = (ACTUALITES || []).map(n => `
                 <div class="news-item">
@@ -624,6 +682,7 @@
                 if (data.ACCORDS) renderAccords(data.ACCORDS);
                 renderDocs(data.DOCUMENTS);
                 renderTags(data.MOTS_CLES);
+                renderTicker(data);
             } catch (e) {
                 const grid = document.getElementById('stats-grid');
                 const essais = parseInt(sessionStorage.getItem('accueil_retries') || '0', 10);
