@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGIAD - Plateforme Nationale de Suivi</title>
+    <script src="js/auth_client.js"></script>
     <link rel="stylesheet" href="css/style.css">
     <!-- Police Montserrat pour le titre + Inter pour le reste -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
@@ -29,7 +30,7 @@
                 <img src="assets/logos/logo_bad.png" alt="BAD" class="donor-logo" onerror="this.style.display='none'">
             </div>
 
-            <button class="btn-disconnect" onclick="localStorage.removeItem('sgiad_accueil_user');window.location.href='/'">Déconnexion</button>
+            <button class="btn-disconnect" onclick="(window.SGIADAuth ? SGIADAuth.logout('/') : (localStorage.removeItem('sgiad_accueil_user'), window.location.href='/'))">Déconnexion</button>
 
             <div class="user-info-vertical">
                 <p><strong>Superviseur :</strong> Structure SUPER - Paramétrage</p>

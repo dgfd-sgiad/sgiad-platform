@@ -32,15 +32,35 @@ import threading
 import tempfile
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# CORS restreint aux domaines autorises (le frontend est servi en same-origin)
+_default_origins = [
+    'https://sgiad-platform.onrender.com',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+]
+_cors_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', '').split(',') if o.strip()] or _default_origins
+CORS(app, resources={r"/api/*": {"origins": _cors_origins}})
 
 # ── Module Gestion des Accords Financiers (Supabase) ──
 from accords_financiers import bp as accords_financiers_bp
 app.register_blueprint(accords_financiers_bp)
 
 # ── Module Authentification ──
-from auth import bp as auth_bp
+from auth import bp as auth_bp, require_auth
 app.register_blueprint(auth_bp)
+
+
+@app.after_request
+def add_security_headers(resp):
+    """En-tetes de securite sur toutes les reponses."""
+    resp.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    resp.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    resp.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    resp.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    if request.path.startswith('/api/'):
+        resp.headers.setdefault('Cache-Control', 'no-store')
+    return resp
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
@@ -65,10 +85,26 @@ def app_interne():
     resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     return resp
 
+# Extensions autorisees pour les fichiers statiques (pas de code source,
+# pas de secrets .env, pas de donnees .xlsx/.json)
+ALLOWED_STATIC_EXT = {'.html', '.css', '.js', '.png', '.jpg', '.jpeg', '.webp',
+                      '.svg', '.ico', '.gif', '.geojson', '.pdf', '.woff', '.woff2'}
+BLOCKED_STATIC_NAMES = {'session_log.json'}
+
 @app.route('/<path:filepath>')
 def serve_static(filepath):
-    """Sert les fichiers HTML, CSS, JS, images depuis le repertoire projet."""
-    full_path = os.path.join(BASE_DIR, filepath)
+    """Sert uniquement les fichiers statiques autorises (HTML, CSS, JS, images).
+    Bloque le code source (.py), les secrets (.env) et les donnees (.xlsx)."""
+    filename = os.path.basename(filepath)
+    if filename.startswith('.') or filename in BLOCKED_STATIC_NAMES:
+        return jsonify({"error": "Fichier introuvable"}), 404
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext not in ALLOWED_STATIC_EXT:
+        return jsonify({"error": "Fichier introuvable"}), 404
+    # Protege contre toute tentative de remontee d'arborescence
+    full_path = os.path.realpath(os.path.join(BASE_DIR, filepath))
+    if not full_path.startswith(os.path.realpath(BASE_DIR) + os.sep):
+        return jsonify({"error": "Fichier introuvable"}), 404
     if os.path.isfile(full_path):
         resp = send_file(full_path)
         if filepath.endswith('.html'):
@@ -198,9 +234,12 @@ def _compute_accueil_stats(rows):
     return {'STATS': stats, 'TODAY_STATS': today_stats, 'ACCORDS': accords_recents}
 
 
-@app.route('/api/accueil/data', methods=['GET'])
-def get_accueil_data():
-    """Donnees de la page d'accueil: contenu editorial (JSON) + stats reelles (Supabase)."""
+_accueil_cache = {'ts': 0, 'data': None}
+_ACCUEIL_CACHE_TTL = 300  # secondes
+
+
+def _build_accueil_data():
+    """Construit le contenu de la page d'accueil (editorial + stats Supabase)."""
     try:
         content = _load_accueil_content()
     except Exception:
@@ -220,11 +259,21 @@ def get_accueil_data():
         if dyn['ACCORDS']:
             content['ACCORDS'] = dyn['ACCORDS']
         content['source'] = 'supabase'
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
         content['source'] = 'defaut'  # valeurs par defaut du JSON
-        content['erreur'] = str(e)
-    return jsonify(content)
+    return content
+
+
+@app.route('/api/accueil/data', methods=['GET'])
+def get_accueil_data():
+    """Donnees de la page d'accueil: contenu editorial (JSON) + stats reelles (Supabase).
+    Resultat mis en cache 5 min pour eviter les lenteurs/cold starts."""
+    now = time.time()
+    if _accueil_cache['data'] is None or (now - _accueil_cache['ts']) > _ACCUEIL_CACHE_TTL:
+        _accueil_cache['data'] = _build_accueil_data()
+        _accueil_cache['ts'] = now
+    return jsonify(_accueil_cache['data'])
 
 
 @app.route('/api/ping')
@@ -238,6 +287,7 @@ def api_ping():
 # ══════════════════════════════════════════════════════════════════════
 
 @app.route('/api/veille/alertes', methods=['GET'])
+@require_auth
 def veille_alertes():
     """Liste des alertes de veille (accords signés détectés en ligne)."""
     from db import get_supabase
@@ -247,6 +297,7 @@ def veille_alertes():
 
 
 @app.route('/api/veille/scan', methods=['POST'])
+@require_auth
 def veille_scan():
     """Déclenche un scan manuel de la veille."""
     from services import veille_service
@@ -255,7 +306,7 @@ def veille_scan():
         return jsonify({'message': f'{n} nouvelle(s) alerte(s) enregistrée(s)', 'nouvelles': n})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 def _veille_loop():
@@ -290,14 +341,36 @@ _demarrer_veille()
 
 @app.route('/api/accueil/login', methods=['POST'])
 def accueil_login():
-    """Connexion depuis la page d'accueil — MODE LIBRE pour le moment :
-    tout identifiant/mot de passe non vide est accepte."""
-    data = request.get_json(force=True) or {}
-    identifiant = str(data.get('identifiant', '')).strip()
-    mot_de_passe = str(data.get('mot_de_passe', ''))
-    if not identifiant or not mot_de_passe:
-        return jsonify({'error': 'Identifiant et mot de passe requis'}), 400
-    return jsonify({'message': 'Connexion réussie', 'user': identifiant})
+    """Connexion depuis la page d'accueil via Supabase Auth
+    (l'identifiant est l'email du compte)."""
+    try:
+        data = request.get_json(force=True) or {}
+        identifiant = str(data.get('identifiant', '')).strip()
+        mot_de_passe = str(data.get('mot_de_passe', ''))
+        if not identifiant or not mot_de_passe:
+            return jsonify({'error': 'Identifiant et mot de passe requis'}), 400
+
+        from db import get_supabase
+        sb = get_supabase()
+        resp = sb.auth.sign_in_with_password({
+            'email': identifiant,
+            'password': mot_de_passe,
+        })
+        if not resp or not resp.session:
+            return jsonify({'error': 'Identifiant ou mot de passe incorrect'}), 401
+
+        return jsonify({
+            'message': 'Connexion réussie',
+            'user': resp.user.email or identifiant,
+            'access_token': resp.session.access_token,
+            'refresh_token': resp.session.refresh_token,
+            'expires_in': resp.session.expires_in,
+        })
+    except Exception as e:
+        traceback.print_exc()
+        if 'Invalid login credentials' in str(e):
+            return jsonify({'error': 'Identifiant ou mot de passe incorrect'}), 401
+        return jsonify({'error': 'Erreur de connexion, veuillez réessayer.'}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -325,6 +398,12 @@ def load_wb_safe(path, retries=3):
             print(f"⚠️  Fichier verrouillé, tentative {attempt+1}/{retries}…")
             time.sleep(1)
     return None
+
+def _safe_error(e):
+    """Message d'erreur sur : details techniques seulement en debug local."""
+    if os.environ.get('FLASK_DEBUG') == '1':
+        return f"{type(e).__name__}: {str(e)}"
+    return "Une erreur interne est survenue. Veuillez réessayer."
 
 PLACEHOLDERS = {"-- sélectionner --", "-- selectionner --", "tous", "tout", ""}
 
@@ -383,17 +462,18 @@ def get_localisation_hierarchie():
             return jsonify(tree)
         except Exception as e2:
             traceback.print_exc()
-            return jsonify({"error": str(e2)}), 500
+            return jsonify({"error": _safe_error(e2)}), 500
 
 
 @app.route('/api/localisation/reload', methods=['POST'])
+@require_auth
 def reload_localisation_tree():
     try:
         from db import get_localisation_tree
         get_localisation_tree(force_reload=True)
         return jsonify({"message": "Arbre de localisation rechargé"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 def _get_localisation_from_excel():
@@ -498,6 +578,7 @@ def derive_localisation_columns(zone_str):
 
 
 @app.route('/api/banque/projets/list', methods=['GET'])
+@require_auth
 def get_projets_banque():
     try:
         if not os.path.exists(BANQUE_FILE):
@@ -533,10 +614,11 @@ def get_projets_banque():
         return jsonify(cleaned)
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/projets/add', methods=['POST'])
+@require_auth
 def add_projet_banque():
     try:
         data = request.get_json(force=True) or {}
@@ -596,10 +678,11 @@ def add_projet_banque():
         return jsonify({"message": "Projet ajouté avec succès", "code": data.get('Code_Projet')}), 201
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/projets/update/<code>', methods=['PUT'])
+@require_auth
 def update_projet_banque(code):
     try:
         code = unquote(code).strip()
@@ -671,10 +754,11 @@ def update_projet_banque(code):
         return jsonify({"message": "Projet mis à jour"}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/projets/delete/<code>', methods=['DELETE'])
+@require_auth
 def delete_projet_banque(code):
     try:
         code = unquote(code).strip()
@@ -690,7 +774,7 @@ def delete_projet_banque(code):
         return jsonify({"error": "Projet non trouvé"}), 404
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/parametres', methods=['GET'])
@@ -713,10 +797,11 @@ def get_parametres_banque():
                 return jsonify(params[categorie])
             return jsonify(params)
         except Exception as e2:
-            return jsonify({"error": str(e2)}), 500
+            return jsonify({"error": _safe_error(e2)}), 500
 
 
 @app.route('/api/banque/parametres/add', methods=['POST'])
+@require_auth
 def add_parametre_banque():
     try:
         data = request.json
@@ -744,7 +829,7 @@ def add_parametre_banque():
             return jsonify({"message": "Valeur ajoutée", "colonne": colonne, "valeur": nouvelle_valeur}), 201
         except Exception as sb_err:
             traceback.print_exc()
-            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
+            return jsonify({"error": _safe_error(sb_err)}), 500
 
         # Fallback Excel
         wb = load_wb_safe(BANQUE_FILE)
@@ -765,10 +850,11 @@ def add_parametre_banque():
         return jsonify({"message": "Valeur ajoutée", "colonne": colonne, "valeur": nouvelle_valeur}), 201
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/parametres/delete', methods=['POST'])
+@require_auth
 def delete_parametre_banque():
     try:
         data = request.get_json(force=True) or {}
@@ -821,10 +907,11 @@ def delete_parametre_banque():
         return jsonify({"message": "Valeur supprim\u00e9e"}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/parametres/update', methods=['POST'])
+@require_auth
 def update_parametre_banque():
     try:
         data = request.json
@@ -850,7 +937,7 @@ def update_parametre_banque():
             return jsonify({"message": "Valeur modifiée", "colonne": colonne}), 200
         except Exception as sb_err:
             traceback.print_exc()
-            return jsonify({"error": f"Supabase: {str(sb_err)}"}), 500
+            return jsonify({"error": _safe_error(sb_err)}), 500
 
         # Fallback Excel
         wb = load_wb_safe(BANQUE_FILE)
@@ -870,13 +957,14 @@ def update_parametre_banque():
         return jsonify({"message": "Valeur modifiée", "colonne": colonne}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ============================================
 # DOCUMENTS ASSOCIES AUX PROJETS (stockés dans Supabase)
 # ============================================
 @app.route('/api/banque/documents', methods=['GET'])
+@require_auth
 def list_documents_projet():
     """Liste les métadonnées des documents d'un projet (sans le contenu)."""
     code = request.args.get('code', '').strip()
@@ -891,10 +979,11 @@ def list_documents_projet():
         return jsonify(resp.data or [])
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/documents/upload', methods=['POST'])
+@require_auth
 def upload_document_projet():
     """Reçoit un fichier (multipart) et le stocke en base64 dans Supabase."""
     try:
@@ -920,10 +1009,11 @@ def upload_document_projet():
         return jsonify({"message": "Document ajouté", "code_projet": code_projet}), 201
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/documents/<int:doc_id>/download', methods=['GET'])
+@require_auth
 def download_document_projet(doc_id):
     """Retourne le contenu du document pour téléchargissement/visualisation."""
     try:
@@ -945,10 +1035,11 @@ def download_document_projet(doc_id):
         )
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/documents/<int:doc_id>', methods=['DELETE'])
+@require_auth
 def delete_document_projet(doc_id):
     try:
         from db import get_supabase
@@ -957,10 +1048,11 @@ def delete_document_projet(doc_id):
         return jsonify({"message": "Document supprimé"}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/projets/export', methods=['POST'])
+@require_auth
 def export_projets():
     try:
         req_data = request.get_json(force=True) or {}
@@ -1005,7 +1097,7 @@ def export_projets():
                          as_attachment=True, download_name=f'Rapport_Projets_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx')
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1013,6 +1105,7 @@ def export_projets():
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.route('/api/banque/suivi/list', methods=['GET'])
+@require_auth
 def get_suivi_trimestriel():
     try:
         from db import get_supabase
@@ -1027,7 +1120,7 @@ def get_suivi_trimestriel():
             return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
         except Exception as e2:
             traceback.print_exc()
-            return jsonify({"error": str(e2)}), 500
+            return jsonify({"error": _safe_error(e2)}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1107,16 +1200,17 @@ def get_secteurs_sous_secteurs_route():
         return jsonify(get_secteurs_sous_secteurs())
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/secteurs_sous_secteurs/reload', methods=['POST'])
+@require_auth
 def reload_secteurs_sous_secteurs():
     try:
         get_secteurs_sous_secteurs(force_reload=True)
         return jsonify({"message": "Mapping secteurs/sous-secteurs rechargé"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ── CRUD: secteur_sous_secteur (table de relation explicite) ──
@@ -1134,7 +1228,7 @@ def list_secteur_sous_secteur():
         if 'relation' in str(e) and 'does not exist' in str(e):
             return jsonify([])
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/secteur_sous_secteur/by_secteur', methods=['GET'])
@@ -1153,10 +1247,11 @@ def get_sous_secteurs_by_secteur():
         if 'relation' in str(e) and 'does not exist' in str(e):
             return jsonify([])
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/secteur_sous_secteur/add', methods=['POST'])
+@require_auth
 def add_secteur_sous_secteur():
     """Ajoute une relation secteur -> sous-secteur."""
     try:
@@ -1183,10 +1278,11 @@ def add_secteur_sous_secteur():
         return jsonify({"message": "Sous-secteur lié", "secteur": secteur, "sous_secteur": sous_secteur}), 201
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/secteur_sous_secteur/delete', methods=['POST'])
+@require_auth
 def delete_secteur_sous_secteur():
     """Supprime une relation secteur -> sous-secteur."""
     try:
@@ -1205,7 +1301,7 @@ def delete_secteur_sous_secteur():
         return jsonify({"message": "Liaison supprimée"}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1224,6 +1320,7 @@ def read_accords_sheet(sheet_name):
     return pd.read_excel(ACCORDS_FILE, sheet_name=sheet_name, dtype=str, header=hdr)
 
 @app.route('/api/partenaires/list', methods=['GET'])
+@require_auth
 def get_partenaires():
     try:
         df = read_accords_sheet('PARTENAIRES')
@@ -1232,7 +1329,7 @@ def get_partenaires():
         df = df.replace({np.nan: None})
         return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1277,6 +1374,7 @@ def read_coop_sheet(sheet_name):
     return pd.read_excel(COOP_DEC_FILE, sheet_name=sheet_name, dtype=str, header=0)
 
 @app.route('/api/coop_dec/list', methods=['GET'])
+@require_auth
 def get_coop_dec_list():
     try:
         df = read_coop_sheet('ACCORDS')
@@ -1287,7 +1385,7 @@ def get_coop_dec_list():
         return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 @app.route('/api/coop_dec/parametres', methods=['GET'])
 def get_coop_dec_parametres():
@@ -1297,9 +1395,10 @@ def get_coop_dec_parametres():
         params = {col: [str(v).strip() for v in df[col].dropna() if str(v).strip()] for col in df.columns}
         return jsonify(params)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 @app.route('/api/coop_dec/actions', methods=['GET'])
+@require_auth
 def get_coop_dec_actions():
     try:
         df = read_coop_sheet('ACTIONS_PROJETS')
@@ -1307,9 +1406,10 @@ def get_coop_dec_actions():
         df = df.replace({np.nan: None})
         return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 @app.route('/api/coop_dec/echanges', methods=['GET'])
+@require_auth
 def get_coop_dec_echanges():
     try:
         df = read_coop_sheet('ECHANGES_VISITES')
@@ -1317,7 +1417,7 @@ def get_coop_dec_echanges():
         df = df.replace({np.nan: None})
         return jsonify(json.loads(df.to_json(orient='records', force_ascii=False)))
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1344,6 +1444,7 @@ def _get_pg_connection():
 
 
 @app.route('/api/setup/create-tables', methods=['POST'])
+@require_auth
 def setup_create_tables():
     """Crée les tables manquantes dans Supabase (one-time setup)."""
     try:
@@ -1365,10 +1466,11 @@ def setup_create_tables():
         return jsonify({"message": "Tables créées avec succès"}), 200
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": _safe_error(e)}), 500
 
 
 @app.route('/api/banque/parametres/diag', methods=['GET'])
+@require_auth
 def diag_parametres():
     """Diagnostic: verifie l'etat de la table parametres."""
     result = {"status": "unknown", "details": {}}
@@ -1410,4 +1512,4 @@ if __name__ == '__main__':
     print(f"  Partagez cette URL avec vos collegues :")
     print(f"  >>> http://{local_ip}:5000 <<<")
     print("=" * 60)
-    app.run(host='0.0.0.0', debug=True, port=5000)
+    app.run(host='0.0.0.0', debug=os.environ.get('FLASK_DEBUG') == '1', port=5000)

@@ -24,9 +24,18 @@ from datetime import datetime
 
 from flask import Blueprint, request, jsonify, send_file
 
+from auth import require_auth
+
 bp = Blueprint('accords_financiers', __name__)
 
 KEY_HEADER = 'Code Projet'
+
+
+def _safe_error(e):
+    """Message d'erreur sur : details techniques seulement en debug local."""
+    if os.environ.get('FLASK_DEBUG') == '1':
+        return f"{type(e).__name__}: {str(e)}"
+    return "Une erreur interne est survenue. Veuillez réessayer."
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -42,10 +51,11 @@ def get_columns():
         return jsonify({'key_field': KEY_HEADER, 'columns': columns})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/list', methods=['GET'])
+@require_auth
 def list_accords():
     """Retourne tous les accords."""
     try:
@@ -54,10 +64,11 @@ def list_accords():
         return jsonify({'total': len(rows), 'data': rows})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/add', methods=['POST'])
+@require_auth
 def add_accord():
     """Ajoute un nouvel accord."""
     try:
@@ -77,10 +88,11 @@ def add_accord():
         return jsonify({'message': 'Accord enregistré.', KEY_HEADER: code}), 201
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/update/<code>', methods=['PUT'])
+@require_auth
 def update_accord(code):
     """Met a jour un accord existant."""
     try:
@@ -105,10 +117,11 @@ def update_accord(code):
         return jsonify({'message': 'Accord mis à jour.'})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/delete/<code>', methods=['DELETE'])
+@require_auth
 def delete_accord(code):
     """Supprime un accord."""
     try:
@@ -124,10 +137,11 @@ def delete_accord(code):
         return jsonify({'message': 'Accord supprimé.'})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/export', methods=['POST'])
+@require_auth
 def export_accords():
     """Exporte les accords filtres en Excel."""
     try:
@@ -172,10 +186,11 @@ def export_accords():
                           mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
 
 
 @bp.route('/api/accords-financiers/import', methods=['POST'])
+@require_auth
 def import_accords():
     """Importe des accords depuis un fichier Excel."""
     try:
@@ -230,4 +245,4 @@ def import_accords():
         return jsonify({'message': f'{added} accord(s) ajouté(s), {updated} mis à jour.'})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': _safe_error(e)}), 500
