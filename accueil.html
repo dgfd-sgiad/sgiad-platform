@@ -340,14 +340,14 @@
             <div class="map-card">
                 <div class="section-title" style="margin-bottom: 8px; font-size: 16px;">Répartition des projets</div>
                 <div class="toggle-row">
-                    <button class="toggle-btn active">Par secteur</button>
-                    <button class="toggle-btn" onclick="openLogin('Rapports')">Par partenaire</button>
+                    <button class="toggle-btn active" id="donut-btn-secteur" onclick="switchDonut('secteur')">Par secteur</button>
+                    <button class="toggle-btn" id="donut-btn-partenaire" onclick="switchDonut('partenaire')">Par partenaire</button>
                 </div>
                 <div class="donut-wrap">
                     <div class="donut" id="donut"></div>
                     <div class="donut-hole">
                         <div class="donut-center-value" id="donut-total">—</div>
-                        <div class="donut-center-label">Projets</div>
+                        <div class="donut-center-label">Projets en cours</div>
                     </div>
                 </div>
                 <div class="legend-grid" id="donut-legend"></div>
@@ -606,8 +606,26 @@
                 `<div class="partner-item"><span class="partner-dot" style="background:${PARTNER_COLORS[i % 3]}"></span>${esc(p)}</div>`).join('');
         }
 
-        function renderDonut(REPARTITION) {
-            if (!REPARTITION) return;
+        let DONUT_DATAS = {};
+
+        function renderDonut(data) {
+            DONUT_DATAS = { secteur: data.REPARTITION, partenaire: data.REPARTITION_PARTENAIRES };
+            drawDonut(DONUT_DATAS.secteur);
+        }
+
+        function switchDonut(mode) {
+            document.getElementById('donut-btn-secteur').classList.toggle('active', mode === 'secteur');
+            document.getElementById('donut-btn-partenaire').classList.toggle('active', mode === 'partenaire');
+            drawDonut(DONUT_DATAS[mode]);
+        }
+
+        function drawDonut(REPARTITION) {
+            if (!REPARTITION) {
+                document.getElementById('donut').style.background = '#e5e7eb';
+                document.getElementById('donut-total').textContent = '—';
+                document.getElementById('donut-legend').innerHTML = '<div class="loading-hint">Aucune donnée.</div>';
+                return;
+            }
             const { Secteurs, Pourcentages, Couleurs, Total } = REPARTITION;
             let acc = 0;
             const stops = Secteurs.map((s, i) => {
@@ -677,7 +695,7 @@
                 renderNews(data.ACTUALITES);
                 renderProjets(data.PROJETS_UNE);
                 renderDepartements(data.DEPARTEMENTS);
-                renderDonut(data.REPARTITION);
+                renderDonut(data);
                 renderEvents(data.EVENEMENTS);
                 if (data.ACCORDS) renderAccords(data.ACCORDS);
                 renderDocs(data.DOCUMENTS);

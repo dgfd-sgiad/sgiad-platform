@@ -143,61 +143,91 @@ def _extract_departements_zone(zone_str):
             if re.search(r'\b' + dep + r'\b', texte)}
 
 
+def _repartition_projets(rows_actifs, champ):
+    """Repartition (camembert) des projets en cours selon un champ (secteur/partenaire)."""
+    from collections import Counter
+    comptes = Counter()
+    for r in rows_actifs:
+        val = str(r.get(champ) or '').strip()
+        if not val or val.lower() == 'nan':
+            val = 'Non précisé'
+        comptes[val] += 1
+    total = sum(comptes.values())
+    if not total:
+        return None
+    items = comptes.most_common(6)
+    if len(comptes) > 6:
+        items.append(('Autres', total - sum(c for _, c in items)))
+    palette = ['#0a2540', '#0e7a3a', '#f2c94c', '#2563eb', '#7c3aed', '#dc2626', '#0891b2']
+    secteurs, pcts, couleurs = [], [], []
+    reste = 100
+    for i, (nom, nb) in enumerate(items):
+        pct = round(nb * 100 / total) if i < len(items) - 1 else reste
+        pct = max(0, min(pct, reste))
+        reste -= pct
+        secteurs.append(nom)
+        pcts.append(pct)
+        couleurs.append(palette[i % len(palette)])
+    return {'Secteurs': secteurs, 'Pourcentages': pcts, 'Couleurs': couleurs, 'Total': total}
+
+
 def _compute_accueil_stats(rows):
-    """Calcule les statistiques dynamiques depuis les lignes accords_consolides."""
-    from datetime import date
-    annee_en_cours = date.today().year
-    premier_janvier = f'{annee_en_cours}-01-01'
+    """Calcule les statistiques dynamiques : informations recentes et projets en cours."""
+    from datetime import date, timedelta
+    aujourd_hui = date.today()
+    auj_iso = aujourd_hui.isoformat()
+    il_y_a_12_mois = (aujourd_hui - timedelta(days=365)).isoformat()
+    dans_12_mois = (aujourd_hui + timedelta(days=365)).isoformat()
 
     def iso(v):
         return str(v)[:10] if v else ''
 
-    total = len(rows)
     actifs = 0
-    partenaires = set()
-    departements = set()
-    montant_fcfa = 0.0
-    annees_signature = []
+    clotures_a_venir = 0
+    accords_12_mois = 0
+    partenaires_actifs = set()
+    departements_actifs = set()
+    montant_actifs = 0.0
+    rows_actifs = []
 
     for r in rows:
-        part = str(r.get('partenaire') or '').strip()
-        if part:
-            partenaires.add(part)
-        # Departements: extraits de la zone (texte libre/arbre), sinon colonne departement
-        deps_zone = _extract_departements_zone(r.get('zone'))
-        if deps_zone:
-            departements.update(deps_zone)
-        else:
-            dep = strip_accents(str(r.get('departement') or '').strip()).upper()
-            if dep in DEPARTEMENTS_BENIN:
-                departements.add(dep)
-        try:
-            annees_signature.append(int(r.get('annee_signature')))
-        except (TypeError, ValueError):
-            pass
-        m = r.get('montant_total_fcfa')
-        try:
-            montant_fcfa += float(m or 0)
-        except (TypeError, ValueError):
-            pass
-        # Projet actif = cloture (apres prorogation sinon initiale) >= 1er janvier
+        # Un emprunt obligataire n'est pas un projet : exclu des indicateurs "en cours"
+        emprunt = 'EMPRUNT OBLIGATAIRE' in strip_accents(str(r.get('partenaire') or '')).upper()
+        # Projet en cours = cloture (apres prorogation sinon initiale) >= aujourd'hui
         ref = iso(r.get('nouvelle_date_cloture')) or iso(r.get('date_cloture'))
         if ref:
-            if ref >= premier_janvier:
-                actifs += 1
-            continue
-        try:
-            if int(r.get('annee_cloture')) >= annee_en_cours:
-                actifs += 1
-        except (TypeError, ValueError):
-            actifs += 1  # aucune cloture connue = actif
+            actif = (not emprunt) and ref >= auj_iso
+            if actif and ref <= dans_12_mois:
+                clotures_a_venir += 1
+        else:
+            try:
+                actif = (not emprunt) and int(r.get('annee_cloture')) >= aujourd_hui.year
+            except (TypeError, ValueError):
+                actif = not emprunt  # aucune cloture connue = en cours
+        if actif:
+            actifs += 1
+            rows_actifs.append(r)
+            part = str(r.get('partenaire') or '').strip()
+            if part:
+                partenaires_actifs.add(part)
+            deps_zone = _extract_departements_zone(r.get('zone'))
+            if deps_zone:
+                departements_actifs.update(deps_zone)
+            else:
+                dep = strip_accents(str(r.get('departement') or '').strip()).upper()
+                if dep in DEPARTEMENTS_BENIN:
+                    departements_actifs.add(dep)
+            try:
+                montant_actifs += float(r.get('montant_total_fcfa') or 0)
+            except (TypeError, ValueError):
+                pass
+        # Accord signe dans les 12 derniers mois
+        d_sig = iso(r.get('date_signature'))
+        if d_sig and d_sig >= il_y_a_12_mois:
+            accords_12_mois += 1
 
-    milliards = int(round(montant_fcfa / 1_000_000_000))
+    milliards = int(round(montant_actifs / 1_000_000_000))
     montant_str = f'{milliards:,}'.replace(',', ' ')
-    if annees_signature:
-        periode = f'{min(annees_signature)} - {max(annees_signature)}'
-    else:
-        periode = '2016 - 2025'
 
     # Derniers accords signes (4 plus recents)
     tries = sorted(
@@ -219,19 +249,21 @@ def _compute_accueil_stats(rows):
         })
 
     stats = {
-        'accords_signes': {'valeur': total, 'label': 'Accords signés', 'sublabel': periode, 'icone': '📄'},
-        'projets_actifs': {'valeur': actifs, 'label': 'Projets actifs', 'sublabel': "En cours d'exécution", 'icone': '📁'},
-        'partenaires': {'valeur': len(partenaires), 'label': 'Partenaires techniques et financiers', 'sublabel': '', 'icone': '👥'},
-        'montant': {'valeur': montant_str, 'label': 'Milliards FCFA', 'sublabel': 'Montant total mobilisé', 'icone': '🪙'},
-        'departements': {'valeur': len(departements), 'label': 'Départements couverts', 'sublabel': '', 'icone': '🏛️'},
-        'projets_clotures': {'valeur': total - actifs, 'label': 'Projets clôturés', 'sublabel': 'Depuis 2016', 'icone': '✅'},
+        'projets_en_cours': {'valeur': actifs, 'label': 'Projets en cours', 'sublabel': "En cours d'exécution", 'icone': '📁'},
+        'accords_recents': {'valeur': accords_12_mois, 'label': 'Accords signés', 'sublabel': '12 derniers mois', 'icone': '📄'},
+        'financements_en_cours': {'valeur': montant_str, 'label': 'Milliards FCFA', 'sublabel': 'Financements en cours', 'icone': '🪙'},
+        'partenaires_actifs': {'valeur': len(partenaires_actifs), 'label': 'Partenaires actifs', 'sublabel': 'Sur les projets en cours', 'icone': '👥'},
+        'departements': {'valeur': len(departements_actifs), 'label': 'Départements couverts', 'sublabel': 'Par les projets en cours', 'icone': '🏛️'},
+        'clotures_a_venir': {'valeur': clotures_a_venir, 'label': 'Clôtures à venir', 'sublabel': '12 prochains mois', 'icone': '⏳'},
     }
     today_stats = [
-        {'icone': '📋', 'valeur': total, 'label': 'Accords enregistrés'},
-        {'icone': '🚀', 'valeur': actifs, 'label': 'Projets actifs'},
-        {'icone': '⚠️', 'valeur': montant_str, 'label': 'Montant mobilisé Milliards FCFA'},
+        {'icone': '🚀', 'valeur': actifs, 'label': 'Projets en cours'},
+        {'icone': '📄', 'valeur': accords_12_mois, 'label': 'Accords signés (12 mois)'},
+        {'icone': '🪙', 'valeur': montant_str, 'label': 'Milliards FCFA en cours'},
     ]
-    return {'STATS': stats, 'TODAY_STATS': today_stats, 'ACCORDS': accords_recents}
+    return {'STATS': stats, 'TODAY_STATS': today_stats, 'ACCORDS': accords_recents,
+            'REPARTITION': _repartition_projets(rows_actifs, 'secteur_principal'),
+            'REPARTITION_PARTENAIRES': _repartition_projets(rows_actifs, 'partenaire')}
 
 
 _accueil_cache = {'ts': 0, 'data': None}
@@ -251,13 +283,17 @@ def _build_accueil_data():
         resp = sb.table('accords_consolides').select(
             'code_projet, partenaire, objet_accord, date_signature, annee_signature, '
             'date_cloture, nouvelle_date_cloture, annee_cloture, '
-            'montant_total_fcfa, departement, zone'
+            'montant_total_fcfa, departement, zone, secteur_principal'
         ).execute()
         dyn = _compute_accueil_stats(resp.data or [])
         content['STATS'] = dyn['STATS']
         content['TODAY_STATS'] = dyn['TODAY_STATS']
         if dyn['ACCORDS']:
             content['ACCORDS'] = dyn['ACCORDS']
+        if dyn['REPARTITION']:
+            content['REPARTITION'] = dyn['REPARTITION']
+        if dyn['REPARTITION_PARTENAIRES']:
+            content['REPARTITION_PARTENAIRES'] = dyn['REPARTITION_PARTENAIRES']
         content['source'] = 'supabase'
     except Exception:
         traceback.print_exc()
