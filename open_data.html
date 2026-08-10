@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Data DGFD</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: Inter, Arial, sans-serif; margin: 0; background: linear-gradient(180deg, #f8fbff 0%, #f2f6fb 100%); color: #0f172a; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; box-shadow: 0 10px 28px rgba(15,23,42,.06); }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { color: #475569; line-height: 1.6; margin-top: 0; }
+    .hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: #eff6ff; color: #1d4ed8; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .filters { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin: 18px 0 14px; }
+    .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #334155; }
+    .field span { font-weight: 700; }
+    .field input, .field select, .field button { padding: 10px 12px; border-radius: 12px; border: 1px solid #cbd5e1; font: inherit; background: #fff; }
+    .field input:focus, .field select:focus { outline: 2px solid rgba(37,99,235,.18); border-color: #60a5fa; }
+    .search-box { display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; }
+    .search-box input { border: 0; padding: 10px 0; width: 100%; outline: none; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 16px; }
+    button { background: #0f4c81; color: white; border: none; cursor: pointer; font-weight: 700; padding: 10px 14px; border-radius: 999px; }
+    button.secondary { background: #64748b; }
+    button.ghost { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+    .hint { font-size: 13px; color: #64748b; margin-top: 10px; }
+    .stats-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .stat-chip { padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 999px; color: #334155; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+    th { background: #f8fafc; color: #334155; }
+    .muted { color: #64748b; }
+    @media (max-width: 1100px) { .filters { grid-template-columns: 1fr 1fr 1fr; } }
+    @media (max-width: 700px) { .filters { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="hero">
+        <div>
+          <h1>Open Data DGFD</h1>
+        </div>
+        <div class="pill">🔎 Recherche instantanée • Filtres professionnels</div>
+      </div>
+
+      <div class="filters">
+        <label class="field">
+          <span>Recherche</span>
+          <div class="search-box">
+            <span>🔎</span>
+            <input id="search" placeholder="Code, partenaire, objet, commune" />
+          </div>
+        </label>
+        <label class="field">
+          <span>Partenaire</span>
+          <select id="partenaire"><option value="">Tous</option></select>
+        </label>
+        <label class="field">
+          <span>Secteur</span>
+          <select id="secteur"><option value="">Tous</option></select>
+        </label>
+        <label class="field">
+          <span>Département</span>
+          <select id="departement"><option value="">Tous</option></select>
+        </label>
+        <label class="field">
+          <span>Commune</span>
+          <select id="commune"><option value="">Toutes</option></select>
+        </label>
+        <label class="field">
+          <span>Année de clôture</span>
+          <input id="annee_cloture" type="number" min="2020" max="2035" placeholder="2026" />
+        </label>
+      </div>
+
+      <div class="actions">
+        <button onclick="loadData()">Afficher l’aperçu</button>
+        <button class="secondary" onclick="exportData('csv')">Exporter CSV</button>
+        <button class="secondary" onclick="exportData('xlsx')">Exporter Excel</button>
+        <button class="ghost" onclick="clearFilters()">Effacer les filtres</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-chip" id="stat-count">Chargement…</div>
+        <div class="stat-chip" id="stat-source">Source : données publiques</div>
+      </div>
+
+      <div id="summary" class="hint">Chargement des données…</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Partenaire</th>
+            <th>Objet</th>
+            <th>Date signature</th>
+            <th>Date clôture</th>
+            <th>Montant</th>
+            <th>Département</th>
+            <th>Commune</th>
+            <th>Secteur</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    let searchTimer = null;
+
+    function esc(v) {
+      return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function getFilters() {
+      return {
+        search: document.getElementById('search').value.trim(),
+        partenaire: document.getElementById('partenaire').value.trim(),
+        secteur: document.getElementById('secteur').value.trim(),
+        departement: document.getElementById('departement').value.trim(),
+        commune: document.getElementById('commune').value.trim(),
+        annee_cloture: document.getElementById('annee_cloture').value.trim()
+      };
+    }
+
+    function setFiltersFromData(data) {
+      const options = data.options || {};
+      fillSelect('partenaire', options.partenaire || []);
+      fillSelect('secteur', options.secteur_principal || []);
+      fillSelect('departement', options.departement || []);
+      fillSelect('commune', options.commune || []);
+      document.getElementById('stat-count').textContent = `${data.count || 0} résultat(s) au total`;
+      document.getElementById('stat-source').textContent = `Source : ${data.source || 'données publiques'}`;
+    }
+
+    async function loadData() {
+      const params = new URLSearchParams();
+      const filters = getFilters();
+      if (filters.search) params.set('search', filters.search);
+      if (filters.partenaire) params.set('partenaire', filters.partenaire);
+      if (filters.secteur) params.set('secteur_principal', filters.secteur);
+      if (filters.departement) params.set('departement', filters.departement);
+      if (filters.commune) params.set('commune', filters.commune);
+      if (filters.date_cloture) params.set('date_cloture', filters.date_cloture);
+      params.set('limit', '40');
+      const res = await fetch('/api/open-data?' + params.toString());
+      const data = await res.json();
+      const rows = data.records || [];
+      document.getElementById('summary').innerHTML = `${rows.length} ligne(s) affichées sur ${data.count || 0}. ${data.message || ''}`;
+      const tbody = document.getElementById('rows');
+      tbody.innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${esc(r.code_projet || '')}</td>
+          <td>${esc(r.partenaire || '')}</td>
+          <td>${esc((r.objet_accord || '').slice(0, 120))}</td>
+          <td>${esc(r.date_signature || '')}</td>
+          <td>${esc(r.date_cloture || '')}</td>
+          <td>${esc(r.montant_total_fcfa || '')}</td>
+          <td>${esc(r.departement || '')}</td>
+          <td>${esc(r.commune || '')}</td>
+          <td>${esc(r.secteur_principal || '')}</td>
+        </tr>`).join('') : '<tr><td colspan="9" class="muted">Aucune information à afficher pour ces filtres.</td></tr>';
+      setFiltersFromData(data);
+    }
+
+    function fillSelect(id, values) {
+      const sel = document.getElementById(id);
+      const current = sel.value;
+      const options = [`<option value="">${id === 'commune' ? 'Toutes' : 'Tous'}</option>`].concat((values || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`));
+      sel.innerHTML = options.join('');
+      if (current && (values || []).includes(current)) sel.value = current;
+    }
+
+    function clearFilters() {
+      document.getElementById('search').value = '';
+      document.getElementById('partenaire').value = '';
+      document.getElementById('secteur').value = '';
+      document.getElementById('departement').value = '';
+      document.getElementById('commune').value = '';
+      document.getElementById('annee_cloture').value = '';
+      loadData();
+    }
+
+    function exportData(fmt) {
+      const params = new URLSearchParams();
+      const filters = getFilters();
+      if (filters.search) params.set('search', filters.search);
+      if (filters.partenaire) params.set('partenaire', filters.partenaire);
+      if (filters.secteur) params.set('secteur_principal', filters.secteur);
+      if (filters.departement) params.set('departement', filters.departement);
+      if (filters.commune) params.set('commune', filters.commune);
+      if (filters.date_cloture) params.set('date_cloture', filters.date_cloture);
+      const hasCombination = [filters.partenaire, filters.secteur, filters.departement, filters.commune, filters.search, filters.annee_cloture].filter(Boolean).length >= 2;
+      if (!hasCombination) {
+        alert('Les exports CSV/Excel exigent au moins deux filtres combinés ou une recherche ciblée.');
+        return;
+      }
+      params.set('format', fmt);
+      params.set('limit', '250');
+      window.location.href = '/api/open-data?' + params.toString();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('search').addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(loadData, 250);
+      });
+      ['partenaire', 'secteur', 'departement', 'commune', 'annee_cloture'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadData);
+      });
+      loadData();
+    });
+  </script>
+</body>
+</html>

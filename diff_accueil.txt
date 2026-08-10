@@ -1,0 +1,202 @@
+diff --git a/accueil.html b/accueil.html
+index d0988af..1bcc43d 100644
+--- a/accueil.html
++++ b/accueil.html
+@@ -3,7 +3,7 @@
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-    <title>SGIAD - Plateforme Nationale de Suivi</title>
++    <title>DGFD - Plateforme Nationale du Financement du Développement</title>
+     <script src="js/auth_client.js"></script>
+     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+@@ -124,9 +124,8 @@
+         .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin-top: 8px; }
+         .legend-row { display: flex; align-items: center; gap: 6px; }
+         .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+-        .legend-clot { color: #9ca3af; font-size: 10px; white-space: nowrap; font-weight: 500; }
+-        .legend-label { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+-        .legend-pct { font-size: 11px; color: #0a2540; font-weight: 600; margin-left: auto; white-space: nowrap; }
++        .legend-label { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
++        .legend-pct { font-size: 11px; color: #0a2540; font-weight: 600; margin-left: auto; }
+         .toggle-row { display: flex; gap: 8px; margin-bottom: 8px; }
+         .toggle-btn { flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #d1d5db; background: #f9fafb; font-size: 12px; font-weight: 600; color: #374151; cursor: pointer; font-family: inherit; }
+         .toggle-btn.active { background: #0a2540; color: white; border-color: #0a2540; }
+@@ -244,10 +243,14 @@
+         </div>
+         <div style="display: flex; align-items: center; gap: 2rem;">
+             <div class="dgfd-nav">
+-                <a class="active" onclick="scrollTo({top:0,behavior:'smooth'})">Accueil</a>
+-                <a onclick="openLogin('Plateforme')">Plateforme</a>
++                <a class="active">Accueil</a>
++                <a onclick="openLogin('Projets')">Projets</a>
++                <a onclick="openLogin('Accords')">Accords</a>
++                <a onclick="openLogin('Partenaires')">Partenaires</a>
++                <a onclick="openLogin('Cartographie')">Cartographie</a>
++                <a onclick="openLogin('Rapports')">Rapports</a>
+                 <a href="#actualites">Actualités</a>
+-                <a onclick="scrollToFooter()">Contact</a>
++                <span style="color: #d1d5db;">🔍</span>
+             </div>
+             <button class="dgfd-btn-login" onclick="openLogin('Connexion')">🔒 Connexion</button>
+         </div>
+@@ -258,9 +261,9 @@
+         <div class="ticker-label"><span class="pulse"></span> En direct</div>
+         <div class="ticker-viewport">
+             <div class="ticker-track" id="ticker-track" style="animation-duration: 40s;">
+-                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale de Suivi…</span>
++                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale du Financement du Développement…</span>
+                 <span class="ticker-sep">◆</span>
+-                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale de Suivi…</span>
++                <span class="ticker-item">🇧🇯 <b>DGFD</b> Bienvenue sur la Plateforme Nationale du Financement du Développement…</span>
+                 <span class="ticker-sep">◆</span>
+             </div>
+         </div>
+@@ -271,51 +274,24 @@
+         <div class="hero-overlay"></div>
+         <div class="hero-content">
+             <div class="hero-left">
+-                <h1 class="hero-title">Plateforme Nationale de Suivi de la Coopération et du Financement de Développement</h1>
++                <h1 class="hero-title">Plateforme Nationale du Financement du Développement</h1>
+                 <p class="hero-subtitle">
+                     Une plateforme unique pour le suivi des accords, projets, partenaires techniques et financiers
+                     et indicateurs de développement du Bénin.
+                 </p>
+                 <div class="hero-buttons">
+-                    <button class="btn-green" onclick="openLogin('Plateforme')">🔐 Accéder à la plateforme</button>
+-                    <button class="btn-white" onclick="scrollTo({top: document.querySelector('#actualites').offsetTop - 60, behavior: 'smooth'})">✨ En savoir plus</button>
++                    <button class="btn-green" onclick="openLogin('Gestion des projets')">📋 Consulter les projets</button>
++                    <button class="btn-white" onclick="openLogin('Tableau de bord')">📊 Tableau de bord</button>
+                 </div>
+             </div>
+             <div class="today-box">
+-                <div class="today-title">Chiffres clés</div>
++                <div class="today-title">Aujourd'hui</div>
+                 <div id="today-stats"><div class="loading-hint">Chargement…</div></div>
+                 <a class="today-link" onclick="openLogin('Tableau de bord')">Voir le tableau de bord →</a>
+             </div>
+         </div>
+     </div>
+ 
+-    <!-- ===== FEATURES ===== -->
+-    <div class="section-wrapper" style="padding-top: 0.5rem; padding-bottom: 0;">
+-        <div class="stats-grid" style="grid-template-columns: repeat(3, minmax(200px, 1fr)); gap: 1.5rem;">
+-            <div class="stat-card" style="background:#f8fafc; border:1px solid #e5e7eb;">
+-                <div class="stat-icon blue">📄</div>
+-                <div>
+-                    <div class="stat-value">Suivi des accords</div>
+-                    <div class="stat-label">Consultez les accords signés et leur état.</div>
+-                </div>
+-            </div>
+-            <div class="stat-card" style="background:#f8fafc; border:1px solid #e5e7eb;">
+-                <div class="stat-icon green">🗺️</div>
+-                <div>
+-                    <div class="stat-value">Cartographie</div>
+-                    <div class="stat-label">Visualisez les projets par département et partenaire.</div>
+-                </div>
+-            </div>
+-            <div class="stat-card" style="background:#f8fafc; border:1px solid #e5e7eb;">
+-                <div class="stat-icon purple">📊</div>
+-                <div>
+-                    <div class="stat-value">Tableaux de bord</div>
+-                    <div class="stat-label">Analysez les indicateurs clés pour le développement.</div>
+-                </div>
+-            </div>
+-        </div>
+-    </div>
+-
+     <!-- ===== STATS ===== -->
+     <div class="stats-section">
+         <div class="stats-grid" id="stats-grid">
+@@ -329,7 +305,7 @@
+             <div>
+                 <div class="section-header">
+                     <div class="section-title">Actualités</div>
+-                    <a class="section-link" onclick="openLogin('Actualités')">Voir toutes →</a>
++                    <a class="section-link">Voir toutes →</a>
+                 </div>
+                 <div id="news-list"><div class="loading-hint">Chargement…</div></div>
+             </div>
+@@ -432,10 +408,13 @@
+                 <div class="footer-title">Liens rapides</div>
+                 <div class="footer-links">
+                     <a onclick="scrollTo({top:0,behavior:'smooth'})">Accueil</a>
+-                    <a onclick="openLogin('Plateforme')">Plateforme</a>
+-                    <a href="#actualites">Actualités</a>
+                     <a onclick="openLogin('Cartographie')">Cartographie</a>
+-                    <a onclick="scrollToFooter()">Contact</a>
++                    <a onclick="openLogin('Projets')">Projets</a>
++                    <a onclick="openLogin('Rapports')">Rapports</a>
++                    <a onclick="openLogin('Accords')">Accords</a>
++                    <a href="#actualites">Actualités</a>
++                    <a onclick="openLogin('Partenaires')">Partenaires</a>
++                    <a>Contact</a>
+                 </div>
+             </div>
+             <div>
+@@ -478,8 +457,8 @@
+             <div class="login-sub" id="login-sub">Accédez à la gestion des projets et accords de la DGFD.</div>
+             <div class="login-error" id="login-error"></div>
+             <form id="login-form" onsubmit="return handleSubmit(event)">
+-                <label class="login-label" for="login-id">Email</label>
+-                <input type="email" class="login-input" id="login-id" placeholder="votre.email@example.com" autocomplete="username" required>
++                <label class="login-label" for="login-id">Email professionnel</label>
++                <input type="email" class="login-input" id="login-id" placeholder="prenom.nom@finances.bj" autocomplete="username" required>
+                 <label class="login-label" for="login-pwd">Mot de passe</label>
+                 <input type="password" class="login-input" id="login-pwd" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                 <div id="signup-confirm-block" style="display:none;">
+@@ -492,7 +471,7 @@
+                 <a href="#" id="login-switch" onclick="toggleAuthMode();return false;"
+                    style="color:#0e7a3a;font-size:13px;font-weight:600;text-decoration:underline;">Pas encore de compte ? Créer un compte</a>
+             </div>
+-            <div class="login-note">Accès public : inscrivez-vous avec votre email pour accéder à la plateforme.</div>
++            <div class="login-note">Accès réservé aux agents — inscription avec un email @finances.bj.</div>
+         </div>
+     </div>
+ 
+@@ -647,7 +626,7 @@
+                 document.getElementById('donut-legend').innerHTML = '<div class="loading-hint">Aucune donnée.</div>';
+                 return;
+             }
+-            const { Secteurs, Pourcentages, Couleurs, Total, Clotures, AnneeCloture, Effectifs } = REPARTITION;
++            const { Secteurs, Pourcentages, Couleurs, Total } = REPARTITION;
+             let acc = 0;
+             const stops = Secteurs.map((s, i) => {
+                 const start = acc; acc += Pourcentages[i];
+@@ -655,18 +634,12 @@
+             });
+             document.getElementById('donut').style.background = `conic-gradient(${stops.join(', ')})`;
+             document.getElementById('donut-total').textContent = Total;
+-            document.getElementById('donut-legend').style.gridTemplateColumns = '1fr';
+-            document.getElementById('donut-legend').innerHTML = Secteurs.map((s, i) => {
+-                const projets = Effectifs && Effectifs[i] !== undefined ? `${Effectifs[i]} projets en cours` : '';
+-                const clotures = Clotures && Clotures[i] !== undefined ? `${Clotures[i]} clôture${Clotures[i] > 1 ? 's' : ''} (2026)` : '';
+-                const meta = [projets, clotures].filter(Boolean).join(' · ');
+-                return `
++            document.getElementById('donut-legend').innerHTML = Secteurs.map((s, i) => `
+                 <div class="legend-row">
+                     <span class="legend-dot" style="background:${Couleurs[i]}"></span>
+                     <span class="legend-label">${esc(s)}</span>
+-                    <span class="legend-pct">${Pourcentages[i]}%${meta ? ' · ' + meta : ''}</span>
+-                </div>`;
+-            }).join('');
++                    <span class="legend-pct">${Pourcentages[i]}%</span>
++                </div>`).join('');
+         }
+ 
+         function renderEvents(EVENEMENTS) {
+@@ -885,13 +858,6 @@
+             return false;
+         }
+ 
+-        function scrollToFooter() {
+-            const footer = document.querySelector('.dgfd-footer');
+-            if (footer) {
+-                footer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+-            }
+-        }
+-
+         chargerAccueil();
+         
+         // Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render

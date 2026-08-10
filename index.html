@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIAD - Plateforme Nationale de Suivi</title>
+    <script src="js/auth_client.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Police Montserrat pour le titre + Inter pour le reste -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <!-- BARRE LATÉRALE STYLE DRAPEAU BÉNIN -->
+        <aside class="sidebar-benin">
+            <div class="flag-stripes">
+                <div class="stripe-green"></div>
+                <div class="stripe-right">
+                    <div class="stripe-yellow"></div>
+                    <div class="stripe-red"></div>
+                </div>
+            </div>
+            
+            <div class="logos-container">
+                <img src="assets/logos/logo_usaid.png" alt="USAID" class="donor-logo" onerror="this.style.display='none'">
+                <img src="assets/logos/logo_ue.png" alt="UE" class="donor-logo" onerror="this.style.display='none'">
+                <img src="assets/logos/logo_afd.png" alt="AFD" class="donor-logo" onerror="this.style.display='none'">
+                <img src="assets/logos/logo_bad.png" alt="BAD" class="donor-logo" onerror="this.style.display='none'">
+            </div>
+
+            <button class="btn-disconnect" onclick="(window.SGIADAuth ? SGIADAuth.logout('/') : (localStorage.removeItem('sgiad_accueil_user'), window.location.href='/'))">Déconnexion</button>
+
+            <div class="user-info-vertical">
+                <p><strong>Superviseur :</strong> Structure SUPER - Paramétrage</p>
+                <p><strong>Connecté depuis :</strong> <span id="infoIP">…</span></p>
+            </div>
+        </aside>
+
+        <!-- CONTENU PRINCIPAL -->
+        <main class="content-area">
+            <header class="top-header">
+                <!-- NOUVEAU TITRE INSTITUTIONNEL -->
+                <h1>Plateforme Nationale de Suivi de la Coopération et du Financement de Développement</h1>
+                
+                <div class="system-status">
+                    <span id="infoUtilisateur">Utilisateur : session non authentifiée</span><br>
+                    <span id="infoConnexion">Chargement des informations de connexion…</span>
+                </div>
+            </header>
+
+            <!-- GRILLE DES MODULES (5 COLONNES FIXES) -->
+            <section class="dashboard-container">
+                <div class="modules-grid" id="modulesGrid">
+                    <!-- Modules injectés par JS -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

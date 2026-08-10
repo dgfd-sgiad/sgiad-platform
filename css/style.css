@@ -1,0 +1,242 @@
+/* =========================================
+   SGIAD - STYLES COMPLETS (TITRE MIS À JOUR)
+   ========================================= */
+
+:root {
+    --primary-blue: #0b2545;
+    --secondary-blue: #1a3a5c;
+    --bg-light: #f4f6f9;
+    --white: #ffffff;
+    --text-dark: #333333;
+    --text-muted: #6c757d;
+    --border-color: #e9ecef;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', Arial, Helvetica, sans-serif;
+    background-color: var(--bg-light);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text-dark);
+}
+
+.main-container { display: flex; height: 100%; width: 100%; }
+
+/* --- SIDEBAR --- */
+.sidebar-benin {
+    width: 80px; background-color: white; display: flex;
+    flex-direction: column; align-items: center; border-right: 1px solid #ccc; z-index: 10;
+}
+.flag-stripes { width: 100%; height: 120px; display: flex; flex-direction: row; }
+.stripe-green { width: 40%; height: 100%; background-color: #009739; }
+.stripe-right { width: 60%; height: 100%; display: flex; flex-direction: column; }
+.stripe-yellow { width: 100%; flex: 1; background-color: #FCD116; }
+.stripe-red { width: 100%; flex: 1; background-color: #E8112D; }
+
+.logos-container {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 20px; align-items: center; width: 100%; padding: 0 10px;
+}
+.donor-logo { width: 55px; height: auto; object-fit: contain; }
+
+.user-info-vertical {
+    margin-top: auto; margin-bottom: 30px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    text-align: center; font-size: 10px; color: #333;
+    white-space: nowrap; line-height: 1.6;
+}
+.btn-disconnect {
+    margin-top: 20px; background: #e8112d; color: white; border: none;
+    padding: 5px 10px; cursor: pointer; font-size: 9px; border-radius: 2px;
+}
+
+/* --- CONTENU PRINCIPAL --- */
+.content-area {
+    flex: 1; background-color: white; padding: 20px 30px;
+    overflow-y: auto; display: flex; flex-direction: column;
+}
+
+.top-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 2px solid #009739; padding-bottom: 10px; margin-bottom: 30px;
+}
+
+/* TITRE MODERNE ET IMPOSANT (MONTSERRAT) */
+.top-header h1 {
+    font-family: 'Montserrat', sans-serif; 
+    font-weight: 800; 
+    /* Taille légèrement réduite à 20px car le texte est très long */
+    font-size: 20px; 
+    color: var(--primary-blue);
+    letter-spacing: 0.3px; 
+    text-transform: uppercase;
+    text-shadow: 0px 2px 4px rgba(11, 37, 69, 0.08);
+    line-height: 1.3;
+    max-width: 85%; /* Laisse de la place au statut utilisateur à droite */
+}
+
+.system-status {
+    font-size: 10px; color: #666; text-align: right; line-height: 1.4;
+    min-width: 250px;
+}
+
+/* --- GRILLE FIXE À 5 COLONNES --- */
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.module-card {
+    display: flex; flex-direction: column; align-items: center;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    height: auto; min-height: 220px; 
+    background-color: white; border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 10px 8px; text-align: center; overflow: hidden;
+}
+.module-card:hover {
+    transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border-color: #009739;
+}
+
+/* CARRÉ PARFAIT GARANTI */
+.module-image {
+    width: 100%; padding-bottom: 100%; position: relative;
+    background-color: #f9f9f9; border: 1px solid #e0e0e0;
+    margin-bottom: 10px; border-radius: 6px; overflow: hidden;
+}
+.module-image img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block;
+}
+.placeholder-icon {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); font-size: 35px; opacity: 0.4;
+}
+
+/* TITRES COMPACTS POUR 5 COLONNES */
+.module-title {
+    font-family: 'Arial Black', Impact, sans-serif; 
+    font-size: 11px; font-weight: 900; color: var(--primary-blue);
+    text-align: center; line-height: 1.2; min-height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    text-transform: uppercase; letter-spacing: 0.2px;
+    text-shadow: 0px 1px 0px rgba(255,255,255,0.8);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1400px) {
+    .modules-grid { grid-template-columns: repeat(4, 1fr); gap: 25px; }
+    .module-title { font-size: 12px; min-height: 36px; }
+}
+@media (max-width: 1100px) {
+    .modules-grid { grid-template-columns: repeat(3, 1fr); gap: 25px; }
+    .module-title { font-size: 13px; min-height: 40px; }
+}
+@media (max-width: 768px) {
+    .modules-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .module-card { padding: 12px 10px; }
+    .module-title { font-size: 14px; min-height: 44px; }
+    .top-header h1 { font-size: 16px; max-width: 100%; }
+}
+@media (max-width: 480px) {
+    .modules-grid { grid-template-columns: 1fr; gap: 15px; }
+}
+/* ================= CARTE BENIN ================= */
+
+#benin-map{
+    width:100%;
+    height:360px;
+    border-radius:10px;
+    border:1px solid #ddd;
+}
+.actions-bar{position:fixed;top:10px;right:12px;display:flex;gap:8px;z-index:999}
+.actions-bar button{border:none;border-radius:6px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.ab-back{background:#6b7280;color:#fff}
+.ab-save{background:#0e7a3a;color:#fff}
+.ab-pdf{background:#d5251f;color:#fff}
+.actions-bar button:hover{opacity:.9}
+@media print{.actions-bar{display:none !important}}
+
+
+/* ══════════ MODE PORTRAIT (corrige les décalages) ══════════ */
+.page{max-width:860px}
+
+/* En-tête recentré sur une colonne */
+header{grid-template-columns:1fr;justify-items:center;text-align:center;gap:12px}
+.hleft{flex-direction:column;align-items:center}
+.hright{width:240px}
+
+/* KPI : 3 par ligne au lieu de 6 */
+.kpis{grid-template-columns:repeat(3,1fr)}
+
+/* Tous les panneaux empilés verticalement */
+.r1,.r2,.r4{grid-template-columns:1fr}
+
+/* Finances : tableau puis donut centré dessous */
+.finwrap{flex-direction:column;align-items:stretch}
+.donutbox{width:auto;flex-direction:row;justify-content:center;align-items:center;gap:26px}
+
+/* Secteur & stratégies : tableau puis tuiles ODD sur une ligne */
+.s7wrap{flex-direction:column}
+.odds{width:100%;grid-template-columns:repeat(4,1fr)}
+.odd{width:auto;min-height:88px}
+
+/* Impression A4 PORTRAIT */
+@page{size:A4 portrait;margin:8mm}
+@media print{
+  .page{max-width:100%;box-shadow:none}
+  .actions-bar{display:none!important}
+  .panel{break-inside:avoid}
+  .tl::before{left:30px;right:30px}
+}
+
+/* ===============================================
+   MODALE — positionnement et drag
+   =============================================== */
+
+.modal-content {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    margin: 0;
+    z-index: 9999;
+}
+
+.modal-header, .modal-title {
+    cursor: grab;
+    user-select: none;
+    padding: 10px 15px;
+}
+.modal-header:active {
+    cursor: grabbing;
+}
+
+/* ===============================================
+   MODULES NON ACTIFS — badge et carte grisée
+   =============================================== */
+
+.module-card.module-inactive { cursor: not-allowed; }
+.module-card.module-inactive:hover {
+    transform: none; box-shadow: none; border-color: var(--border-color);
+}
+.module-card.module-inactive .module-image img,
+.module-card.module-inactive .placeholder-icon {
+    filter: grayscale(1); opacity: 0.35;
+}
+.module-card.module-inactive .module-title { color: #9ca3af; }
+
+.badge-non-actif {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    background: #d5251f; color: white;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+    padding: 4px 8px; border-radius: 4px; text-transform: uppercase;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+/* =============================================== */

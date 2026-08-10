@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Export PDF — Fiches projets</title>
+<script src="../js/auth_client.js"></script>
+<style id="fiche-style">/* Styles injectés depuis fiche_projet.html */</style>
+<style>
+.toolbar{position:fixed;top:10px;right:10px;display:flex;gap:8px;z-index:99;align-items:center}
+.toolbar button{border:none;border-radius:6px;padding:9px 13px;font-weight:700;font-size:12px;cursor:pointer;color:#fff;background:#d5251f;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.toolbar .status{background:#fff;border:1px solid #ddd;border-radius:6px;padding:9px 13px;font-size:12px;font-weight:600}
+.fiche-sheet{break-after:page;page-break-after:always}
+.fiche-sheet:last-child{break-after:auto;page-break-after:auto}
+@media print{
+  .toolbar{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <span class="status" id="status">Chargement des fiches…</span>
+  <button onclick="window.print()">📄 Imprimer / Enregistrer en PDF</button>
+</div>
+<div id="sprite-container"></div>
+<div id="fiches-container"></div>
+
+<script>
+(async function(){
+  var params = new URLSearchParams(location.search);
+  var codes = (params.get('codes') || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+  var statusEl = document.getElementById('status');
+  if (!codes.length) { statusEl.textContent = 'Aucun projet sélectionné'; return; }
+
+  /* ── Helpers (identiques à fiche_projet.html) ── */
+  function fmt(n){ n = Math.round(Number(n) || 0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function fdate(s){ if(!s) return '—'; var d = new Date(s); if(isNaN(d)) return s; return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+d.getFullYear(); }
+  function year(s){ if(s == null || s === '') return '—'; var n = Number(s); if (!isNaN(n) && String(s).trim().length === 4) return String(n); var d = new Date(s); return isNaN(d) ? '—' : String(d.getFullYear()); }
+  function split(s){ return String(s || '').split(/\s*;\s*/).filter(function(x){ return x.length > 2; }); }
+  function ul(a){ return '<ul>' + a.map(function(x){ return '<li>'+x+'</li>'; }).join('') + '</ul>'; }
+  /* ── Indicateurs de suivi et tuiles ODD : 100% issus de la base ── */
+  function setGauge($, gid, tid, val){ var g=$(gid),t=$(tid); var has=(val!==''&&val!=null&&!isNaN(Number(val))); var n=has?Math.max(0,Math.min(100,Number(val))):0; if(g)g.setAttribute('stroke-dasharray',n+' 100'); if(t)t.textContent=has?Math.round(n)+'%':'—'; }
+  var ODD_INFO={1:['#E5243B','PAS DE PAUVRETÉ'],2:['#DDA63A','FAIM «ZÉRO»'],3:['#4C9F38','BONNE SANTÉ ET BIEN-ÊTRE'],4:['#C5192D','ÉDUCATION DE QUALITÉ'],5:['#FF3A21','ÉGALITÉ ENTRE LES SEXES'],6:['#26BDE2','EAU PROPRE ET ASSAINISSEMENT'],7:['#FCC30B','ÉNERGIE PROPRE ET ABORDABLE'],8:['#A21942','TRAVAIL DÉCENT ET CROISSANCE ÉCONOMIQUE'],9:['#FD6925','INDUSTRIE, INNOVATION ET INFRASTRUCTURE'],10:['#DD1367','INÉGALITÉS RÉDUITES'],11:['#FD9D24','VILLES ET COMMUNAUTÉS DURABLES'],12:['#BF8B2E','CONSOMMATION ET PRODUCTION RESPONSABLES'],13:['#3F7E44','LUTTE CONTRE LES CHANGEMENTS CLIMATIQUES'],14:['#0A97D9','VIE AQUATIQUE'],15:['#56C02B','VIE TERRESTRE'],16:['#00689D','PAIX, JUSTICE ET INSTITUTIONS EFFICACES'],17:['#19486A','PARTENARIATS POUR LES OBJECTIFS']};
+  function renderOddTiles($, oddStr){ var box=$('odds'); if(!box)return; var nums=[],seen={}; String(oddStr||'').split(/[;,\/]/).forEach(function(tok){ var m=tok.match(/\d{1,2}/g); if(m)m.forEach(function(x){ var n=parseInt(x,10); if(n>=1&&n<=17&&!seen[n]){seen[n]=1;nums.push(n);} }); }); box.innerHTML=nums.length?nums.map(function(n){ var i=ODD_INFO[n]; return '<div class="odd" style="background:'+i[0]+'"><div class="n">'+n+'</div><div class="t">'+i[1]+'</div></div>'; }).join(''):''; }
+
+  /* ── Remplissage d'une fiche (logique identique à fiche_projet.html, scopée au conteneur) ── */
+  function fillSheet(wrap, p, code){
+    return (async function(){
+    var $ = function(id){ return wrap.querySelector('#' + id); };
+    var set = function(id, val){ var el = $(id); if (el) el.textContent = val; };
+    set('kpi_code', p['Code Projet'] || '—'); set('v_code', p['Code Projet'] || '—');
+    var statut = p['STATUT (en cours, achevé, en approbation)'] || '—';
+    set('kpi_statut', statut.toUpperCase() + ' ●'); set('v_statut', statut);
+    set('kpi_partenaire', p['Partenaire'] || '—'); set('v_partenaire2', p['Partenaire'] || '—');
+    set('kpi_secteur', (p['Secteur principal'] || '—').toUpperCase()); set('v_secteur2', p['Secteur principal'] || '—');
+    var tot = Number(p['Montant_Total_FCFA']) || 0;
+    set('kpi_montant', String(fmt(tot)).replace(/ /g, ','));
+    set('v_objet', p["Objet de l'accord"] || '—'); set('v_objgen', p['Objectif général'] || '—');
+    var os = split(p['Objectifs spécifiques']); if (os.length && $('v_objspec')) $('v_objspec').innerHTML = ul(os);
+    var ra = split(p['Resultats attendues']); if (ra.length && $('v_resultats')) $('v_resultats').innerHTML = ul(ra);
+    var cp = split(p['Principales composantes']); if (cp.length && $('v_composantes')) $('v_composantes').innerHTML = ul(cp);
+    set('v_benef', p['Bénéficiaires directes'] || '—'); set('v_pop', p['Population cible'] || '—');
+    set('v_ansig', year(p['Annee de signature'])); set('v_anclot', year(p['Annee de cloture']));
+    set('v_modalite', p["Modalité d'intervention"] || '—'); set('v_instrument', p['Instrument de financement'] || '—');
+    set('v_nature', p['Nature (Prêt/Don/Mixte)'] || '—'); set('v_apd', p['APD Oui/non'] || '—');
+    set('v_typefin', p['TYPE DE FINANCEMENT'] || '—'); set('v_typecontrib', p['TYPE DE CONTRIBUTEUR'] || '—'); set('v_typecontrib2', p['TYPE DE CONTRIBUTEUR'] || '—');
+    set('v_sigle', p['Sigle_Part'] || '—');
+    set('v_web', p['Site web partenaire'] || p['Source vérifiable'] || '—');
+    set('v_adresse', p['Adresse partenaire'] || '—');
+    set('v_contact', p['Contact partenaire'] || '—');
+    set('v_niveau', p['Niveau'] || '—');
+    var pret = Number(p['Montant_Pret_FCFA']) || 0, don = Number(p['Montant_Don_FCFA']) || 0;
+    if (!tot) tot = pret + don;
+    var pp = tot ? pret / tot * 100 : 0, pd = tot ? don / tot * 100 : 0;
+    set('v_devise', p['Devise'] || '—'); set('v_pret', fmt(pret)); set('v_don', fmt(don));
+    set('v_total', fmt(tot)); set('v_totaldev', fmt(p['Montant total (devise)']));
+    set('v_pctpret', String(pp.toFixed(2)).replace('.', ',') + ' %'); set('v_pctdon', String(pd.toFixed(2)).replace('.', ',') + ' %');
+    set('leg_pret', String(pp.toFixed(2)).replace('.', ',') + ' %'); set('leg_don', String(pd.toFixed(2)).replace('.', ',') + ' %');
+    set('donut_val', String((tot / 1e9).toFixed(1)).replace('.', ','));
+    if ($('donut')) $('donut').style.background = 'conic-gradient(#0e7a3a 0 ' + pp + '%,#f2b70b ' + pp + '% 100%)';
+    set('v_zone', p['Zone'] ? p['Zone'].substring(0, 60) : '—');
+    set('v_deps', p['Departement'] || '—'); set('v_communes', p['Commune'] || '—');
+    set('d_approb', fdate(p["Date d'approbation"])); set('d_sig', fdate(p['Date de signature']));
+    set('d_vig', fdate(p['Date entree en vigueur'])); set('d_dec', fdate(p['Date_Demarrage'])); set('d_clot', fdate(p['Date de clôture']));
+    if (p['Duree_Initiale_Mois'] && $('duree_lab')) $('duree_lab').textContent = 'Durée totale : ' + Math.round(Number(p['Duree_Initiale_Mois'])) + ' mois';
+    set('v_soussecteur', p['SOUS SECTEUR'] || '—'); set('v_axe', p['AXE PAG'] || '—'); set('v_pilier', p['PILIER PAG'] || '—');
+    set('v_odd', p['ODD'] || '—'); set('v_cible', p['Cible_ODD'] || '—'); set('v_snfd', p['Pilier'] || '—');
+    var dureeMois = p['Duree_Initiale_Mois'] ? Math.round(Number(p['Duree_Initiale_Mois'])) + ' Mois' : '—';
+    var anneeSig = p['Annee de signature'] || '';
+    var anneeClot = p['Annee de cloture'] || '...';
+    if ($('kpi_duree')) $('kpi_duree').innerHTML = dureeMois + (anneeSig ? '<small>(' + anneeSig + '-' + anneeClot + ')</small>' : '');
+    /* Co-partenaires : nom, montant engage, date de signature */
+    var coparts = [];
+    for (var i = 1; i <= 7; i++) { var cv = p['Co_Partenaire_' + i]; if (cv && String(cv).trim()) { var line = '<b>' + String(cv) + '</b>'; var m = p['Co_Partenaire_' + i + '_Montant']; if (m !== '' && m != null && !isNaN(Number(m))) line += ' — ' + Number(m).toLocaleString('fr-FR') + ' FCFA'; var dt = p['Co_Partenaire_' + i + '_Date']; if (dt) line += ' <small>(signé le ' + dt + ')</small>'; coparts.push('<div style="margin-bottom:3px">• ' + line + '</div>'); } }
+    if (coparts.length && $('v_copartenaires')) $('v_copartenaires').innerHTML = coparts.join('');
+    /* Tuiles ODD generees depuis la valeur en base */
+    renderOddTiles($, p['ODD']);
+    /* 8. Suivi de la mise en œuvre */
+    setGauge($, 'g_phys', 't_phys', p['Taux execution physique']);
+    setGauge($, 'g_fin', 't_fin', p['Taux de decaissement']);
+    var risque = String(p['Niveau de risque'] || '').trim();
+    if (risque) {
+      var RISK_MAP = {faible:[25,'#0e7a3a'],moyen:[50,'#f28c00'],eleve:[75,'#d5251f'],critique:[90,'#d5251f']};
+      var rk = risque.toLowerCase().replace(/[éèê]/g,'e').replace(/[^a-z]/g,'');
+      var rinfo = RISK_MAP[rk] || [60,'#f28c00'];
+      var gr = $('g_risk'); if (gr) { gr.setAttribute('stroke-dasharray', rinfo[0]+' 100'); gr.setAttribute('stroke', rinfo[1]); }
+      var tr = $('t_risk'); if (tr) { tr.textContent = risque.toUpperCase(); tr.style.fill = rinfo[1]; }
+    }
+    var nav = p['Nb avenants'], npr = p['Nb prorogations'];
+    set('v_avenants', (nav !== '' && nav != null) ? String(Math.round(Number(nav) || 0)) : '—');
+    set('v_prorog', (npr !== '' && npr != null) ? String(Math.round(Number(npr) || 0)) : '—');
+    set('v_maj', p['Date_MAJ'] || '—');
+    set('v_resp', p['Responsable de suivi'] || '—');
+    set('v_structure', p['Agence Exécution'] || p['Tutelle'] || '—');
+    set('v_chef', p['Chef de projet'] || '—');
+    set('v_coord', p['Coordonnees'] || '—');
+    /* 9. Observations */
+    set('obs_txt', p['Observations'] || '—');
+    /* Documents associés : chargés depuis Supabase */
+    if ($('docs')) {
+      try {
+        var docsRes = await fetch(API + '/api/banque/documents?code=' + encodeURIComponent(code));
+        var realDocs = await docsRes.json();
+        if (Array.isArray(realDocs) && realDocs.length) {
+          $('docs').innerHTML = realDocs.map(function(d){
+            return '<div class="doc"><svg viewBox="0 0 24 28" fill="none" stroke="#0e7a3a" stroke-width="2"><path d="M4 2h11l6 6v18H4z"/><path d="M15 2v6h6"/><text x="12" y="20" text-anchor="middle" font-size="6.5" font-weight="700" fill="#0e7a3a" stroke="none">PDF</text></svg><div class="t">' + (d.categorie && d.categorie !== 'Autre' ? '<small style="display:block;color:#888;font-size:7.5px;font-weight:700">' + d.categorie + '</small>' : '') + (d.nom_fichier || 'Document') + '</div></div>';
+          }).join('');
+        } else {
+          $('docs').innerHTML = '<div style="color:#999;font-size:10px">Aucun document associé</div>';
+        }
+      } catch (e) {
+        $('docs').innerHTML = '<div style="color:#999;font-size:10px">Aucun document associé</div>';
+      }
+    }
+    })();
+  }
+
+  try {
+    /* 1. Charger le modèle de fiche (styles + structure) depuis fiche_projet.html */
+    var tplRes = await fetch('fiche_projet.html?t=' + Date.now());
+    var tplHtml = await tplRes.text();
+    var doc = new DOMParser().parseFromString(tplHtml, 'text/html');
+
+    var styles = Array.from(doc.querySelectorAll('style')).map(function(s){ return s.textContent; }).join('\n');
+    document.getElementById('fiche-style').textContent = styles;
+
+    var sprite = doc.querySelector('body > svg');
+    if (sprite) document.getElementById('sprite-container').appendChild(document.importNode(sprite, true));
+
+    var pageTpl = doc.querySelector('.page');
+    if (!pageTpl) throw new Error('Modèle de fiche introuvable');
+    var pageHtml = pageTpl.outerHTML;
+
+    /* 2. Charger les projets */
+    var API = window.location.origin;
+    var dataRes = await fetch(API + '/api/accords-financiers/list?t=' + Date.now());
+    var data = await dataRes.json();
+    var list = data.data || data || [];
+
+    /* 3. Générer une fiche par code sélectionné */
+    var container = document.getElementById('fiches-container');
+    var rendered = 0, missing = [];
+    for (var ci = 0; ci < codes.length; ci++) {
+      var code = codes[ci];
+      var p = list.find(function(x){ return (x['Code Projet'] || '').trim() === code.trim(); });
+      if (!p) { missing.push(code); continue; }
+      var sheet = document.createElement('div');
+      sheet.className = 'fiche-sheet';
+      sheet.innerHTML = pageHtml;
+      await fillSheet(sheet, p, code);
+      container.appendChild(sheet);
+      rendered++;
+    }
+
+    if (rendered === 0) {
+      statusEl.textContent = 'Aucun projet trouvé';
+    } else {
+      statusEl.textContent = rendered + ' fiche(s) prête(s)' + (missing.length ? ' — introuvable(s) : ' + missing.join(', ') : '');
+    }
+  } catch (e) {
+    statusEl.textContent = 'Erreur : ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>

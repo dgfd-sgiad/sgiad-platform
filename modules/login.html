@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIAD - Connexion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f4c81 0%, #1a6fb5 50%, #27ae60 100%);
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            color: #0f4c81;
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #0f4c81;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: #0f4c81;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover { background: #0a355c; }
+        .btn-login:disabled { background: #aaa; cursor: not-allowed; }
+
+        .error-msg {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-msg.show { display: block; }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .signup-link a {
+            color: #0f4c81;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .signup-link a:hover { text-decoration: underline; }
+
+        .mode-toggle {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .mode-toggle button {
+            background: none;
+            border: none;
+            color: #0f4c81;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .mode-toggle button:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>SGIAD</h1>
+            <p>Plateforme de Suivi de la Cooperation et du Financement du Developpement</p>
+        </div>
+
+        <div id="errorMsg" class="error-msg"></div>
+
+        <form id="authForm">
+            <div class="form-group">
+                <label for="email">Adresse email</label>
+                <input type="email" id="email" placeholder="votre@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" placeholder="Votre mot de passe" required minlength="6">
+            </div>
+            <button type="submit" class="btn-login" id="btnSubmit">Se connecter</button>
+        </form>
+
+        <div class="mode-toggle">
+            <button id="toggleMode" type="button">Pas encore de compte ? S'inscrire</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_AUTH = `${window.location.origin}/api/auth`;
+        let isLoginMode = true;
+
+        const form = document.getElementById('authForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const errorMsg = document.getElementById('errorMsg');
+        const toggleMode = document.getElementById('toggleMode');
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            btnSubmit.textContent = isLoginMode ? 'Se connecter' : "S'inscrire";
+            toggleMode.textContent = isLoginMode
+                ? "Pas encore de compte ? S'inscrire"
+                : "Deja un compte ? Se connecter";
+            errorMsg.classList.remove('show');
+        }
+
+        toggleMode.addEventListener('click', toggleAuthMode);
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.classList.remove('show');
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                showError('Veuillez remplir tous les champs');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Chargement...';
+
+            try {
+                const endpoint = isLoginMode ? '/login' : '/signup';
+                const res = await fetch(API_AUTH + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showError(data.error || 'Erreur de connexion');
+                    return;
+                }
+
+                // Stocker le token
+                if (data.access_token) {
+                    localStorage.setItem('sgiad_token', data.access_token);
+                    localStorage.setItem('sgiad_refresh', data.refresh_token || '');
+                    localStorage.setItem('sgiad_user', JSON.stringify(data.user || {}));
+                }
+
+                // Rediriger vers l'accueil
+                window.location.href = '/index.html';
+
+            } catch (err) {
+                showError('Erreur reseau. Verifiez votre connexion.');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = isLoginMode ? 'Se connecter' : "S'inscrire";
+            }
+        });
+
+        // Si deja connecte, rediriger
+        if (localStorage.getItem('sgiad_token')) {
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>

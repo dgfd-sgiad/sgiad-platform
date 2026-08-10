@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGIAD - Gestion des Accords V2</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary-blue: #0f4c81; --secondary-green: #27ae60; --bg-light: #f8f9fa; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-light); margin: 0; }
+        
+        .top-header-tools { background: white; padding: 12px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .filter-input { padding: 6px 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 11px; height: 32px; box-sizing: border-box; }
+        .btn-tool { height: 32px; padding: 0 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 10px; display: flex; align-items: center; gap: 4px; color: white; }
+        
+        /* Dashboard Stats */
+        .stats-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+        .stat-card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-blue); }
+        .stat-card div:first-child { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+        
+        .main-tabs { display: flex; gap: 4px; margin-bottom: 15px; border-bottom: 2px solid #eee; overflow-x: auto; padding: 0 20px; }
+        .main-tab-btn { padding: 10px 20px; background: #f8f9fa; color: #666; border: 1px solid #eee; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 600; white-space: nowrap; font-size: 12px; }
+        .main-tab-btn.active { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
+        .main-tab-content { display: none; padding: 0 20px; }
+        .main-tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .data-table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-height: calc(100vh - 250px); overflow-y: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 1200px; }
+        .data-table th { background: var(--primary-blue); color: white; padding: 10px; text-align: left; position: sticky; top: 0; white-space: nowrap; z-index: 5; }
+        .data-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; text-transform: uppercase; display: inline-block; }
+        .bg-green { background: #dcfce7; color: #166534; } .bg-blue { background: #dbeafe; color: #1e40af; }
+        .bg-gold { background: #fef3c7; color: #92400e; } .bg-red { background: #fee2e2; color: #991b1b; } .bg-gray { background: #f3f4f6; color: #374151; }
+        .action-btn { border: none; background: none; cursor: pointer; font-size: 14px; margin: 0 3px; }
+        .btn-edit { color: #f59e0b; } .btn-delete { color: #ef4444; }
+
+        #modal-accord { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; align-items:center; justify-content:center; backdrop-filter: blur(2px); }
+        .modal-content { background:white; padding:20px; border-radius:12px; width:95%; max-width:900px; max-height:90vh; overflow-y:auto; }
+        .form-tabs { display: flex; gap: 4px; margin-bottom: 15px; border-bottom: 1px solid #eee; overflow-x: auto; padding-bottom: 5px; }
+        .form-tab-btn { padding: 6px 12px; background: #f8f9fa; border: 1px solid #eee; border-radius: 4px; cursor: pointer; font-size: 10px; white-space: nowrap; }
+        .form-tab-btn.active { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
+        .form-tab-content { display: none; }
+        .form-tab-content.active { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; animation: fadeIn 0.2s; }
+        .form-full { grid-column: span 2; }
+        .form-input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; font-size: 12px; }
+        .form-input:focus { outline: none; border-color: var(--primary-blue); }
+        .section-title { grid-column: span 2; font-size: 11px; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 4px; margin-top: 10px; }
+        .section-label { font-size: 10px; font-weight: 700; color: #444; display: block; margin-bottom: 3px; }
+
+        .export-widget { position: fixed; bottom: 80px; right: 20px; z-index: 90; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-left: 4px solid var(--secondary-green); max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; display: none; }
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto; padding: 10px; background: #fcfcfc; border: 1px solid #e9ecef; border-radius: 4px; }
+        .checkbox-grid label { font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-fab { position: fixed; bottom: 20px; right: 20px; background: var(--secondary-green); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100; }
+        
+        .exp-tab-content { display: none; }
+        .exp-tab-content.active { display: block; animation: fadeIn 0.2s; }
+        .exp-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .exp-filter-grid label { font-size: 10px; font-weight: 700; color: #444; display: block; margin-bottom: 3px; }
+        .exp-filter-grid select { width: 100%; padding: 4px 6px; font-size: 11px; border: 1px solid #ced4da; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <aside class="sidebar-benin">
+            <div class="flag-stripes"><div class="stripe green"></div><div class="stripe yellow"></div><div class="stripe red"></div></div>
+            <div class="user-info-vertical"><p>Superviseur DGFD</p><button class="btn-disconnect" onclick="window.location.href='/'">Déconnexion</button></div>
+        </aside>
+
+        <main class="content-area">
+            <!-- HEADER AVEC TOUS LES FILTRES -->
+            <header class="top-header-tools">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">Banque des Accords V2</h1>
+                    <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    <input type="text" id="filter-texte" class="filter-input" placeholder="🔍 Rechercher..." style="width:160px;">
+                    <select id="filter-annee" class="filter-input" style="width:90px;"><option value="">Toutes années</option></select>
+                    <select id="filter-type-accord" class="filter-input" style="width:130px;"><option value="">Tous types accord</option></select>
+                    <select id="filter-type-part" class="filter-input" style="width:120px;"><option value="">Tous types parten.</option></select>
+                    <select id="filter-nature" class="filter-input" style="width:120px;"><option value="">Toutes natures</option></select>
+                    <select id="filter-ptf" class="filter-input" style="width:130px;"><option value="">Tous PTF</option></select>
+                    <select id="filter-type-partenaire" class="filter-input" style="width:120px;"><option value="">Tous types part.</option></select>
+                    <select id="filter-secteur" class="filter-input" style="width:120px;"><option value="">Tous secteurs</option></select>
+                    <select id="filter-statut" class="filter-input" style="width:110px;"><option value="">Tous statuts</option></select>
+                    <select id="filter-etat" class="filter-input" style="width:110px;"><option value="">Tous états</option></select>
+                    <button onclick="resetFilters()" class="btn-tool" style="background:#6c757d;"><i class="fas fa-undo"></i> Reset</button>
+                    <button onclick="toggleExportWidget()" class="btn-tool" style="background:var(--secondary-green);"><i class="fas fa-file-export"></i> Export</button>
+                    <button onclick="toggleImportZone()" class="btn-tool" style="background:#f59e0b;"><i class="fas fa-file-import"></i> Import</button>
+                </div>
+            </header>
+
+            <!-- ZONE IMPORT -->
+            <div id="import-zone" style="display:none; background:white; padding:12px 20px; margin-bottom:12px; border-left:4px solid #f59e0b; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <h4 style="margin:0; font-size:12px; color:#92400e;">📥 Import Excel</h4>
+                    <button onclick="toggleImportZone()" style="background:none; border:none; cursor:pointer; font-size:16px; color:#666;">✕</button>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="file" id="import-file" accept=".xlsx,.xls" class="filter-input" style="flex:1;">
+                    <button onclick="importExcel()" class="btn-tool" style="background:#f59e0b;">Lancer l'import</button>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- DASHBOARD RÉCAPITULATIF                                        -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="stats-dashboard">
+                <div class="stat-card">
+                    <div>Total Accords</div>
+                    <div id="stat-total" style="font-size:20px; font-weight:800;">-</div>
+                </div>
+                <div class="stat-card">
+                    <div>Montant Total (FCFA)</div>
+                    <div id="stat-montant" style="font-size:20px; font-weight:800;">-</div>
+                </div>
+                <div class="stat-card">
+                    <div>Top Secteur</div>
+                    <div id="stat-secteur" style="font-size:14px; font-weight:800;">-</div>
+                </div>
+                <div class="stat-card">
+                    <div>En Cours</div>
+                    <div id="stat-encours" style="font-size:20px; font-weight:800;">-</div>
+                </div>
+            </div>
+
+            <!-- GRAPHIQUES COMPACTS -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">📅 Par Année de Signature</h4>
+                    <div id="chart-annees"></div>
+                </div>
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <h4 style="margin:0; font-size:12px; color:var(--primary-blue);">💰 Top 10 PTF</h4>
+                        <select id="filter-annee-chart" onchange="updateCharts()" style="padding:2px 5px; border:1px solid #ddd; border-radius:3px; font-size:9px;">
+                            <option value="">Toutes années</option>
+                        </select>
+                    </div>
+                    <div id="chart-ptf"></div>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">⚖️ Par Statut Juridique</h4>
+                    <div id="chart-statut"></div>
+                </div>
+                <div style="background:white; padding:10px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                    <h4 style="margin:0 0 8px 0; font-size:12px; color:var(--primary-blue);">📊 Par État d'Exécution</h4>
+                    <div id="chart-etat"></div>
+                </div>
+            </div>
+
+            <!-- STATS -->
+            <div style="background: #eef2f7; padding: 8px 15px; border-radius: 4px; font-size: 12px; color: #444; margin-bottom:10px;">
+                <strong>Résultats :</strong> <span id="count-value" style="color: var(--primary-blue); font-weight: 800;">-</span> accord(s)
+            </div>
+
+            <!-- ONGLETS PRINCIPAUX -->
+            <div class="main-tabs">
+                <button class="main-tab-btn active" onclick="switchMainTab(0)">📋 Accords</button>
+                <button class="main-tab-btn" onclick="switchMainTab(1)">📊 Suivi Trimestriel</button>
+                <button class="main-tab-btn" onclick="switchMainTab(2)">💰 Décaissements</button>
+                <button class="main-tab-btn" onclick="switchMainTab(3)">📝 Avenants</button>
+                <button class="main-tab-btn" onclick="switchMainTab(4)">🤝 Commissions</button>
+            </div>
+
+            <!-- CONTENU ONGLET 1: ACCORDS -->
+            <div id="main-tab-0" class="main-tab-content active">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Réf.</th><th>Intitulé</th><th>Date Sig.</th><th>Année</th>
+                                <th>PTF Principal</th><th>Secteur</th><th>Montant</th>
+                                <th>Statut / État</th><th>Pièce Jointe</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-accords"><tr><td colspan="10" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTENU ONGLET 2: SUIVI -->
+            <div id="main-tab-1" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf.</th><th>Intitulé</th><th>Année</th><th>Trimestre</th><th>Activités Réalisées</th><th>Niveau Exécution</th><th>Date Saisie</th></tr></thead>
+                        <tbody id="table-body-suivi"><tr><td colspan="7" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTENU ONGLET 3: DÉCAISSEMENTS -->
+            <div id="main-tab-2" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf.</th><th>Partenaire</th><th>N° Tranche</th><th>Libellé</th><th>Montant Prévu</th><th>Date Prévue</th><th>Montant Décaissé</th><th>Taux (%)</th><th>Statut</th></tr></thead>
+                        <tbody id="table-body-decaissements"><tr><td colspan="9" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTENU ONGLET 4: AVENANTS -->
+            <div id="main-tab-3" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf. Avenant</th><th>Réf. Accord</th><th>Intitulé Accord</th><th>Date Avenant</th><th>Objet</th><th>Impact Financier</th><th>Fichier</th></tr></thead>
+                        <tbody id="table-body-avenants"><tr><td colspan="7" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CONTENU ONGLET 5: COMMISSIONS -->
+            <div id="main-tab-4" class="main-tab-content">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Réf. CM</th><th>Réf. Accord</th><th>Intitulé Accord</th><th>Date Commission</th><th>Lieu</th><th>Présidence Bénin</th><th>Présidence PTF</th><th>Prochaine Date</th></tr></thead>
+                        <tbody id="table-body-commissions"><tr><td colspan="8" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- WIDGET EXPORT -->
+    <div id="export-widget" class="export-widget">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:13px; color:var(--secondary-green); font-weight:700;"><i class="fas fa-file-export"></i> Export Personnalisé</h3>
+            <button onclick="toggleExportWidget()" style="background:none; border:none; cursor:pointer; font-size:18px; color:#666;">✕</button>
+        </div>
+        
+        <div class="tabs-nav" id="export-tabs-nav" style="display:flex; gap:4px; margin-bottom:10px; overflow-x:auto; border-bottom:1px solid #eee; padding-bottom:5px;">
+            <button class="tab-btn active" onclick="switchExportTab(0)">1. Identification</button>
+            <button class="tab-btn" onclick="switchExportTab(1)">2. Partenaires</button>
+            <button class="tab-btn" onclick="switchExportTab(2)">3. Juridique</button>
+            <button class="tab-btn" onclick="switchExportTab(3)">4. Financement</button>
+            <button class="tab-btn" onclick="switchExportTab(4)">5. Gouvernance</button>
+            <button class="tab-btn" onclick="switchExportTab(5)">6. Alignement</button>
+            <button class="tab-btn" onclick="switchExportTab(6)">7. Suivi & Docs</button>
+        </div>
+
+        <!-- ONGLET 1 : IDENTIFICATION -->
+        <div id="exp-tab-0" class="exp-tab-content active">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Année Signature</label>
+                    <select id="exp-filter-Annee_Signature" multiple size="3"><option value="">-- Toutes --</option></select>
+                </div>
+                <div><label>Filtrer par Type Accord</label>
+                    <select id="exp-filter-Type_Accord" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Type Partenariat</label>
+                    <select id="exp-filter-Type_Partenariat" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Nature Coopération</label>
+                    <select id="exp-filter-Nature_Cooperation" multiple size="3"><option value="">-- Toutes --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-identification"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 2 : PARTENAIRES -->
+        <div id="exp-tab-1" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Partenaire Principal</label>
+                    <select id="exp-filter-Partenaire_Principal" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Pays Partenaire</label>
+                    <select id="exp-filter-Pays_Partenaire" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Type Partenaire</label>
+                    <select id="exp-filter-Type_Partenaire" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Secteur</label>
+                    <select id="exp-filter-Secteur" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-partenaires"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 3 : JURIDIQUE -->
+        <div id="exp-tab-2" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Statut Juridique</label>
+                    <select id="exp-filter-Statut_Juridique" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Renouvelable</label>
+                    <select id="exp-filter-Renouvelable" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-juridique"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 4 : FINANCEMENT -->
+        <div id="exp-tab-3" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Devise</label>
+                    <select id="exp-filter-Devise" multiple size="3"><option value="">-- Toutes --</option></select>
+                </div>
+                <div><label>Filtrer par Type Financement</label>
+                    <select id="exp-filter-Type_Financement" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-financement"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 5 : GOUVERNANCE -->
+        <div id="exp-tab-4" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Tutelle</label>
+                    <select id="exp-filter-Tutelle" multiple size="3"><option value="">-- Toutes --</option></select>
+                </div>
+                <div><label>Filtrer par État Exécution</label>
+                    <select id="exp-filter-Etat_Execution" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-gouvernance"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 6 : ALIGNEMENT -->
+        <div id="exp-tab-5" class="exp-tab-content">
+            <div class="exp-filter-grid">
+                <div><label>Filtrer par Secteur PAG</label>
+                    <select id="exp-filter-Secteur_PAG" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Pilier PAG</label>
+                    <select id="exp-filter-Pilier_PAG" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par Axe PAG</label>
+                    <select id="exp-filter-Axe_PAG" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+                <div><label>Filtrer par ODD</label>
+                    <select id="exp-filter-ODD" multiple size="3"><option value="">-- Tous --</option></select>
+                </div>
+            </div>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-alignement"></div>
+            </div>
+        </div>
+
+        <!-- ONGLET 7 : SUIVI & DOCS -->
+        <div id="exp-tab-6" class="exp-tab-content">
+            <p style="font-size:11px; color:#666; margin:0 0 10px 0;"><i>ℹ️ Aucun filtre disponible pour cet onglet.</i></p>
+            <div style="border-top:1px dashed #eee; padding-top:8px;">
+                <h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5>
+                <div class="checkbox-grid" id="exp-cols-suivi"></div>
+            </div>
+        </div>
+
+        <div style="margin-top:15px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid #eee; padding-top:10px;">
+            <button onclick="selectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout cocher</button>
+            <button onclick="deselectAllExportCols()" style="padding:6px 10px; background:white; color:#333; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:10px;">Tout décocher</button>
+            <button onclick="triggerCustomExport()" style="padding:6px 12px; background:var(--secondary-green); color:white; border:none; border-radius:4px; cursor:pointer; font-weight:600; font-size:10px;">📥 Télécharger Excel</button>
+        </div>
+    </div>
+
+    <!-- BOUTON + ET MODAL FORMULAIRE -->
+    <button class="btn-fab" onclick="openModal()">+</button>
+    
+    <div id="modal-accord">
+        <div class="modal-content">
+            <h2 style="margin-top:0;color:var(--primary-blue); font-family:'Montserrat',sans-serif; font-size:16px;" id="modal-title">NOUVEL ACCORD</h2>
+            
+            <div class="form-tabs">
+                <button class="form-tab-btn active" onclick="switchFormTab(0)">1. ID & Partenaires</button>
+                <button class="form-tab-btn" onclick="switchFormTab(1)">2. Description</button>
+                <button class="form-tab-btn" onclick="switchFormTab(2)">3. Juridique</button>
+                <button class="form-tab-btn" onclick="switchFormTab(3)">4. Financement</button>
+                <button class="form-tab-btn" onclick="switchFormTab(4)">5. Gouvernance</button>
+                <button class="form-tab-btn" onclick="switchFormTab(5)">6. Alignement & Contacts</button>
+                <button class="form-tab-btn" onclick="switchFormTab(6)">7. Suivi & Docs</button>
+            </div>
+
+            <form id="form-accord">
+                <input type="hidden" name="Old_Ref" id="Old_Ref">
+                
+                <div id="form-tab-0" class="form-tab-content active">
+                    <div class="section-title">Identification</div>
+                    <div><label class="section-label">Référence Accord *</label><input type="text" name="Ref_Accord" class="form-input" required></div>
+                    <div><label class="section-label">Numéro Accord</label><input type="text" name="Numero_Accord" class="form-input"></div>
+                    <div class="form-full"><label class="section-label">Intitulé Accord *</label><input type="text" name="Intitule_Accord" class="form-input" required></div>
+                    <div><label class="section-label">Type Accord</label><select name="Type_Accord" class="form-input" data-param="TYPE_ACCORD"><option value="">--</option></select></div>
+                    <div><label class="section-label">Type Partenariat</label><select name="Type_Partenariat" class="form-input" data-param="TYPE_PARTENARIAT"><option value="">--</option></select></div>
+                    <div><label class="section-label">Nature Coopération</label><select name="Nature_Cooperation" class="form-input" data-param="NATURE_COOPERATION"><option value="">--</option></select></div>
+                    <div><label class="section-label">Année Signature</label><select name="Annee_Signature" class="form-input" data-param="ANNEE"><option value="">--</option></select></div>
+                    
+                    <div class="section-title">Partenaires</div>
+                    <div class="form-full"><label class="section-label">Partenaire Principal *</label><select name="Partenaire_Principal" id="select-ptf" class="form-input" required><option value="">-- Choisir --</option></select></div>
+                    <div><label class="section-label">Pays Partenaire</label><select name="Pays_Partenaire" class="form-input" data-param="PAYS"><option value="">--</option></select></div>
+                    <div><label class="section-label">Type Partenaire</label><select name="Type_Partenaire" class="form-input" data-param="TYPE_PARTENAIRE"><option value="">--</option></select></div>
+                    <div><label class="section-label">Co-Partenaire 1</label><input type="text" name="Co_Partenaire_1" class="form-input"></div>
+                    <div><label class="section-label">Co-Partenaire 2</label><input type="text" name="Co_Partenaire_2" class="form-input"></div>
+                </div>
+
+                <div id="form-tab-1" class="form-tab-content">
+                    <div class="section-title">Description Technique</div>
+                    <div><label class="section-label">Secteur</label><select name="Secteur" class="form-input" data-param="SECTEUR"><option value="">--</option></select></div>
+                    <div><label class="section-label">Sous-Secteur</label><input type="text" name="Sous_Secteur" class="form-input"></div>
+                    <div class="form-full"><label class="section-label">Objectif Général</label><textarea name="Objectif_General" class="form-input" rows="2"></textarea></div>
+                    <div class="form-full"><label class="section-label">Objectifs Spécifiques</label><textarea name="Objectifs_Specifiques" class="form-input" rows="2"></textarea></div>
+                    <div class="form-full"><label class="section-label">Résultats Attendus</label><textarea name="Resultats_Attendus" class="form-input" rows="2"></textarea></div>
+                </div>
+
+                <div id="form-tab-2" class="form-tab-content">
+                    <div class="section-title">Cadre Juridique</div>
+                    <div><label class="section-label">Statut Juridique</label><select name="Statut_Juridique" class="form-input" data-param="STATUT_JURIDIQUE"><option value="">--</option></select></div>
+                    <div><label class="section-label">Date Signature</label><input type="date" name="Date_Signature" class="form-input"></div>
+                    <div><label class="section-label">Date Ratification</label><input type="date" name="Date_Ratification" class="form-input"></div>
+                    <div><label class="section-label">Numéro Loi</label><input type="text" name="Numero_Loi" class="form-input"></div>
+                    <div><label class="section-label">Date Entrée Vigueur</label><input type="date" name="Date_Entree_Vigueur" class="form-input"></div>
+                    <div><label class="section-label">Date Expiration</label><input type="date" name="Date_Expiration" class="form-input"></div>
+                    <div><label class="section-label">Durée (mois)</label><input type="number" name="Duree_Accord" class="form-input"></div>
+                    <div><label class="section-label">Renouvelable</label><select name="Renouvelable" class="form-input"><option value="Non">Non</option><option value="Oui">Oui</option></select></div>
+                </div>
+
+                <div id="form-tab-3" class="form-tab-content">
+                    <div class="section-title">Aspects Financiers</div>
+                    <div><label class="section-label">Montant Total</label><input type="number" name="Montant_Total" class="form-input" step="0.01"></div>
+                    <div><label class="section-label">Devise</label><select name="Devise" class="form-input" data-param="DEVISE"><option value="">--</option></select></div>
+                    <div><label class="section-label">Part Dons</label><input type="number" name="Part_Dons" class="form-input" step="0.01"></div>
+                    <div><label class="section-label">Part Prêts</label><input type="number" name="Part_Prets" class="form-input" step="0.01"></div>
+                    <div><label class="section-label">Contrepartie Bénin</label><input type="number" name="Contrepartie_Benin" class="form-input" step="0.01"></div>
+                    <div><label class="section-label">Type Financement</label><select name="Type_Financement" class="form-input" data-param="TYPE_FINANCEMENT"><option value="">--</option></select></div>
+                    <div class="form-full"><label class="section-label">Source Financement</label><input type="text" name="Source_Financement" class="form-input"></div>
+                </div>
+
+                <div id="form-tab-4" class="form-tab-content">
+                    <div class="section-title">Gouvernance & Suivi</div>
+                    <div><label class="section-label">Tutelle</label><select name="Tutelle" class="form-input" data-param="TUTELLE"><option value="">--</option></select></div>
+                    <div><label class="section-label">Structure Responsable</label><input type="text" name="Structure_Responsable" class="form-input"></div>
+                    <div class="form-full"><label class="section-label">Commission Mixte</label><input type="text" name="Commission_Mixte" class="form-input"></div>
+                    <div><label class="section-label">Date Dernière Commission</label><input type="date" name="Date_Derniere_Commission" class="form-input"></div>
+                    <div><label class="section-label">Date Prochaine Commission</label><input type="date" name="Date_Prochaine_Commission" class="form-input"></div>
+                    <div><label class="section-label">État Exécution</label><select name="Etat_Execution" class="form-input" data-param="ETAT_EXECUTION"><option value="">--</option></select></div>
+                </div>
+
+                <div id="form-tab-5" class="form-tab-content">
+                    <div class="section-title">Alignement Stratégique</div>
+                    <div><label class="section-label">Secteur PAG</label><select name="Secteur_PAG" class="form-input" data-param="SECTEUR_PAG"><option value="">--</option></select></div>
+                    <div><label class="section-label">Pilier PAG</label><select name="Pilier_PAG" class="form-input" data-param="PILIER_PAG"><option value="">--</option></select></div>
+                    <div><label class="section-label">Axe PAG</label><select name="Axe_PAG" class="form-input" data-param="AXE_PAG"><option value="">--</option></select></div>
+                    <div><label class="section-label">ODD</label><select name="ODD" class="form-input" data-param="ODD"><option value="">--</option></select></div>
+                    <div class="form-full"><label class="section-label">Cible ODD</label><input type="text" name="Cible_ODD" class="form-input"></div>
+                    
+                    <div class="section-title">Points Focaux</div>
+                    <div><label class="section-label">PF Bénin (Nom)</label><input type="text" name="Point_Focal_Benin" class="form-input"></div>
+                    <div><label class="section-label">PF Bénin (Email)</label><input type="email" name="Email_Point_Focal" class="form-input"></div>
+                    <div><label class="section-label">PF Bénin (Tél)</label><input type="text" name="Tel_Point_Focal" class="form-input"></div>
+                    <div><label class="section-label">PF PTF (Nom)</label><input type="text" name="Point_Focal_PTF" class="form-input"></div>
+                    <div><label class="section-label">PF PTF (Email)</label><input type="email" name="Email_PTF" class="form-input"></div>
+                    <div><label class="section-label">PF PTF (Tél)</label><input type="text" name="Tel_PTF" class="form-input"></div>
+                </div>
+
+                <div id="form-tab-6" class="form-tab-content">
+                    <div class="section-title">Suivi & Documents</div>
+                    <div class="form-full"><label class="section-label">Difficultés Rencontrées</label><textarea name="Difficultes" class="form-input" rows="2"></textarea></div>
+                    <div class="form-full"><label class="section-label">Recommandations</label><textarea name="Recommandations" class="form-input" rows="2"></textarea></div>
+                    <div><label class="section-label">Fichier Accord</label><input type="file" name="Fichier_Accord" class="form-input" accept=".pdf,.doc,.docx"></div>
+                    <div><label class="section-label">Loi Ratification</label><input type="file" name="Loi_Ratification" class="form-input" accept=".pdf,.doc,.docx"></div>
+                    <div><label class="section-label">Avenants</label><input type="file" name="Avenants" class="form-input" accept=".pdf,.doc,.docx"></div>
+                    <div class="form-full"><label class="section-label">Observations</label><textarea name="Observations" class="form-input" rows="2"></textarea></div>
+                </div>
+
+                <div class="form-full" style="text-align:right;margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                    <button type="button" onclick="closeModal()" style="padding:8px 15px;border:1px solid #ddd;background:white;cursor:pointer;">Annuler</button>
+                    <button type="submit" style="padding:8px 15px;background:#10b981;color:white;border:none;cursor:pointer;"> Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let isEditMode = false;
+        let allAccords = [], allSuivi = [], allDecaiss = [], allAvenants = [], allCommissions = [];
+        let parametres = {}, partenaires = [];
+
+        // ═══════════════════════════════════════════════════════════════
+        // COLONNES PAR ONGLET
+        // ═══════════════════════════════════════════════════════════════
+        const EXPORT_COLUMNS_MAP = {
+            identification: ['Ref_Accord','Numero_Accord','Intitule_Accord','Type_Accord','Type_Partenariat','Nature_Cooperation','Annee_Signature'],
+            partenaires: ['Partenaire_Principal','Pays_Partenaire','Type_Partenaire','Co_Partenaire_1','Co_Partenaire_2','Secteur','Sous_Secteur','Objectif_General','Objectifs_Specifiques','Resultats_Attendus'],
+            juridique: ['Statut_Juridique','Date_Signature','Date_Ratification','Numero_Loi','Date_Entree_Vigueur','Date_Expiration','Duree_Accord','Renouvelable'],
+            financement: ['Montant_Total','Devise','Part_Dons','Part_Prets','Contrepartie_Benin','Type_Financement','Source_Financement'],
+            gouvernance: ['Tutelle','Structure_Responsable','Commission_Mixte','Date_Derniere_Commission','Date_Prochaine_Commission','Etat_Execution'],
+            alignement: ['Secteur_PAG','Pilier_PAG','Axe_PAG','ODD','Cible_ODD','Point_Focal_Benin','Email_Point_Focal','Tel_Point_Focal','Point_Focal_PTF','Email_PTF','Tel_PTF'],
+            suivi: ['Difficultes','Recommandations','Fichier_Accord','Loi_Ratification','Avenants','Observations']
+        };
+
+        const FILTER_PARAM_MAP = {
+            'exp-filter-Type_Accord': 'TYPE_ACCORD',
+            'exp-filter-Type_Partenariat': 'TYPE_PARTENARIAT',
+            'exp-filter-Nature_Cooperation': 'NATURE_COOPERATION',
+            'exp-filter-Statut_Juridique': 'STATUT_JURIDIQUE',
+            'exp-filter-Etat_Execution': 'ETAT_EXECUTION',
+            'exp-filter-Type_Financement': 'TYPE_FINANCEMENT',
+            'exp-filter-Type_Partenaire': 'TYPE_PARTENAIRE',
+            'exp-filter-Devise': 'DEVISE',
+            'exp-filter-ODD': 'ODD',
+            'exp-filter-Tutelle': 'TUTELLE',
+            'exp-filter-Secteur': 'SECTEUR',
+            'exp-filter-Pays_Partenaire': 'PAYS',
+            'exp-filter-Annee_Signature': 'ANNEE',
+            'exp-filter-Secteur_PAG': 'SECTEUR_PAG',
+            'exp-filter-Pilier_PAG': 'PILIER_PAG',
+            'exp-filter-Axe_PAG': 'AXE_PAG'
+        };
+
+        const FILTER_STATIC_VALUES = {
+            'exp-filter-Renouvelable': ['Oui', 'Non']
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // INITIALISATION
+        // ═══════════════════════════════════════════════════════════════
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([loadParametres(), loadPartenaires()]);
+            await Promise.all([loadAccords(), loadSuivi(), loadDecaissements(), loadAvenants(), loadCommissions()]);
+            initExportInterface();
+            initFilters();
+            updateStats(); // ← APPEL DES GRAPHIQUES AU CHARGEMENT
+        });
+
+        async function loadParametres() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/parametres`);
+                parametres = await res.json();
+                document.querySelectorAll('select[data-param]').forEach(select => {
+                    const paramName = select.getAttribute('data-param');
+                    if (parametres[paramName]) {
+                        select.innerHTML = '<option value="">-- Sélectionner --</option>';
+                        parametres[paramName].forEach(val => {
+                            const opt = document.createElement('option');
+                            opt.value = val; opt.textContent = val;
+                            select.appendChild(opt);
+                        });
+                    }
+                });
+            } catch(e) { console.error("Err params:", e); }
+        }
+
+        async function loadPartenaires() {
+            try {
+                const res = await fetch(`${API_BASE}/api/partenaires/list`);
+                partenaires = await res.json();
+                const selectPtf = document.getElementById('select-ptf');
+                if(selectPtf) {
+                    selectPtf.innerHTML = '<option value="">-- Choisir un PTF --</option>';
+                    partenaires.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.Partenaire; opt.textContent = `${p.Partenaire} (${p.Pays})`;
+                        selectPtf.appendChild(opt);
+                    });
+                }
+            } catch(e) { console.error("Err partenaires:", e); }
+        }
+
+        async function loadAccords() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/list?t=` + Date.now());
+                allAccords = await res.json();
+                renderAccords(allAccords);
+                populateFilters();
+                updateStats(); // ← MISE À JOUR DES GRAPHIQUES
+            } catch(e) { console.error("Err accords:", e); }
+        }
+
+        async function loadSuivi() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/suivi`);
+                allSuivi = await res.json();
+                const tbody = document.getElementById('table-body-suivi');
+                tbody.innerHTML = allSuivi.length ? allSuivi.map(s => `<tr><td>${s.Ref_Accord||''}</td><td>${s.Intitule_Accord||''}</td><td>${s.Annee||''}</td><td>${s.Trimestre||''}</td><td>${s.Activites_Realisees||''}</td><td>${s.Niveau_Execution||''}</td><td>${s.Date_Saisie||''}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err suivi:", e); }
+        }
+
+        async function loadDecaissements() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/decaissements`);
+                allDecaiss = await res.json();
+                const tbody = document.getElementById('table-body-decaissements');
+                tbody.innerHTML = allDecaiss.length ? allDecaiss.map(d => `<tr><td>${d.Ref_Accord||''}</td><td>${d.Partenaire_Principal||''}</td><td>${d.Num_Tranche||''}</td><td>${d.Libelle_Tranche||''}</td><td>${d.Montant_Prevu||''}</td><td>${d.Date_Prevue||''}</td><td>${d.Montant_Decaisse||''}</td><td>${d.Taux_Realisation||''}</td><td>${d.Statut_Tranche||''}</td></tr>`).join('') : '<tr><td colspan="9" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err decaiss:", e); }
+        }
+
+        async function loadAvenants() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/avenants`);
+                allAvenants = await res.json();
+                const tbody = document.getElementById('table-body-avenants');
+                tbody.innerHTML = allAvenants.length ? allAvenants.map(a => `<tr><td>${a.Ref_Avenant||''}</td><td>${a.Ref_Accord||''}</td><td>${a.Intitule_Accord||''}</td><td>${a.Date_Avenant||''}</td><td>${a.Objet||''}</td><td>${a.Impact_Financier||''}</td><td>${a.Fichier ? '📄 Voir' : '-'}</td></tr>`).join('') : '<tr><td colspan="7" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err avenants:", e); }
+        }
+
+        async function loadCommissions() {
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/commissions`);
+                allCommissions = await res.json();
+                const tbody = document.getElementById('table-body-commissions');
+                tbody.innerHTML = allCommissions.length ? allCommissions.map(c => `<tr><td>${c.Ref_CM||''}</td><td>${c.Ref_Accord||''}</td><td>${c.Intitule_Accord||''}</td><td>${c.Date_Commission||''}</td><td>${c.Lieu||''}</td><td>${c.Presidence_Benin||''}</td><td>${c.Presidence_PTF||''}</td><td>${c.Prochaine_Date||''}</td></tr>`).join('') : '<tr><td colspan="8" style="text-align:center;">Aucune donnée</td></tr>';
+            } catch(e) { console.error("Err commissions:", e); }
+        }
+
+        function renderAccords(data) {
+            const tbody = document.getElementById('table-body-accords');
+            document.getElementById('count-value').textContent = data.length;
+            tbody.innerHTML = '';
+            if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:20px;">Aucun accord.</td></tr>'; return; }
+
+            function getValidCurrency(devise) {
+                const mapping = {
+                    'FCFA': 'XOF', 'XOF': 'XOF', 'XAF': 'XAF',
+                    'EUR': 'EUR', 'USD': 'USD', 'GBP': 'GBP',
+                    'JPY': 'JPY', 'CNY': 'CNY', 'DTS': 'XDR'
+                };
+                return mapping[devise] || 'XOF';
+            }
+
+            data.forEach(acc => {
+                try {
+                    let badgeClass = 'bg-gold';
+                    const statut = (acc.Statut_Juridique||'').toLowerCase();
+                    if (statut.includes('vigueur')) badgeClass = 'bg-green';
+                    else if (statut.includes('ratif')) badgeClass = 'bg-blue';
+                    else if (statut.includes('expir')) badgeClass = 'bg-red';
+
+                    let execClass = 'bg-gray';
+                    const etat = (acc.Etat_Execution||'').toLowerCase();
+                    if (etat.includes('cours')) execClass = 'bg-green';
+                    else if (etat.includes('prépa')) execClass = 'bg-blue';
+
+                    let montant = '-';
+                    if (acc.Montant_Total) {
+                        try {
+                            const deviseVal = parseFloat(acc.Montant_Total);
+                            if (!isNaN(deviseVal)) {
+                                const currency = getValidCurrency(acc.Devise);
+                                montant = new Intl.NumberFormat('fr-BJ', {
+                                    style: 'currency', 
+                                    currency: currency, 
+                                    maximumFractionDigits: 0
+                                }).format(deviseVal);
+                            }
+                        } catch (e) {
+                            montant = acc.Montant_Total + ' ' + (acc.Devise || '');
+                        }
+                    }
+
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${acc.Ref_Accord||'-'}</strong></td>
+                        <td><div style="font-weight:600">${acc.Intitule_Accord||'-'}</div></td>
+                        <td style="white-space:nowrap;">${acc.Date_Signature || '-'}</td>
+                        <td style="text-align:center; font-weight:700; color:var(--primary-blue);">${acc.Annee_Signature || '-'}</td>
+                        <td><div>${acc.Partenaire_Principal||'-'}</div></td>
+                        <td>${acc.Secteur||'-'}</td>
+                        <td style="font-weight:bold;text-align:right">${montant}</td>
+                        <td><span class="badge ${badgeClass}">${acc.Statut_Juridique||'-'}</span><br><span class="badge ${execClass}" style="margin-top:4px;">${acc.Etat_Execution || '-'}</span></td>
+                        <td>${acc.Fichier_Accord ? `<a href="../uploads/${acc.Fichier_Accord}" target="_blank" style="color:var(--primary-blue);">📄 Voir</a>` : '-'}</td>
+                        <td>
+                            <button class="action-btn btn-edit" onclick="openModal('${acc.Ref_Accord}')"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn btn-delete" onclick="deleteAccord('${acc.Ref_Accord}')"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>`;
+                } catch (err) {
+                    console.error(`Erreur accord ${acc.Ref_Accord}:`, err);
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STATISTIQUES ET GRAPHIQUES
+        // ═══════════════════════════════════════════════════════════════
+        function updateStats() {
+            const getEl = (id) => document.getElementById(id);
+            const parseNum = (val) => {
+                if (!val && val !== 0) return 0;
+                if (typeof val === 'number') return isNaN(val) ? 0 : val;
+                let str = String(val).replace(/[^0-9.,\-]/g, '').replace(',', '.');
+                return parseFloat(str) || 0;
+            };
+
+            if (!allAccords || allAccords.length === 0) {
+                if(getEl('stat-total')) getEl('stat-total').textContent = "0";
+                if(getEl('stat-montant')) getEl('stat-montant').textContent = "0 FCFA";
+                if(getEl('stat-encours')) getEl('stat-encours').textContent = "0";
+                if(getEl('stat-secteur')) getEl('stat-secteur').textContent = "-";
+                if(getEl('chart-annees')) getEl('chart-annees').innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                if(getEl('chart-ptf')) getEl('chart-ptf').innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                if(getEl('chart-statut')) getEl('chart-statut').innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                if(getEl('chart-etat')) getEl('chart-etat').innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée</div>';
+                return;
+            }
+
+            const total = allAccords.length;
+            
+            // Conversion en FCFA pour le montant total
+            const montantTotal = allAccords.reduce((sum, a) => {
+                const montant = parseNum(a.Montant_Total);
+                if (!montant) return sum;
+                const devise = (a.Devise || '').toUpperCase();
+                let taux = 1;
+                if (devise === 'USD') taux = 610;
+                else if (devise === 'EUR') taux = 655;
+                else if (devise === 'GBP') taux = 770;
+                else if (devise === 'FCFA' || devise === 'XOF') taux = 1;
+                return sum + (montant * taux);
+            }, 0);
+            
+            const encours = allAccords.filter(a => (a.Etat_Execution||'').toLowerCase().includes('cours')).length;
+            
+            if(getEl('stat-total')) getEl('stat-total').textContent = total.toLocaleString('fr-BJ');
+            if(getEl('stat-montant')) getEl('stat-montant').textContent = new Intl.NumberFormat('fr-BJ', {maximumFractionDigits:0}).format(montantTotal) + ' FCFA';
+            if(getEl('stat-encours')) getEl('stat-encours').textContent = encours.toLocaleString('fr-BJ');
+            
+            // Top secteur
+            const secteurs = {};
+            allAccords.forEach(a => { secteurs[a.Secteur || 'Non défini'] = (secteurs[a.Secteur || 'Non défini'] || 0) + 1; });
+            const topSecteur = Object.entries(secteurs).sort((a,b) => b[1]-a[1])[0];
+            if (topSecteur && getEl('stat-secteur')) {
+                const pct = Math.round((topSecteur[1] / total) * 100);
+                getEl('stat-secteur').textContent = `${topSecteur[0]} (${pct}%)`;
+            }
+            
+            // Graphique par année
+            const anneesData = {};
+            allAccords.forEach(a => { 
+                const an = a.Annee_Signature || 'N/A'; 
+                if (!anneesData[an]) anneesData[an] = { count: 0, montant: 0 };
+                anneesData[an].count++;
+                const montant = parseNum(a.Montant_Total);
+                const devise = (a.Devise || '').toUpperCase();
+                let taux = 1;
+                if (devise === 'USD') taux = 610;
+                else if (devise === 'EUR') taux = 655;
+                else if (devise === 'GBP') taux = 770;
+                anneesData[an].montant += (montant * taux);
+            });
+            
+            const sortedAnnees = Object.keys(anneesData)
+                .filter(a => a !== 'N/A' && parseInt(a) >= 2000 && parseInt(a) <= 2030)
+                .sort((a, b) => parseInt(b) - parseInt(a));
+                
+            const maxCount = Math.max(...sortedAnnees.map(a => anneesData[a].count), 1);
+            const chartAnnees = getEl('chart-annees');
+            
+            if(chartAnnees) {
+                chartAnnees.innerHTML = '';
+                sortedAnnees.forEach(annee => {
+                    const data = anneesData[annee];
+                    const pct = (data.count / maxCount) * 100;
+                    chartAnnees.innerHTML += `
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
+                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
+                                <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
+                                <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap;">
+                                    ${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.montant)} FCFA
+                                    <span style="color:#666;font-weight:500">(${data.count})</span>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+            }
+            
+            // Filtre année pour PTF
+            const selectAnnee = getEl('filter-annee-chart');
+            if (selectAnnee && selectAnnee.options.length <= 1) {
+                sortedAnnees.forEach(a => {
+                    const opt = document.createElement('option'); opt.value = a; opt.textContent = a;
+                    selectAnnee.appendChild(opt);
+                });
+            }
+
+            const anneeFiltre = selectAnnee ? selectAnnee.value : "";
+            const accordsFiltres = anneeFiltre ? allAccords.filter(a => a.Annee_Signature === anneeFiltre) : allAccords;
+            
+            // Graphique Top 10 PTF
+            const ptfMontants = {};
+            accordsFiltres.forEach(a => { 
+                const ptf = a.Partenaire_Principal || 'Non défini'; 
+                const montant = parseNum(a.Montant_Total);
+                const devise = (a.Devise || '').toUpperCase();
+                let taux = 1;
+                if (devise === 'USD') taux = 610;
+                else if (devise === 'EUR') taux = 655;
+                else if (devise === 'GBP') taux = 770;
+                ptfMontants[ptf] = (ptfMontants[ptf]||0) + (montant * taux);
+            });
+            
+            const maxPTF = Math.max(...Object.values(ptfMontants), 1); 
+            const chartPTF = getEl('chart-ptf');
+            
+            if(chartPTF) {
+                chartPTF.innerHTML = '';
+                if (accordsFiltres.length === 0) {
+                    chartPTF.innerHTML = '<div style="text-align:center;color:#999;padding:10px;font-size:10px;">Aucune donnée</div>';
+                } else {
+                    Object.entries(ptfMontants).sort((a,b)=>b[1]-a[1]).slice(0, 10).forEach(([ptf, montant]) => {
+                        const pct = (montant/maxPTF)*100;
+                        chartPTF.innerHTML += `
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <div style="width:90px; font-size:9px; font-weight:600; color:#666; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${ptf}">${ptf}</div>
+                                <div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;">
+                                    <div style="width:${pct}%; background:#27ae60; height:100%; border-radius:3px;"></div>
+                                </div>
+                                <div style="width:80px; font-size:8px; font-weight:700; text-align:right; color:#333;">
+                                    ${new Intl.NumberFormat('fr-BJ',{notation:'compact', compactDisplay:'short'}).format(montant)} F
+                                </div>
+                            </div>`;
+                    });
+                }
+            }
+            
+            // Graphique par Statut Juridique
+            const statuts = {};
+            allAccords.forEach(a => { 
+                const s = a.Statut_Juridique || 'Non défini';
+                statuts[s] = (statuts[s] || 0) + 1; 
+            });
+            
+            const maxStatut = Math.max(...Object.values(statuts), 1);
+            const chartStatut = getEl('chart-statut');
+            
+            if(chartStatut) {
+                chartStatut.innerHTML = '';
+                const colors = {'En vigueur':'#27ae60', 'Signé':'#3498db', 'Ratifié':'#9b59b6', 'Expiré':'#e74c3c', 'Suspendu':'#f39c12', 'Négociation':'#95a5a6'};
+                Object.entries(statuts).sort((a,b)=>b[1]-a[1]).forEach(([statut, count]) => {
+                    const pct = (count/maxStatut)*100;
+                    const color = colors[statut] || '#3498db';
+                    chartStatut.innerHTML += `
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <div style="width:90px; font-size:9px; font-weight:600; color:#666;">${statut}</div>
+                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;">
+                                <div style="width:${pct}%; background:${color}; height:100%; border-radius:3px;"></div>
+                            </div>
+                            <div style="width:40px; font-size:9px; font-weight:700; text-align:right; color:#333;">${count}</div>
+                        </div>`;
+                });
+            }
+            
+            // Graphique par État d'Exécution
+            const etats = {};
+            allAccords.forEach(a => { 
+                const e = a.Etat_Execution || 'Non défini';
+                etats[e] = (etats[e] || 0) + 1; 
+            });
+            
+            const maxEtat = Math.max(...Object.values(etats), 1);
+            const chartEtat = getEl('chart-etat');
+            
+            if(chartEtat) {
+                chartEtat.innerHTML = '';
+                const colors = {'En cours':'#27ae60', 'Préparation':'#3498db', 'Achevé':'#9b59b6', 'Suspendu':'#e74c3c', 'Clôturé':'#95a5a6'};
+                Object.entries(etats).sort((a,b)=>b[1]-a[1]).forEach(([etat, count]) => {
+                    const pct = (count/maxEtat)*100;
+                    const color = colors[etat] || '#3498db';
+                    chartEtat.innerHTML += `
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                            <div style="width:90px; font-size:9px; font-weight:600; color:#666;">${etat}</div>
+                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;">
+                                <div style="width:${pct}%; background:${color}; height:100%; border-radius:3px;"></div>
+                            </div>
+                            <div style="width:40px; font-size:9px; font-weight:700; text-align:right; color:#333;">${count}</div>
+                        </div>`;
+                });
+            }
+        }
+
+        function updateCharts() {
+            updateStats();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // GESTION DES FILTRES
+        // ═══════════════════════════════════════════════════════════════
+        function populateFilters() {
+            const anneeSet = [...new Set(allAccords.map(a => a.Annee_Signature).filter(v => v))].sort().reverse();
+            const typeAccordSet = [...new Set(allAccords.map(a => a.Type_Accord).filter(v => v))];
+            const typePartSet = [...new Set(allAccords.map(a => a.Type_Partenariat).filter(v => v))];
+            const natureSet = [...new Set(allAccords.map(a => a.Nature_Cooperation).filter(v => v))];
+            const ptfSet = [...new Set(allAccords.map(a => a.Partenaire_Principal).filter(v => v))];
+            const typePartenaireSet = [...new Set(allAccords.map(a => a.Type_Partenaire).filter(v => v))];
+            const secteurSet = [...new Set(allAccords.map(a => a.Secteur).filter(v => v))];
+            const statutSet = [...new Set(allAccords.map(a => a.Statut_Juridique).filter(v => v))];
+            const etatSet = [...new Set(allAccords.map(a => a.Etat_Execution).filter(v => v))];
+
+            fillSelect('#filter-annee', anneeSet);
+            fillSelect('#filter-type-accord', typeAccordSet);
+            fillSelect('#filter-type-part', typePartSet);
+            fillSelect('#filter-nature', natureSet);
+            fillSelect('#filter-ptf', ptfSet);
+            fillSelect('#filter-type-partenaire', typePartenaireSet);
+            fillSelect('#filter-secteur', secteurSet);
+            fillSelect('#filter-statut', statutSet);
+            fillSelect('#filter-etat', etatSet);
+        }
+
+        function fillSelect(selector, options) {
+            const el = document.querySelector(selector);
+            if (!el) return;
+            const currentVal = el.value;
+            const firstOpt = el.options[0] ? el.options[0].outerHTML : '<option value="">Tous</option>';
+            el.innerHTML = firstOpt;
+            options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt; o.textContent = opt;
+                el.appendChild(o);
+            });
+            el.value = currentVal;
+        }
+
+        function initFilters() {
+            const filterIds = [
+                'filter-texte', 'filter-annee', 'filter-type-accord', 'filter-type-part',
+                'filter-nature', 'filter-ptf', 'filter-type-partenaire', 'filter-secteur',
+                'filter-statut', 'filter-etat'
+            ];
+            
+            filterIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', applyFilters);
+                    el.addEventListener('change', applyFilters);
+                }
+            });
+        }
+
+        function applyFilters() {
+            const texte = document.getElementById('filter-texte')?.value.toLowerCase().trim() || '';
+            const annee = document.getElementById('filter-annee')?.value || '';
+            const typeAccord = document.getElementById('filter-type-accord')?.value || '';
+            const typePart = document.getElementById('filter-type-part')?.value || '';
+            const nature = document.getElementById('filter-nature')?.value || '';
+            const ptf = document.getElementById('filter-ptf')?.value || '';
+            const typePartenaire = document.getElementById('filter-type-partenaire')?.value || '';
+            const secteur = document.getElementById('filter-secteur')?.value || '';
+            const statut = document.getElementById('filter-statut')?.value || '';
+            const etat = document.getElementById('filter-etat')?.value || '';
+            
+            const filtered = allAccords.filter(a => {
+                const matchTexte = !texte || 
+                    (a.Ref_Accord && a.Ref_Accord.toLowerCase().includes(texte)) ||
+                    (a.Intitule_Accord && a.Intitule_Accord.toLowerCase().includes(texte)) ||
+                    (a.Objectif_General && a.Objectif_General.toLowerCase().includes(texte));
+                
+                const matchAnnee = !annee || a.Annee_Signature === annee;
+                const matchTypeAccord = !typeAccord || a.Type_Accord === typeAccord;
+                const matchTypePart = !typePart || a.Type_Partenariat === typePart;
+                const matchNature = !nature || a.Nature_Cooperation === nature;
+                const matchPtf = !ptf || a.Partenaire_Principal === ptf;
+                const matchTypePartenaire = !typePartenaire || a.Type_Partenaire === typePartenaire;
+                const matchSecteur = !secteur || a.Secteur === secteur;
+                const matchStatut = !statut || a.Statut_Juridique === statut;
+                const matchEtat = !etat || a.Etat_Execution === etat;
+                
+                return matchTexte && matchAnnee && matchTypeAccord && matchTypePart && 
+                       matchNature && matchPtf && matchTypePartenaire && matchSecteur && 
+                       matchStatut && matchEtat;
+            });
+            
+            renderAccords(filtered);
+        }
+
+        function resetFilters() {
+            const filterIds = [
+                'filter-texte', 'filter-annee', 'filter-type-accord', 'filter-type-part',
+                'filter-nature', 'filter-ptf', 'filter-type-partenaire', 'filter-secteur',
+                'filter-statut', 'filter-etat'
+            ];
+            
+            filterIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            
+            applyFilters();
+        }
+
+        // Navigation Onglets Principaux
+        function switchMainTab(index) {
+            document.querySelectorAll('.main-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.main-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`main-tab-${index}`).classList.add('active');
+            document.querySelectorAll('.main-tab-btn')[index].classList.add('active');
+        }
+
+        // Navigation Onglets Formulaire
+        function switchFormTab(index) {
+            document.querySelectorAll('.form-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.form-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`form-tab-${index}`).classList.add('active');
+            document.querySelectorAll('.form-tab-btn')[index].classList.add('active');
+        }
+
+        // Navigation Onglets Export
+        function switchExportTab(index) {
+            document.querySelectorAll('.exp-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#export-tabs-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
+            const target = document.getElementById(`exp-tab-${index}`);
+            if(target) target.classList.add('active');
+            const buttons = document.querySelectorAll('#export-tabs-nav .tab-btn');
+            if(buttons[index]) buttons[index].classList.add('active');
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // EXPORT PERSONNALISÉ
+        // ═══════════════════════════════════════════════════════════════
+        function initExportInterface() {
+            Object.entries(EXPORT_COLUMNS_MAP).forEach(([tabKey, cols]) => {
+                const containerId = `exp-cols-${tabKey}`;
+                const container = document.getElementById(containerId);
+                if(!container) return;
+                container.innerHTML = '';
+                cols.forEach(col => {
+                    const label = document.createElement('label');
+                    label.innerHTML = `<input type="checkbox" value="${col}" checked style="accent-color:var(--secondary-green);"> ${col.replace(/_/g,' ')}`;
+                    container.appendChild(label);
+                });
+            });
+            
+            Object.entries(FILTER_PARAM_MAP).forEach(([selectId, paramName]) => {
+                const values = parametres[paramName] || [];
+                if (values.length > 0) {
+                    fillExportFilter(selectId, values);
+                }
+            });
+            
+            Object.entries(FILTER_STATIC_VALUES).forEach(([selectId, values]) => {
+                fillExportFilter(selectId, values);
+            });
+            
+            fillExportFilter('exp-filter-Partenaire_Principal', partenaires.map(p => p.Partenaire));
+        }
+
+        function fillExportFilter(selectId, values) {
+            const el = document.getElementById(selectId);
+            if (!el) return;
+            const uniqueValues = [...new Set(values.map(v => String(v).trim()).filter(v => v))];
+            uniqueValues.sort();
+            uniqueValues.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                el.appendChild(opt);
+            });
+        }
+
+        function toggleExportWidget() { const w = document.getElementById('export-widget'); w.style.display = w.style.display === 'none' ? 'block' : 'none'; }
+        function toggleImportZone() { const z = document.getElementById('import-zone'); z.style.display = z.style.display === 'none' ? 'block' : 'none'; }
+        function selectAllExportCols() { document.querySelectorAll('[id^="exp-cols-"] input').forEach(i => i.checked = true); }
+        function deselectAllExportCols() { document.querySelectorAll('[id^="exp-cols-"] input').forEach(i => i.checked = false); }
+
+        async function triggerCustomExport() {
+            const filters = {};
+            document.querySelectorAll('select[id^="exp-filter-"]').forEach(select => {
+                const fieldName = select.id.replace('exp-filter-', '');
+                const values = [];
+                for (let i = 0; i < select.options.length; i++) {
+                    const option = select.options[i];
+                    if (option.selected && option.value && option.value.trim()) {
+                        values.push(option.value.trim());
+                    }
+                }
+                if (values.length > 0) {
+                    filters[fieldName] = values;
+                }
+            });
+
+            const selected_columns = [];
+            document.querySelectorAll('[id^="exp-cols-"] input[type="checkbox"]:checked').forEach(cb => {
+                selected_columns.push(cb.value);
+            });
+
+            if (selected_columns.length === 0) {
+                alert("⚠️ Veuillez cocher au moins une colonne à exporter.");
+                return;
+            }
+
+            const payload = { filters, selected_columns };
+            console.log("🔴 PAYLOAD JSON ENVOYÉ AU SERVEUR :", JSON.stringify(payload));
+
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/export`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`Le serveur a répondu : ${res.status} - ${errText}`);
+                }
+
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Export_Accords_${new Date().getTime()}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                console.log("✅ Export réussi !");
+                toggleExportWidget();
+
+            } catch (e) {
+                console.error("❌ ÉCHEC de l'export:", e);
+                alert('❌ Erreur lors de l\'export. Regardez la console (F12).\n\n' + e.message);
+            }
+        }
+
+        async function importExcel() {
+            const file = document.getElementById('import-file').files[0];
+            if (!file) return alert('Sélectionnez un fichier');
+            const fd = new FormData(); fd.append('file', file);
+            try {
+                const res = await fetch(`${API_BASE}/api/accords/import`, { method: 'POST', body: fd });
+                const r = await res.json();
+                if (!res.ok) throw new Error(r.error);
+                alert(`✅ ${r.message}`); toggleImportZone(); loadAccords();
+            } catch (e) { alert('❌ Erreur import: ' + e.message); }
+        }
+
+        // Modal CRUD
+        function openModal(ref = null) {
+            document.getElementById('modal-accord').style.display = 'flex';
+            switchFormTab(0);
+            const form = document.getElementById('form-accord');
+            
+            if (ref) {
+                isEditMode = true;
+                document.getElementById('modal-title').textContent = "MODIFIER L'ACCORD";
+                const acc = allAccords.find(a => a.Ref_Accord === ref);
+                if (!acc) return;
+                document.getElementById('Old_Ref').value = acc.Ref_Accord;
+                Object.keys(acc).forEach(k => {
+                    const el = document.querySelector(`[name="${k}"]`);
+                    if (el) {
+                        if (el.type === 'date' && acc[k]) el.value = acc[k].split('T')[0];
+                        else if (el.type !== 'file') el.value = acc[k] || '';
+                    }
+                });
+            } else {
+                isEditMode = false;
+                document.getElementById('modal-title').textContent = "NOUVEL ACCORD";
+                form.reset();
+                document.getElementById('Old_Ref').value = '';
+            }
+        }
+
+        function closeModal() { document.getElementById('modal-accord').style.display = 'none'; }
+
+        async function deleteAccord(ref) {
+            if (confirm("Supprimer cet accord ?")) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/accords/delete/${ref}`, { method: 'DELETE' });
+                    if (!res.ok) throw new Error('Erreur');
+                    loadAccords();
+                } catch (err) { alert('Erreur: ' + err.message); }
+            }
+        }
+
+        document.getElementById('form-accord').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const oldRef = document.getElementById('Old_Ref').value;
+            
+            let currentRef = formData.get('Ref_Accord');
+            if (!currentRef || currentRef.trim() === "") {
+                currentRef = `ACC-${new Date().toISOString().slice(0,10).replace(/-/g,"")}-${Math.floor(100 + Math.random() * 900)}`;
+                formData.set('Ref_Accord', currentRef);
+            }
+
+            try {
+                let url = isEditMode ? `${API_BASE}/api/accords/update/${encodeURIComponent(oldRef)}` : `${API_BASE}/api/accords/add`;
+                const res = await fetch(url, { method: isEditMode ? 'PUT' : 'POST', body: formData });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || 'Erreur HTTP');
+                
+                alert(isEditMode ? 'Mis à jour !' : 'Enregistré !');
+                closeModal();
+                await Promise.all([loadAccords(), loadSuivi(), loadDecaissements(), loadAvenants(), loadCommissions()]);
+            } catch (err) { alert('❌ Erreur: ' + err.message); }
+        };
+    </script>
+</body>
+</html>
