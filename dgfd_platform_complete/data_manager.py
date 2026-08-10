@@ -1,0 +1,142 @@
+import json
+import os
+from backup_manager import auto_backup, create_backup, restore_backup, get_backup_stats
+
+# =============================================================================
+# GESTIONNAIRE DE DONNÉES JSON - PERSISTANCE CENTRALISÉE
+# =============================================================================
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DATA_FILE = os.path.join(DATA_DIR, "dgfd_data.json")
+
+DEFAULT_DATA = {
+    "STATS": {
+        "accords_signes": {"valeur": 945, "label": "Accords signés", "sublabel": "2016 - 2025", "icone": "📄"},
+        "projets_actifs": {"valeur": 623, "label": "Projets actifs", "sublabel": "En cours d'exécution", "icone": "📁"},
+        "partenaires": {"valeur": 78, "label": "Partenaires techniques et financiers", "sublabel": "", "icone": "👥"},
+        "montant": {"valeur": "8 452", "label": "Milliards FCFA", "sublabel": "Montant total mobilisé", "icone": "🪙"},
+        "departements": {"valeur": 12, "label": "Départements couverts", "sublabel": "", "icone": "🏛️"},
+        "projets_clotures": {"valeur": 212, "label": "Projets clôturés", "sublabel": "Depuis 2016", "icone": "✅"},
+    },
+    "TODAY_STATS": [
+        {"icone": "📋", "valeur": 945, "label": "Accords enregistrés"},
+        {"icone": "🚀", "valeur": 623, "label": "Projets actifs"},
+        {"icone": "⚠️", "valeur": "8 452", "label": "Montant mobilisé Milliards FCFA"},
+    ],
+    "ACTUALITES": [
+        {
+            "titre": "Signature d'un nouvel accord entre le Bénin et la BAD",
+            "date": "02 Août 2026",
+            "resume": "Le Gouvernement du Bénin et la Banque Africaine de Développement ont signé un nouvel accord destiné à renforcer...",
+            "image": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=250&fit=crop",
+            "categorie": "Accord"
+        },
+        {
+            "titre": "Lancement officiel du Programme AQUA-VIE",
+            "date": "28 Juillet 2026",
+            "resume": "Les travaux du programme AQUA-VIE sont officiellement lancés pour améliorer l'accès à l'eau potable...",
+            "image": "https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=400&h=250&fit=crop",
+            "categorie": "Lancement"
+        },
+        {
+            "titre": "Atelier sur le Financement Vert et Climatique",
+            "date": "20 Juillet 2026",
+            "resume": "Le Ministère de l'Économie et des Finances organise un atelier de renforcement des capacités sur le financement vert...",
+            "image": "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&h=250&fit=crop",
+            "categorie": "Atelier"
+        },
+    ],
+    "PROJETS_UNE": [
+        {
+            "titre": "Programme AQUA-VIE",
+            "partenaire": "BAD – BEI",
+            "montant": "506 M USD",
+            "image": "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?w=500&h=300&fit=crop",
+            "categorie": "EAU & ASSAINISSEMENT",
+            "couleur": "#1e5aa8"
+        },
+        {
+            "titre": "PROFAR",
+            "partenaire": "AFD",
+            "montant": "84 M EUR",
+            "image": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=500&h=300&fit=crop",
+            "categorie": "AGRICULTURE",
+            "couleur": "#28a745"
+        },
+        {
+            "titre": "PADMAR-E",
+            "partenaire": "BAD",
+            "montant": "97,8 M EUR",
+            "image": "https://images.unsplash.com/photo-1519817914152-22d216bb9170?w=500&h=300&fit=crop",
+            "categorie": "TRANSPORT",
+            "couleur": "#fd7e14"
+        },
+    ],
+    "REPARTITION": {
+        "Secteurs": ["Agriculture", "Transports", "Eau & Assainissement", "Éducation", "Santé", "Autres"],
+        "Pourcentages": [28, 22, 14, 12, 10, 14],
+        "Couleurs": ["#28a745", "#17a2b8", "#1e5aa8", "#20c997", "#dc3545", "#6f42c1"],
+        "Total": 623
+    },
+    "DEPARTEMENTS": {
+        "Atlantique": {"projets": 18, "montant": 245, "partenaires": ["BAD", "AFD", "UE"]},
+        "Littoral": {"projets": 24, "montant": 312, "partenaires": ["Banque Mondiale", "BAD", "BEI"]},
+        "Ouémé": {"projets": 15, "montant": 189, "partenaires": ["AFD", "UE", "GIZ"]},
+        "Borgou": {"projets": 12, "montant": 156, "partenaires": ["BAD", "FIDA"]},
+        "Mono": {"projets": 9, "montant": 98, "partenaires": ["AFD", "Banque Mondiale"]},
+        "Zou": {"projets": 11, "montant": 134, "partenaires": ["UE", "GIZ"]},
+        "Collines": {"projets": 8, "montant": 87, "partenaires": ["BAD", "AFD"]},
+        "Atacora": {"projets": 7, "montant": 76, "partenaires": ["Banque Mondiale", "BAD"]},
+        "Donga": {"projets": 6, "montant": 65, "partenaires": ["AFD"]},
+        "Couffo": {"projets": 5, "montant": 54, "partenaires": ["UE", "GIZ"]},
+        "Plateau": {"projets": 4, "montant": 43, "partenaires": ["BAD"]},
+        "Alibori": {"projets": 4, "montant": 38, "partenaires": ["FIDA", "BAD"]},
+    },
+    "EVENEMENTS": [
+        {"jour": 12, "mois": "AOÛT", "titre": "Réunion de suivi avec la BAD", "lieu": "Cotonou"},
+        {"jour": 18, "mois": "AOÛT", "titre": "Mission Banque mondiale", "lieu": "Cotonou"},
+        {"jour": 26, "mois": "AOÛT", "titre": "Signature d'un nouvel accord", "lieu": "Palais de la Marina"},
+        {"jour": 30, "mois": "AOÛT", "titre": "Atelier de renforcement DGFD", "lieu": "Cotonou"},
+    ],
+    "ACCORDS": [
+        {"code": "ACC-2026-015", "projet": "Projet Santé 2.0", "partenaire": "BAD", "date": "02/08/2026"},
+        {"code": "ACC-2026-014", "projet": "Programme d'Appui à l'Éducation", "partenaire": "AFD", "date": "29/07/2026"},
+        {"code": "ACC-2026-013", "projet": "Projet d'Infrastructures Rurales", "partenaire": "BOAD", "date": "25/07/2026"},
+        {"code": "ACC-2026-012", "projet": "Programme d'Appui au Secteur Privé", "partenaire": "IFC", "date": "18/07/2026"},
+    ],
+    "DOCUMENTS": [
+        {"titre": "Rapport annuel sur la Coopération 2025", "type": "PDF", "taille": "2.4 Mo"},
+        {"titre": "Portfolio des partenaires 2024", "type": "PDF", "taille": "1.8 Mo"},
+        {"titre": "Plan d'Action SNFD 2025-2029", "type": "PDF", "taille": "3.1 Mo"},
+        {"titre": "Guide des procédures DGFD", "type": "PDF", "taille": "1.2 Mo"},
+    ],
+    "MOTS_CLES": ["PROFAR", "AQUA-VIE", "PADMAR-E", "Santé", "Éducation", "Agriculture", "Transport", "Énergie"]
+}
+
+
+def load_data():
+    """Charge les données depuis le fichier JSON. Crée le fichier avec les valeurs par défaut s'il n'existe pas."""
+    if not os.path.exists(DATA_FILE):
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(DEFAULT_DATA, f, ensure_ascii=False, indent=2)
+        return DEFAULT_DATA.copy()
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_data(data):
+    """Sauvegarde les données dans le fichier JSON + backup automatique."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    
+    # Backup automatique à chaque sauvegarde
+    auto_backup()
+    return True
+
+
+def reset_data():
+    """Réinitialise les données aux valeurs par défaut."""
+    save_data(DEFAULT_DATA)
+    return DEFAULT_DATA.copy()

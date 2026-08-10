@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGFD Admin - Aperçu</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  body { background:#f3f4f6; color:#374151; }
+  
+  .topbar { background:#0a2540; color:#fff; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:500; }
+  .topbar-user { display:flex; align-items:center; gap:8px; }
+  .badge { background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:20px; font-size:11px; }
+
+  .layout { display:flex; min-height:calc(100vh - 44px); }
+  .sidebar { width:280px; background:#fff; border-right:1px solid #e5e7eb; padding:16px; flex-shrink:0; }
+  .sidebar-title { font-size:10px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; padding:0 8px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:500; color:#374151; margin-bottom:2px; cursor:pointer; }
+  .nav-item:hover { background:#f3f4f6; }
+  .nav-item.active { background:#eff6ff; color:#0a2540; font-weight:600; }
+  .nav-icon { width:20px; text-align:center; font-size:14px; }
+
+  .main { flex:1; padding:24px; overflow:auto; }
+  .page-title { font-size:22px; font-weight:700; color:#0a2540; margin-bottom:4px; }
+  .page-desc { font-size:13px; color:#6b7280; margin-bottom:20px; }
+  .card { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:20px; margin-bottom:20px; }
+  .card-title { font-size:14px; font-weight:600; color:#0a2540; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .alert { background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px; border-radius:6px; font-size:13px; color:#92400e; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .btn { padding:6px 14px; border-radius:6px; border:1px solid #d1d5db; background:#fff; font-size:12px; font-weight:500; color:#374151; cursor:pointer; }
+  .btn-primary { background:#0a2540; color:#fff; border-color:#0a2540; }
+  .btn-danger { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+  .btn-green { background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; }
+  .flex-between { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .flex-end { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+  /* Table */
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:10px; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
+  .table td { padding:10px; font-size:12px; color:#374151; border-bottom:1px solid #f3f4f6; }
+  .table tr:hover td { background:#f9fafb; }
+  .table input { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+
+  .form-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .form-group { }
+  .form-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:4px; display:block; }
+  .form-input { width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; }
+  .form-textarea { width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; min-height:60px; resize:vertical; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .stat-edit { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
+  .stat-edit-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:6px; }
+  .stat-edit-row { display:flex; gap:8px; margin-bottom:6px; }
+  .stat-edit-row input { flex:1; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+  .stat-edit-row input.small { width:60px; flex:none; }
+
+  .pie-preview { width:200px; height:200px; border-radius:50%; background:conic-gradient(#28a745 0% 28%, #1e5aa8 28% 48%, #dc3545 48% 68%, #f2c94c 68% 85%, #6c757d 85% 100%); margin:12px auto; position:relative; }
+  .pie-preview-center { position:absolute; top:25%; left:25%; width:50%; height:50%; background:#fff; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .pie-preview-val { font-size:24px; font-weight:800; color:#0a2540; }
+  .pie-preview-label { font-size:10px; color:#6b7280; }
+
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .tag-blue { background:#eff6ff; color:#1e40af; }
+  .tag-green { background:#f0fdf4; color:#166534; }
+  .tag-red { background:#fef2f2; color:#991b1b; }
+  .tag-yellow { background:#fefce8; color:#854d0e; }
+
+  .color-dot { display:inline-block; width:12px; height:12px; border-radius:50%; vertical-align:middle; margin-right:4px; border:1px solid rgba(0,0,0,0.1); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>🔒 <b>DGFD Admin</b> — Interface de gestion des données</div>
+  <div class="topbar-user">👤 Admin <span class="badge">En ligne</span> <button class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:none; margin-left:8px;">Déconnexion</button></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-title">Menu</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">📈</span> Stats (6 indicateurs)</div>
+    <div class="nav-item"><span class="nav-icon">📅</span> Aujourd'hui</div>
+    <div class="nav-item"><span class="nav-icon">📰</span> Actualités</div>
+    <div class="nav-item"><span class="icon">🚀</span> Projets à la une</div>
+    <div class="nav-item"><span class="nav-icon">🥧</span> Répartition (camembert)</div>
+    <div class="nav-item"><span class="nav-icon">🗺️</span> Départements</div>
+    <div class="nav-item"><span class="nav-icon">📆</span> Événements</div>
+    <div class="nav-item"><span class="nav-icon">📋</span> Accords</div>
+    <div class="nav-item"><span class="nav-icon">📄</span> Documents</div>
+    <div class="nav-item"><span class="nav-icon">🏷️</span> Mots-clés</div>
+    <div style="border-top:1px solid #e5e7eb; margin:12px 0;"></div>
+    <div class="nav-item" style="color:#dc2626;"><span class="nav-icon">🔄</span> Réinitialisation</div>
+  </div>
+
+  <div class="main">
+    <div class="alert">⚠️ Toutes les modifications sont enregistrées automatiquement dans le fichier JSON.</div>
+    <div class="page-title">📈 Stats (6 indicateurs)</div>
+    <div class="page-desc">Modifiez les 6 chiffres clés de la page d'accueil. Les changements sont visibles instantanément sur la page publique.</div>
+
+    <div class="stats-grid">
+      <div class="stat-edit">
+        <div class="stat-edit-label">📄 Accords signés</div>
+        <div class="stat-edit-row"><input value="945"><input class="small" value="📄"></div>
+        <div class="stat-edit-row"><input value="Accords signés"><input value="2016 - 2025"></div>
+      </div>
+      <div class="stat-edit">
+        <div class="stat-edit-label">📁 Projets actifs</div>
+        <div class="stat-edit-row"><input value="623"><input class="small" value="📁"></div>
+        <div class="stat-edit-row"><input value="Projets actifs"><input value="En cours"></div>
+      </div>
+      <div class="stat-edit">
+        <div class="stat-edit-label">👥 Partenaires</div>
+        <div class="stat-edit-row"><input value="78"><input class="small" value="👥"></div>
+        <div class="stat-edit-row"><input value="Partenaires"><input value="T&F"></div>
+      </div>
+      <div class="stat-edit">
+        <div class="stat-edit-label">🪙 Montant</div>
+        <div class="stat-edit-row"><input value="8 452"><input class="small" value="🪙"></div>
+        <div class="stat-edit-row"><input value="Milliards FCFA"><input value="Mobilisés"></div>
+      </div>
+      <div class="stat-edit">
+        <div class="stat-edit-label">🏛️ Départements</div>
+        <div class="stat-edit-row"><input value="12"><input class="small" value="🏛️"></div>
+        <div class="stat-edit-row"><input value="Départements"><input value="Couvert"></div>
+      </div>
+      <div class="stat-edit">
+        <div class="stat-edit-label">✅ Projets clôturés</div>
+        <div class="stat-edit-row"><input value="212"><input class="small" value="✅"></div>
+        <div class="stat-edit-row"><input value="Projets clôturés"><input value="Depuis 2016"></div>
+      </div>
+    </div>
+
+    <div class="flex-end">
+      <button class="btn">Annuler</button>
+      <button class="btn btn-primary">💾 Sauvegarder les stats</button>
+    </div>
+
+    <div style="height:20px;"></div>
+    <div class="page-title">📰 Actualités</div>
+    <div class="page-desc">Ajoutez, modifiez ou supprimez des articles. Glissez-déposez pour réorganiser.</div>
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title">📰 Liste des actualités</div>
+        <div><button class="btn btn-green">+ Ajouter</button></div>
+      </div>
+      <table class="table">
+        <thead><tr><th>#</th><th>Titre</th><th>Date</th><th>Catégorie</th><th>Image</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><input value="Signature accord BAD"></td><td><input value="02 Août 2026"></td><td><span class="tag tag-blue">Accord</span></td><td><input value="https://..." style="width:140px;"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+          <tr><td>2</td><td><input value="Lancement AQUA-VIE"></td><td><input value="28 Juillet 2026"></td><td><span class="tag tag-green">Lancement</span></td><td><input value="https://..." style="width:140px;"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+          <tr><td>3</td><td><input value="Atelier Financement Vert"></td><td><input value="20 Juillet 2026"></td><td><span class="tag tag-yellow">Atelier</span></td><td><input value="https://..." style="width:140px;"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+        </tbody>
+      </table>
+      <div class="flex-end"><button class="btn btn-primary">💾 Sauvegarder</button></div>
+    </div>
+
+    <div class="page-title">🥧 Répartition (camembert)</div>
+    <div class="page-desc">Modifiez les secteurs et leurs pourcentages. L'aperçu se met à jour en temps réel.</div>
+    <div class="card" style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+      <div>
+        <div class="card-title">📝 Données du camembert</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Secteur</label><input class="form-input" value="Infrastructure"></div>
+          <div class="form-group"><label class="form-label">%</label><input class="form-input" value="28"></div>
+          <div class="form-group"><label class="form-label">Couleur</label><div class="form-input" style="display:flex; align-items:center; gap:8px;"><span class="color-dot" style="background:#28a745;"></span> #28a745</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input class="form-input" value="Santé"></div>
+          <div class="form-group"><input class="form-input" value="20"></div>
+          <div class="form-group"><div class="form-input" style="display:flex; align-items:center; gap:8px;"><span class="color-dot" style="background:#dc3545;"></span> #dc3545</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input class="form-input" value="Éducation"></div>
+          <div class="form-group"><input class="form-input" value="20"></div>
+          <div class="form-group"><div class="form-input" style="display:flex; align-items:center; gap:8px;"><span class="color-dot" style="background:#1e5aa8;"></span> #1e5aa8</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input class="form-input" value="Agriculture"></div>
+          <div class="form-group"><input class="form-input" value="17"></div>
+          <div class="form-group"><div class="form-input" style="display:flex; align-items:center; gap:8px;"><span class="color-dot" style="background:#f2c94c;"></span> #f2c94c</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><input class="form-input" value="Autres"></div>
+          <div class="form-group"><input class="form-input" value="15"></div>
+          <div class="form-group"><div class="form-input" style="display:flex; align-items:center; gap:8px;"><span class="color-dot" style="background:#6c757d;"></span> #6c757d</div></div>
+        </div>
+        <div class="flex-end"><button class="btn btn-primary">💾 Sauvegarder</button></div>
+      </div>
+      <div style="text-align:center;">
+        <div class="card-title">📊 Aperçu du camembert</div>
+        <div class="pie-preview">
+          <div class="pie-preview-center"><div class="pie-preview-val">128</div><div class="pie-preview-label">Projets</div></div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; max-width:220px; margin:0 auto; text-align:left;">
+          <div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:#28a745;"></span> Infrastructure <b>28%</b></div>
+          <div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:#dc3545;"></span> Santé <b>20%</b></div>
+          <div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:#1e5aa8;"></span> Éducation <b>20%</b></div>
+          <div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:#f2c94c;"></span> Agriculture <b>17%</b></div>
+          <div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:#6c757d;"></span> Autres <b>15%</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:20px;"></div>
+    <div class="page-title">📋 Accords</div>
+    <div class="card">
+      <div class="flex-between">
+        <div class="card-title">📋 Liste des accords</div>
+        <div><button class="btn btn-green">+ Ajouter</button></div>
+      </div>
+      <table class="table">
+        <thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td><input value="ACC-2024-042"></td><td><input value="Route Lokossa-Dévé"></td><td><input value="BAD"></td><td><input value="15/01/2025"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+          <tr><td><input value="ACC-2024-041"></td><td><input value="Électrification rurale"></td><td><input value="Banque Mondiale"></td><td><input value="10/01/2025"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+          <tr><td><input value="ACC-2024-040"></td><td><input value="50 écoles"></td><td><input value="AFD"></td><td><input value="05/01/2025"></td><td><button class="btn btn-danger">🗑️</button></td></tr>
+        </tbody>
+      </table>
+      <div class="flex-end"><button class="btn btn-primary">💾 Sauvegarder</button></div>
+    </div>
+
+    <div style="height:20px;"></div>
+    <div class="page-title">🗺️ Départements</div>
+    <div class="card">
+      <div class="card-title">🗺️ Données par département</div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;">
+        <div><label class="form-label">Département</label><input class="form-input" value="Atlantique"></div>
+        <div><label class="form-label">Projets</label><input class="form-input" value="18"></div>
+        <div><label class="form-label">Montant (Mds)</label><input class="form-input" value="1 245"></div>
+        <div><label class="form-label">Partenaires</label><input class="form-input" value="BM, AFD, BAD"></div>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:8px;">
+        <div><input class="form-input" value="Littoral"></div>
+        <div><input class="form-input" value="14"></div>
+        <div><input class="form-input" value="980"></div>
+        <div><input class="form-input" value="UE, JICA"></div>
+      </div>
+      <div class="flex-end"><button class="btn btn-primary">💾 Sauvegarder</button></div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGFD - Aperçu Plateforme</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  body { background:#f9fafb; color:#374151; }
+
+  /* Header */
+  .header { background:#fff; border-bottom:1px solid #e5e7eb; padding:0.5rem 4rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:1000; }
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo-badge { width:48px; height:48px; background:#0a2540; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#f2c94c; font-size:20px; font-weight:bold; }
+  .logo-title { font-size:13px; font-weight:700; color:#0a2540; line-height:1.2; text-transform:uppercase; letter-spacing:0.5px; }
+  .logo-sub { font-size:9px; color:#6b7280; font-weight:500; }
+  .nav { display:flex; gap:2rem; align-items:center; }
+  .nav a { text-decoration:none; color:#374151; font-size:14px; font-weight:500; }
+  .nav a.active { color:#0a2540; font-weight:600; }
+  .btn-login { background:#0a2540; color:#fff; padding:8px 20px; border-radius:6px; font-size:13px; font-weight:500; text-decoration:none; }
+
+  /* Hero */
+  .hero { position:relative; min-height:420px; background:linear-gradient(135deg, rgba(10,37,64,0.15) 0%, rgba(10,37,64,0.05) 100%), url('https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1400&h=600&fit=crop') center/cover no-repeat; display:flex; align-items:center; padding:0 4rem; }
+  .hero-content { display:flex; justify-content:space-between; align-items:center; width:100%; max-width:1400px; margin:0 auto; }
+  .hero-left { max-width:500px; }
+  .hero-title { font-size:42px; font-weight:800; color:#0a2540; line-height:1.15; margin-bottom:1rem; }
+  .hero-sub { font-size:15px; color:#374151; line-height:1.6; margin-bottom:2rem; }
+  .hero-btns { display:flex; gap:12px; }
+  .btn-green { background:#28a745; color:#fff; padding:12px 24px; border-radius:6px; text-decoration:none; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; border:none; cursor:pointer; }
+  .btn-white { background:#fff; color:#0a2540; padding:12px 24px; border-radius:6px; text-decoration:none; font-size:14px; font-weight:600; display:inline-flex; align-items:center; gap:8px; border:1px solid #d1d5db; }
+  .today-box { background:#fff; border-radius:16px; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.1); min-width:260px; }
+  .today-title { font-size:16px; font-weight:700; color:#0a2540; margin-bottom:16px; }
+  .today-item { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .today-icon { width:36px; height:36px; background:#f3f4f6; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+  .today-val { font-size:22px; font-weight:800; color:#0a2540; line-height:1; }
+  .today-label { font-size:11px; color:#6b7280; font-weight:500; }
+  .today-link { display:flex; align-items:center; gap:6px; color:#0a2540; font-size:12px; font-weight:600; text-decoration:none; margin-top:8px; }
+
+  /* Stats */
+  .stats { background:#fff; padding:2rem 4rem; border-bottom:1px solid #f3f4f6; }
+  .stats-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:1.5rem; max-width:1400px; margin:0 auto; }
+  .stat-card { display:flex; align-items:flex-start; gap:12px; padding:16px; border-radius:12px; }
+  .stat-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .blue { background:#eff6ff; } .green { background:#f0fdf4; } .purple { background:#faf5ff; } .yellow { background:#fefce8; } .teal { background:#f0fdfa; } .gray { background:#f9fafb; }
+  .stat-val { font-size:24px; font-weight:800; color:#0a2540; line-height:1; }
+  .stat-label { font-size:12px; color:#6b7280; font-weight:500; margin-top:4px; line-height:1.3; }
+  .stat-sub { font-size:11px; color:#9ca3af; margin-top:2px; }
+
+  /* Sections */
+  .section { padding:2.5rem 4rem; max-width:1400px; margin:0 auto; }
+  .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+  .section-title { font-size:20px; font-weight:700; color:#0a2540; }
+  .section-link { color:#0a2540; font-size:13px; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:4px; }
+  .cols-2 { display:grid; grid-template-columns:1fr 1fr; gap:3rem; }
+  .cols-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+
+  /* News */
+  .news-item { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid #f3f4f6; }
+  .news-item:last-child { border-bottom:none; }
+  .news-thumb { width:100px; height:70px; border-radius:8px; object-fit:cover; flex-shrink:0; background:#e5e7eb; }
+  .news-title { font-size:14px; font-weight:600; color:#0a2540; margin-bottom:4px; line-height:1.3; }
+  .news-date { font-size:11px; color:#9ca3af; font-weight:500; margin-bottom:4px; }
+  .news-excerpt { font-size:12px; color:#6b7280; line-height:1.4; margin-bottom:6px; }
+  .news-readmore { font-size:12px; color:#0a2540; font-weight:600; text-decoration:none; }
+
+  /* Project cards */
+  .project-card { border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; background:#fff; height:100%; display:flex; flex-direction:column; }
+  .project-img { width:100%; height:140px; object-fit:cover; background:#e5e7eb; position:relative; }
+  .project-tag { position:absolute; bottom:8px; left:8px; padding:4px 10px; border-radius:4px; font-size:9px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; }
+  .project-body { padding:16px; flex:1; display:flex; flex-direction:column; }
+  .project-title { font-size:16px; font-weight:700; color:#0a2540; margin-bottom:6px; }
+  .project-partner { font-size:12px; color:#6b7280; margin-bottom:4px; }
+  .project-amount { font-size:18px; font-weight:800; color:#0a2540; margin-bottom:12px; }
+  .project-link { margin-top:auto; font-size:12px; color:#0a2540; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:6px; }
+
+  /* Map section */
+  .map-section { display:grid; grid-template-columns:1.1fr 1fr 0.9fr; gap:2rem; }
+  .map-card { background:#fff; border-radius:12px; padding:20px; border:1px solid #e5e7eb; height:100%; }
+  .map-hint { font-size:12px; color:#6b7280; margin-bottom:10px; }
+  .map-stats { display:flex; gap:24px; margin:12px 0; }
+  .map-stat-val { font-size:22px; font-weight:800; color:#0a2540; }
+  .map-stat-label { font-size:11px; color:#6b7280; }
+  .select-box { width:100%; padding:8px 12px; border-radius:6px; border:1px solid #d1d5db; font-size:13px; margin-bottom:12px; }
+  .toggle-btns { display:flex; gap:8px; margin-bottom:12px; }
+  .toggle-btn { flex:1; padding:8px 12px; border-radius:6px; border:1px solid #d1d5db; font-size:12px; font-weight:600; cursor:pointer; background:#fff; color:#374151; }
+  .toggle-btn.active { background:#0a2540; color:#fff; border-color:#0a2540; }
+  .pie-placeholder { width:100%; height:200px; border-radius:50%; background:conic-gradient(#28a745 0% 28%, #1e5aa8 28% 48%, #dc3545 48% 68%, #f2c94c 68% 85%, #6c757d 85% 100%); display:flex; align-items:center; justify-content:center; position:relative; }
+  .pie-center { width:65%; height:65%; background:#fff; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .pie-val { font-size:28px; font-weight:800; color:#0a2540; }
+  .pie-label { font-size:11px; color:#6b7280; }
+  .legend-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; margin-top:8px; }
+  .legend-item { display:flex; align-items:center; gap:6px; }
+  .legend-dot { width:8px; height:8px; border-radius:50%; }
+  .legend-text { font-size:11px; color:#6b7280; }
+  .legend-pct { font-size:11px; color:#0a2540; font-weight:600; margin-left:auto; }
+
+  /* Event */
+  .event-item { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid #f3f4f6; }
+  .event-date { width:44px; height:44px; border:2px solid #e5e7eb; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; flex-shrink:0; }
+  .event-day { font-size:16px; font-weight:800; color:#0a2540; line-height:1; }
+  .event-month { font-size:8px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; }
+  .event-title { font-size:13px; font-weight:600; color:#0a2540; margin-bottom:2px; }
+  .event-loc { font-size:11px; color:#9ca3af; }
+
+  /* Table */
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:10px 8px; font-size:11px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #f3f4f6; }
+  .table td { padding:10px 8px; font-size:12px; color:#374151; border-bottom:1px solid #f9fafb; }
+  .table tr:hover td { background:#f9fafb; }
+
+  /* Docs */
+  .doc-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f3f4f6; }
+  .doc-icon { width:32px; height:32px; background:#fef2f2; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#dc2626; font-size:14px; flex-shrink:0; }
+  .doc-title { font-size:12px; font-weight:600; color:#374151; line-height:1.3; }
+  .doc-meta { font-size:11px; color:#9ca3af; }
+
+  /* Search & Tags */
+  .search-box { width:100%; padding:10px 14px; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; color:#6b7280; background:#f9fafb; margin-bottom:16px; border:none; outline:none; }
+  .tags-title { font-size:12px; font-weight:600; color:#374151; margin-bottom:10px; }
+  .tag-list { display:flex; flex-wrap:wrap; gap:8px; }
+  .tag-item { padding:6px 14px; background:#fff; border:1px solid #e5e7eb; border-radius:20px; font-size:12px; color:#374151; font-weight:500; cursor:pointer; transition:all 0.2s; }
+  .tag-item:hover { background:#0a2540; color:#fff; border-color:#0a2540; }
+
+  /* Footer */
+  .footer { background:#0a2540; color:#fff; padding:3rem 4rem 1.5rem; margin-top:3rem; }
+  .footer-grid { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:3rem; max-width:1400px; margin:0 auto 2rem; }
+  .footer-brand { display:flex; gap:12px; margin-bottom:12px; }
+  .footer-desc { font-size:12px; color:#9ca3af; line-height:1.6; }
+  .footer-title { font-size:14px; font-weight:700; margin-bottom:16px; color:#fff; }
+  .footer-links { display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; }
+  .footer-links a { color:#9ca3af; text-decoration:none; font-size:12px; transition:color 0.2s; }
+  .footer-links a:hover { color:#fff; }
+  .footer-contact { display:flex; align-items:center; gap:8px; color:#9ca3af; font-size:12px; margin-bottom:8px; }
+  .footer-social { display:flex; gap:12px; margin-top:12px; }
+  .footer-social-icon { width:32px; height:32px; background:rgba(255,255,255,0.1); border-radius:6px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; text-decoration:none; }
+  .footer-bottom { border-top:1px solid rgba(255,255,255,0.1); padding-top:1.5rem; display:flex; justify-content:space-between; align-items:center; max-width:1400px; margin:0 auto; font-size:11px; color:#6b7280; }
+  .footer-bottom a { color:#9ca3af; text-decoration:none; margin-left:20px; }
+
+  /* Responsive */
+  @media(max-width:1024px) { .stats-grid { grid-template-columns:repeat(3,1fr); } .footer-grid { grid-template-columns:1fr 1fr; } .hero-content { flex-direction:column; gap:2rem; } }
+  @media(max-width:768px) { .stats-grid { grid-template-columns:repeat(2,1fr); } .footer-grid { grid-template-columns:1fr; } .section { padding:1.5rem; } .hero { padding:2rem; } .cols-2 { grid-template-columns:1fr; } .map-section { grid-template-columns:1fr; } .nav { display:none; } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-badge">🇧🇯</div>
+    <div>
+      <div class="logo-title">DGFD</div>
+      <div class="logo-sub">Direction Générale du Financement du Développement</div>
+      <div class="logo-sub">RÉPUBLIQUE DU BÉNIN</div>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:2rem;">
+    <div class="nav">
+      <a href="#" class="active">Accueil</a>
+      <a href="#">Projets</a>
+      <a href="#">Accords</a>
+      <a href="#">Partenaires</a>
+      <a href="#">Cartographie</a>
+      <a href="#">Rapports</a>
+      <a href="#">Actualités</a>
+      <span style="color:#d1d5db;">🔍</span>
+    </div>
+    <a href="#" class="btn-login">🔒 Admin</a>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="hero-left">
+      <h1 class="hero-title">Plateforme Nationale du Financement du Développement</h1>
+      <p class="hero-sub">Une plateforme unique pour le suivi des accords, projets, partenaires techniques et financiers et indicateurs de développement du Bénin.</p>
+      <div class="hero-btns">
+        <a href="#" class="btn-green">📋 Consulter les projets</a>
+        <a href="#" class="btn-white">📊 Tableau de bord</a>
+      </div>
+    </div>
+    <div class="today-box">
+      <div class="today-title">Aujourd'hui</div>
+      <div class="today-item">
+        <div class="today-icon">📋</div>
+        <div><div class="today-val">2</div><div class="today-label">Nouveaux accords</div></div>
+      </div>
+      <div class="today-item">
+        <div class="today-icon">🚀</div>
+        <div><div class="today-val">3</div><div class="today-label">Projets validés</div></div>
+      </div>
+      <div class="today-item">
+        <div class="today-icon">📅</div>
+        <div><div class="today-val">1</div><div class="today-label">Événement à venir</div></div>
+      </div>
+      <a href="#" class="today-link">Voir le tableau de bord →</a>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon blue">📄</div><div><div class="stat-val">42</div><div class="stat-label">Accords et conventions</div><div class="stat-sub">actifs</div></div></div>
+    <div class="stat-card"><div class="stat-icon green">📁</div><div><div class="stat-val">128</div><div class="stat-label">Projets en cours</div><div class="stat-sub">sur tout le territoire</div></div></div>
+    <div class="stat-card"><div class="stat-icon purple">👥</div><div><div class="stat-val">35</div><div class="stat-label">Partenaires</div><div class="stat-sub">techniques et financiers</div></div></div>
+    <div class="stat-card"><div class="stat-icon yellow">🪙</div><div><div class="stat-val">8 400</div><div class="stat-label">Milliards FCFA</div><div class="stat-sub">engagés</div></div></div>
+    <div class="stat-card"><div class="stat-icon teal">🏛️</div><div><div class="stat-val">12</div><div class="stat-label">Départements</div><div class="stat-sub">couvertes</div></div></div>
+    <div class="stat-card"><div class="stat-icon gray">✅</div><div><div class="stat-val">94%</div><div class="stat-label">Taux d'exécution</div><div class="stat-sub">moyen des projets</div></div></div>
+  </div>
+</div>
+
+<!-- NEWS & PROJECTS -->
+<div class="section">
+  <div class="cols-2">
+    <!-- Actualités -->
+    <div>
+      <div class="section-header"><div class="section-title">Actualités</div><a href="#" class="section-link">Voir toutes →</a></div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=200&h=140&fit=crop') center/cover;"></div>
+        <div>
+          <div class="news-title">Signature d'un accord de financement avec la BAD pour la route Lokossa-Dévé</div>
+          <div class="news-date">15 janvier 2025</div>
+          <div class="news-excerpt">Un montant de 45 milliards FCFA a été mobilisé pour la réhabilitation de cette route stratégique...</div>
+          <a href="#" class="news-readmore">Lire la suite →</a>
+        </div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:url('https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=200&h=140&fit=crop') center/cover;"></div>
+        <div>
+          <div class="news-title">Lancement du projet d'électrification rurale dans le Borgou</div>
+          <div class="news-date">10 janvier 2025</div>
+          <div class="news-excerpt">Le projet vise à connecter 150 villages au réseau électrique national d'ici 2027...</div>
+          <a href="#" class="news-readmore">Lire la suite →</a>
+        </div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:url('https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=200&h=140&fit=crop') center/cover;"></div>
+        <div>
+          <div class="news-title">Atelier national sur la gestion des finances publiques à Cotonou</div>
+          <div class="news-date">05 janvier 2025</div>
+          <div class="news-excerpt">Les experts du FMI et de la Banque Mondiale ont participé à cet atelier de 3 jours...</div>
+          <a href="#" class="news-readmore">Lire la suite →</a>
+        </div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=200&h=140&fit=crop') center/cover;"></div>
+        <div>
+          <div class="news-title">Bilan annuel 2024 : 15 milliards FCFA de mobilisation de ressources</div>
+          <div class="news-date">28 décembre 2024</div>
+          <div class="news-excerpt">La DGFD présente son bilan annuel avec un taux de mobilisation record...</div>
+          <a href="#" class="news-readmore">Lire la suite →</a>
+        </div>
+      </div>
+      <div class="news-item">
+        <div class="news-thumb" style="background:url('https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=200&h=140&fit=crop') center/cover;"></div>
+        <div>
+          <div class="news-title">Réunion avec les partenaires techniques et financiers du secteur agricole</div>
+          <div class="news-date">20 décembre 2024</div>
+          <div class="news-excerpt">Les partenaires se sont engagés à renforcer leur appui au secteur agricole béninois...</div>
+          <a href="#" class="news-readmore">Lire la suite →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projets à la une -->
+    <div>
+      <div class="section-header"><div class="section-title">Projets à la une</div><a href="#" class="section-link">Voir tous →</a></div>
+      <div class="cols-3">
+        <div class="project-card">
+          <div class="project-img" style="background:url('https://images.unsplash.com/photo-1530549387789-4c1017266635?w=400&h=200&fit=crop') center/cover;">
+            <span class="project-tag" style="background:#28a745;">Infrastructure</span>
+          </div>
+          <div class="project-body">
+            <div class="project-title">Construction du pont de Cotonou</div>
+            <div class="project-partner">Partenaire : Banque Mondiale</div>
+            <div class="project-amount">12 500 000 000 FCFA</div>
+            <a href="#" class="project-link">Voir le projet →</a>
+          </div>
+        </div>
+        <div class="project-card">
+          <div class="project-img" style="background:url('https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=200&fit=crop') center/cover;">
+            <span class="project-tag" style="background:#1e5aa8;">Éducation</span>
+          </div>
+          <div class="project-body">
+            <div class="project-title">Construction de 50 écoles primaires</div>
+            <div class="project-partner">Partenaire : AFD</div>
+            <div class="project-amount">8 000 000 000 FCFA</div>
+            <a href="#" class="project-link">Voir le projet →</a>
+          </div>
+        </div>
+        <div class="project-card">
+          <div class="project-img" style="background:url('https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=200&fit=crop') center/cover;">
+            <span class="project-tag" style="background:#dc3545;">Santé</span>
+          </div>
+          <div class="project-body">
+            <div class="project-title">Rénovation du CHU de Cotonou</div>
+            <div class="project-partner">Partenaire : BAD</div>
+            <div class="project-amount">5 200 000 000 FCFA</div>
+            <a href="#" class="project-link">Voir le projet →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAP / PIE / CALENDAR -->
+<div class="section">
+  <div class="map-section">
+    <!-- Map -->
+    <div class="map-card">
+      <div class="section-title" style="margin-bottom:8px;">Carte interactive</div>
+      <div class="map-hint">Cliquez sur un département pour voir les projets</div>
+      <select class="select-box">
+        <option>Atlantique</option>
+        <option>Littoral</option>
+        <option>Mono</option>
+        <option>Ouémé</option>
+        <option>Borgou</option>
+        <option>Zou</option>
+        <option>Collines</option>
+        <option>Alibori</option>
+        <option>Atacora</option>
+        <option>Donga</option>
+        <option>Couffo</option>
+        <option>Plateau</option>
+      </select>
+      <div class="map-stats">
+        <div><div class="map-stat-val">18</div><div class="map-stat-label">Projets</div></div>
+        <div><div class="map-stat-val">1 245</div><div class="map-stat-label">Milliards FCFA</div></div>
+      </div>
+      <div style="font-size:12px; font-weight:600; color:#374151; margin-bottom:8px;">Principaux partenaires</div>
+      <div style="font-size:12px; color:#6b7280; margin-bottom:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#28a745; margin-right:6px;"></span>Banque Mondiale</div>
+      <div style="font-size:12px; color:#6b7280; margin-bottom:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#1e5aa8; margin-right:6px;"></span>AFD</div>
+      <div style="font-size:12px; color:#6b7280; margin-bottom:4px;"><span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#dc3545; margin-right:6px;"></span>BAD</div>
+      <br><a href="#" style="padding:8px 16px; border:1px solid #d1d5db; border-radius:6px; font-size:12px; color:#374151; text-decoration:none; display:inline-block;">Voir tous les projets</a>
+    </div>
+
+    <!-- Pie Chart -->
+    <div class="map-card">
+      <div class="section-title" style="margin-bottom:4px;">Répartition des projets</div>
+      <div class="toggle-btns">
+        <button class="toggle-btn active">Par secteur</button>
+        <button class="toggle-btn">Par partenaire</button>
+      </div>
+      <div class="pie-placeholder">
+        <div class="pie-center">
+          <div class="pie-val">128</div>
+          <div class="pie-label">Projets</div>
+        </div>
+      </div>
+      <div class="legend-grid">
+        <div class="legend-item"><span class="legend-dot" style="background:#28a745;"></span><span class="legend-text">Infrastructure</span><span class="legend-pct">28%</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#dc3545;"></span><span class="legend-text">Santé</span><span class="legend-pct">20%</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#1e5aa8;"></span><span class="legend-text">Éducation</span><span class="legend-pct">20%</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f2c94c;"></span><span class="legend-text">Agriculture</span><span class="legend-pct">17%</span></div>
+        <div class="legend-item"><span class="legend-dot" style="background:#6c757d;"></span><span class="legend-text">Autres</span><span class="legend-pct">15%</span></div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div>
+      <div class="section-header" style="margin-bottom:12px;"><div class="section-title">Calendrier des événements</div><a href="#" class="section-link">Voir tout →</a></div>
+      <div class="event-item"><div class="event-date"><div class="event-day">15</div><div class="event-month">JAN</div></div><div><div class="event-title">Réunion des partenaires techniques</div><div class="event-loc">Palais de la Marina, Cotonou</div></div></div>
+      <div class="event-item"><div class="event-date"><div class="event-day">22</div><div class="event-month">JAN</div></div><div><div class="event-title">Lancement du projet éducation</div><div class="event-loc">Ministère de l'Éducation</div></div></div>
+      <div class="event-item"><div class="event-date"><div class="event-day">05</div><div class="event-month">FEV</div></div><div><div class="event-title">Forum des investissements</div><div class="event-loc">Cotonou, Bénin</div></div></div>
+      <div class="event-item"><div class="event-date"><div class="event-day">18</div><div class="event-month">FEV</div></div><div><div class="event-title">Atelier bilan annuel</div><div class="event-loc">Direction DGFD</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM -->
+<div class="section">
+  <div class="map-section" style="grid-template-columns:1.2fr 0.9fr 0.9fr;">
+    <!-- Accords -->
+    <div class="map-card">
+      <div class="section-header" style="margin-bottom:8px;"><div class="section-title">Derniers accords signés</div><a href="#" class="section-link">Voir tous →</a></div>
+      <table class="table">
+        <thead><tr><th>Code Accord</th><th>Projet</th><th>Partenaire</th><th>Date</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:600; color:#0a2540;">ACC-2024-042</td><td>Route Lokossa-Dévé</td><td>BAD</td><td style="white-space:nowrap;">15/01/2025</td></tr>
+          <tr><td style="font-weight:600; color:#0a2540;">ACC-2024-041</td><td>Électrification rurale</td><td>Banque Mondiale</td><td style="white-space:nowrap;">10/01/2025</td></tr>
+          <tr><td style="font-weight:600; color:#0a2540;">ACC-2024-040</td><td>Construction de 50 écoles</td><td>AFD</td><td style="white-space:nowrap;">05/01/2025</td></tr>
+          <tr><td style="font-weight:600; color:#0a2540;">ACC-2024-039</td><td>Renforcement CHU</td><td>UE</td><td style="white-space:nowrap;">28/12/2024</td></tr>
+          <tr><td style="font-weight:600; color:#0a2540;">ACC-2024-038</td><td>Projet agricole Ouémé</td><td>FAO</td><td style="white-space:nowrap;">20/12/2024</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Documents -->
+    <div class="map-card">
+      <div class="section-header" style="margin-bottom:8px;"><div class="section-title">Documents récents</div><a href="#" class="section-link">Voir tous →</a></div>
+      <div class="doc-item"><div class="doc-icon">📄</div><div><div class="doc-title">Rapport annuel DGFD 2024</div><div class="doc-meta">PDF · 2.4 Mo</div></div></div>
+      <div class="doc-item"><div class="doc-icon">📄</div><div><div class="doc-title">Plan d'action 2025-2027</div><div class="doc-meta">PDF · 1.8 Mo</div></div></div>
+      <div class="doc-item"><div class="doc-icon">📄</div><div><div class="doc-title">Guide des procédures</div><div class="doc-meta">PDF · 850 Ko</div></div></div>
+      <div class="doc-item"><div class="doc-icon">📄</div><div><div class="doc-title">Cartographie des projets</div><div class="doc-meta">PDF · 3.2 Mo</div></div></div>
+    </div>
+
+    <!-- Search & Tags -->
+    <div class="map-card">
+      <div class="section-title" style="margin-bottom:12px;">Recherche rapide</div>
+      <input class="search-box" type="text" placeholder="Rechercher un projet, accord, partenaire...">
+      <div class="tags-title">Mots-clés populaires</div>
+      <div class="tag-list">
+        <span class="tag-item">PROFAR</span>
+        <span class="tag-item">AQUA-VIE</span>
+        <span class="tag-item">Santé</span>
+        <span class="tag-item">Éducation</span>
+        <span class="tag-item">Agriculture</span>
+        <span class="tag-item">Infrastructure</span>
+        <span class="tag-item">Énergie</span>
+        <span class="tag-item">Eau</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">
+        <div style="width:48px; height:48px; background:rgba(255,255,255,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px;">🇧🇯</div>
+        <div><div style="font-size:14px; font-weight:700; color:#fff;">DGFD</div><div style="font-size:10px; color:#9ca3af;">Direction Générale du Financement du Développement</div></div>
+      </div>
+      <div class="footer-desc">Plateforme officielle de suivi des accords et projets de développement au Bénin.</div>
+    </div>
+    <div>
+      <div class="footer-title">Liens rapides</div>
+      <div class="footer-links">
+        <a href="#">Accueil</a><a href="#">Cartographie</a>
+        <a href="#">Projets</a><a href="#">Rapports</a>
+        <a href="#">Accords</a><a href="#">Actualités</a>
+        <a href="#">Partenaires</a><a href="#">Contact</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-title">Nous contacter</div>
+      <div class="footer-contact">📍 Palais de la Marina<br>01 BP 302 Cotonou – Bénin</div>
+      <div class="footer-contact">📞 +229 21 30 10 20</div>
+      <div class="footer-contact">✉️ contact@dgfd.gov.bj</div>
+    </div>
+    <div>
+      <div class="footer-title">Suivez-nous</div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <div style="width:40px; height:40px; background:rgba(255,255,255,0.1); border-radius:8px; display:flex; align-items:center; justify-content:center;">🇧🇯</div>
+        <div><div style="font-size:10px; font-weight:700; color:#fff;">RÉPUBLIQUE DU BÉNIN</div><div style="font-size:9px; color:#9ca3af;">Fraternité - Justice - Travail</div></div>
+      </div>
+      <div class="footer-social">
+        <a href="#" class="footer-social-icon">f</a>
+        <a href="#" class="footer-social-icon">in</a>
+        <a href="#" class="footer-social-icon">▶</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2025 DGFD – Tous droits réservés</div>
+    <div><a href="#">Mentions légales</a><a href="#">Confidentialité</a><a href="#">Plan du site</a></div>
+  </div>
+</div>
+
+</body>
+</html>
