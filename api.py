@@ -32,6 +32,11 @@ import time
 import threading
 import tempfile
 
+# Charge le fichier .env AVANT que auth.py lise SIGNUP_ENABLED
+from dotenv import load_dotenv
+load_dotenv()
+
+
 app = Flask(__name__)
 
 # CORS restreint aux domaines autorises (le frontend est servi en same-origin)
@@ -59,7 +64,7 @@ def add_security_headers(resp):
     resp.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
     resp.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
     resp.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
-    resp.headers.setdefault('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; connect-src 'self';")
+    resp.headers.setdefault('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https://images.unsplash.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com https://cdn.jsdelivr.net; connect-src 'self' https://unpkg.com https://cdnjs.cloudflare.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org;")
     if request.path.startswith('/api/'):
         resp.headers.setdefault('Cache-Control', 'no-store')
     return resp
