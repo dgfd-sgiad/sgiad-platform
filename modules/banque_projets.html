@@ -2062,41 +2062,56 @@
 
         function populateAnneeReference() {
             const years = [...new Set(allProjets.map(p => parseInt(p['Annee de signature'])).filter(y => y && y > 1990 && y < 2100))].sort((a, b) => b - a);
+            const yearsCloture = [...new Set(allProjets.map(p => parseInt(p['Annee de cloture'])).filter(y => y && y > 1990 && y < 2100))].sort((a, b) => a - b);
 
-            // annee-reference
+            // annee-reference (En cours vs Clôturés) : conserver la sélection
             const sel = getEl('annee-reference');
             if (sel) {
+                const current = sel.value;
                 sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-                if (years.length) sel.value = new Date().getFullYear() <= years[0] ? new Date().getFullYear() : years[0];
+                if (current && years.includes(parseInt(current))) sel.value = current;
+                else if (years.length) {
+                    sel.value = String(new Date().getFullYear());
+                    if (!sel.value) sel.value = String(years[0]);
+                }
             }
 
-            // filter-annee-ptf
+            // filter-annee-ptf (Top 10 Partenaires) : conserver la sélection
             const selPtf = getEl('filter-annee-ptf');
             if (selPtf) {
+                const current = selPtf.value;
                 selPtf.innerHTML = '<option value="">Toutes années</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+                if (current) selPtf.value = current;
             }
 
-            // filter-annee (table filter)
+            // filter-annee (filtre du tableau) : conserver la sélection
             const selAnnee = getEl('filter-annee');
             if (selAnnee) {
+                const current = selAnnee.value;
                 selAnnee.innerHTML = '<option value="">Toutes années</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+                if (current) selAnnee.value = current;
             }
 
-            // filter-annee-cloture (table filter)
-            const yearsCloture = [...new Set(allProjets.map(p => parseInt(p['Annee de cloture'])).filter(y => y && y > 1990 && y < 2100))].sort((a, b) => a - b);
+            // filter-annee-cloture : conserver la sélection
             const selAnneeCloture = getEl('filter-annee-cloture');
             if (selAnneeCloture) {
+                const current = selAnneeCloture.value;
                 selAnneeCloture.innerHTML = '<option value="">Toutes clôtures</option>' + yearsCloture.map(y => `<option value="${y}">${y}</option>`).join('');
+                if (current) selAnneeCloture.value = current;
             }
 
-            // Export widget year filters
+            // Filtres année du widget Export : conserver la sélection
             const expFilterSig = getEl('exp-filter-Annee de signature');
             if (expFilterSig) {
+                const current = Array.from(expFilterSig.selectedOptions).map(o => o.value);
                 expFilterSig.innerHTML = '<option value="">-- Toutes --</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+                current.forEach(v => { const o = expFilterSig.querySelector(`option[value="${v}"]`); if (o) o.selected = true; });
             }
             const expFilterClot = getEl('exp-filter-Annee de cloture');
             if (expFilterClot) {
+                const current = Array.from(expFilterClot.selectedOptions).map(o => o.value);
                 expFilterClot.innerHTML = '<option value="">-- Toutes --</option>' + yearsCloture.map(y => `<option value="${y}">${y}</option>`).join('');
+                current.forEach(v => { const o = expFilterClot.querySelector(`option[value="${v}"]`); if (o) o.selected = true; });
             }
         }
 
@@ -2209,10 +2224,20 @@
                 let enCoursN = 0, cloturesN = 0, nonDemarresN = 0;
                 scopedProjets.forEach(p => {
                     const sig = parseInt(p['Annee de signature']);
-                    const clo = parseInt(p['Annee de cloture']);
+                    let clo = parseInt(p['Annee de cloture']);
+                    const rawCloture = p['Nouvelle date de clôture'] || p['Date de clôture'];
+                    if (p['Nouvelle date de clôture']) {
+                        const iso = frToIso(p['Nouvelle date de clôture']) || p['Nouvelle date de clôture'];
+                        const match = String(iso).match(/^(\d{4})/);
+                        if (match) clo = parseInt(match[1]);
+                    } else if (!clo && rawCloture) {
+                        const iso = frToIso(rawCloture) || rawCloture;
+                        const match = String(iso).match(/^(\d{4})/);
+                        if (match) clo = parseInt(match[1]);
+                    }
                     if (!sig) return;
                     if (sig > refYear) { nonDemarresN++; return; }
-                    if (clo && clo < refYear) { cloturesN++; return; }
+                    if (clo && clo <= refYear) { cloturesN++; return; }
                     enCoursN++;
                 });
                 barChart(getEl('chart-encours'), [
