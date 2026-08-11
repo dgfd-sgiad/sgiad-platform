@@ -245,27 +245,31 @@ UNE_IMAGES = {
     'TRANSPORT': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=260&fit=crop',
     'PROTECTION_SOCIALE': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=260&fit=crop',
     'CADRE_DE_VIE': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=260&fit=crop',
+    'NUMERIQUE': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=260&fit=crop',
+    'GOUVERNANCE': 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=260&fit=crop',
     'DEFAUT': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=260&fit=crop',
 }
 UNE_COULEURS = {
     'INFRASTRUCTURE': '#2563eb', 'SANTE': '#dc2626', 'EDUCATION': '#7c3aed',
     'AGRICULTURE': '#0e7a3a', 'EAU': '#0891b2', 'ENERGIE': '#d97706',
-    'TRANSPORT': '#475569', 'PROTECTION_SOCIALE': '#db2777', 'CADRE_DE_VIE': '#0d9488', 'DEFAUT': '#0a2540',
+    'TRANSPORT': '#475569', 'PROTECTION_SOCIALE': '#db2777', 'CADRE_DE_VIE': '#0d9488',
+    'NUMERIQUE': '#4f46e5', 'GOUVERNANCE': '#92400e', 'DEFAUT': '#0a2540',
 }
 
 def _secteur_cle(secteur):
     s = strip_accents(str(secteur or '')).upper()
-    for kw, cle in [('PROTECTION', 'PROTECTION_SOCIALE'), ('CADRE', 'CADRE_DE_VIE'), ('INFRASTRUCTURE', 'INFRASTRUCTURE'), ('SANTE', 'SANTE'), ('EDUCATION', 'EDUCATION'), ('AGRICULTURE', 'AGRICULTURE'), ('EAU', 'EAU'), ('ENERGIE', 'ENERGIE'), ('TRANSPORT', 'TRANSPORT')]:
+    for kw, cle in [('PROTECTION', 'PROTECTION_SOCIALE'), ('CADRE', 'CADRE_DE_VIE'), ('NUMER', 'NUMERIQUE'), ('GOUVERN', 'GOUVERNANCE'), ('INFRASTRUCTURE', 'INFRASTRUCTURE'), ('SANTE', 'SANTE'), ('EDUCATION', 'EDUCATION'), ('AGRICULTURE', 'AGRICULTURE'), ('EAU', 'EAU'), ('ENERGIE', 'ENERGIE'), ('TRANSPORT', 'TRANSPORT')]:
         if kw in s:
             return cle
     return 'DEFAUT'
 
 def _compute_projets_une(rows, nb=9):
-    """Les accords les plus recents (tous secteurs) pour la rotation de la une."""
+    """Accords recents (tous secteurs), sans doublon de secteur dans chaque groupe de 3."""
     signes = [r for r in rows if str(r.get('date_signature') or '')[:10]]
     signes.sort(key=lambda r: str(r.get('date_signature'))[:10], reverse=True)
-    une = []
-    for r in signes[:nb]:
+    pool = signes[:15]
+
+    def fiche(r):
         cle = _secteur_cle(r.get('secteur_principal'))
         try:
             m = float(r.get('montant_total_fcfa') or 0)
@@ -280,14 +284,34 @@ def _compute_projets_une(rows, nb=9):
         objet = str(r.get('objet_accord') or r.get('code_projet') or '').strip()
         if len(objet) > 70:
             objet = objet[:67] + '...'
-        une.append({
+        return {
             'image': UNE_IMAGES[cle],
             'couleur': UNE_COULEURS[cle],
             'categorie': str(r.get('secteur_principal') or 'Divers').strip().title(),
             'titre': objet,
             'partenaire': str(r.get('partenaire') or '').strip(),
             'montant': montant_str,
-        })
+            '_cle': cle,
+        }
+
+    candidats = [fiche(r) for r in pool]
+    une = []
+    for _g in range(nb // 3):
+        used = set()
+        for _s in range(3):
+            if not candidats:
+                break
+            for i, c in enumerate(candidats):
+                if c['_cle'] not in used:
+                    choix = c
+                    del candidats[i]
+                    break
+            else:
+                choix = candidats.pop(0)
+            used.add(choix['_cle'])
+            une.append(choix)
+    for c in une:
+        c.pop('_cle', None)
     return une
 
 def _compute_accueil_stats(rows):
