@@ -1221,6 +1221,24 @@ def upload_document_projet():
         categorie = str(request.form.get('categorie', 'Autre')).strip() or 'Autre'
         if not file or not code_projet:
             return jsonify({"error": "Fichier et code_projet requis"}), 400
+
+        # Quick win 2 : liste blanche extensions + types MIME autorises
+        ALLOWED_UPLOADS = {
+            '.pdf': 'application/pdf',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.txt': 'text/plain',
+        }
+        ext = os.path.splitext(secure_filename(file.filename or ''))[1].lower()
+        mime = (file.mimetype or '').split(';')[0].strip().lower()
+        if ext not in ALLOWED_UPLOADS:
+            return jsonify({"error": "Type de fichier non autorisé"}), 400
+        if mime not in list(ALLOWED_UPLOADS.values()) + ['application/octet-stream']:
+            return jsonify({"error": "Type de fichier non autorisé"}), 400
+
         content = file.read()
         if len(content) > 10 * 1024 * 1024:
             return jsonify({"error": "Fichier trop volumineux (max 10 Mo)"}), 413
