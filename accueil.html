@@ -477,6 +477,8 @@
                 <div id="signup-confirm-block" style="display:none;">
                     <label class="login-label" for="login-pwd2">Confirmer le mot de passe</label>
                     <input type="password" class="login-input" id="login-pwd2" placeholder="Ressaisissez le mot de passe" autocomplete="new-password">
+                    <label class="login-label" for="signup-code">Code d'invitation</label>
+                    <input type="text" class="login-input" id="signup-code" placeholder="Votre code d'invitation" autocomplete="off">
                 </div>
                 <button type="submit" class="login-btn" id="login-btn">Se connecter</button>
             </form>
@@ -834,6 +836,7 @@
             const email = document.getElementById('login-id').value.trim();
             const password = document.getElementById('login-pwd').value;
             const password2 = document.getElementById('login-pwd2').value;
+            const code_secret = document.getElementById('signup-code').value.trim();
             const errBox = document.getElementById('login-error');
             const btn = document.getElementById('login-btn');
             errBox.style.display = 'none';
@@ -852,7 +855,7 @@
                 const res = await fetchWithRetry('/api/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, code_secret })
                 });
                 const result = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(result.error || `Erreur serveur (HTTP ${res.status})`);

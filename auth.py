@@ -139,6 +139,13 @@ def signup():
         if not SIGNUP_ENABLED:
             return jsonify({'error': 'Les inscriptions sont fermées. Contactez l\'administrateur.'}), 403
 
+        secret_attendu = os.environ.get('REGISTRATION_SECRET_CODE', '')
+        if not secret_attendu:
+            return jsonify({"error": "Les inscriptions sont actuellement désactivées."}), 403
+        code_fourni = str((request.get_json(silent=True) or {}).get('code_secret', ''))
+        if code_fourni != secret_attendu:
+            return jsonify({"error": "Code d'invitation invalide."}), 403
+
         data = request.get_json(force=True) or {}
         email = data.get('email', '').strip()
         password = data.get('password', '')
