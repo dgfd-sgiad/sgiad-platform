@@ -948,12 +948,16 @@
                 <!-- 4 graphiques alignés -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto; gap:8px;">
                     <div class="dashboard-card" style="padding:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; gap:6px;">
                             <h4 style="margin:0; font-size:11px;">📊 Par année de signature</h4>
-                            <select id="chart-annees-mode" onchange="updateStats()" style="padding:2px 5px; font-size:10px;">
-                                <option value="count">Nombre de projets</option>
-                                <option value="montant">Montant total (FCFA)</option>
-                            </select>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <select id="chart-annees-mode" onchange="togglePartenaireSelect(); updateStats()" style="padding:2px 5px; font-size:10px;">
+                                    <option value="count">Nombre de projets</option>
+                                    <option value="montant">Montant total (FCFA)</option>
+                                    <option value="cumul">Cumul par partenaire</option>
+                                </select>
+                                <select id="chart-annees-ptf" onchange="updateStats()" style="padding:2px 5px; font-size:10px; max-width:200px; display:none;"></select>
+                            </div>
                         </div>
                         <div id="chart-annees"></div>
                     </div>
@@ -979,6 +983,8 @@
                     </div>
                 </div>
             </div>
+
+
 
             <!-- FILTRE COUNTER -->
             <div id="filter-counter" style="background: #eef2f7; padding: 8px 15px; border-radius: 4px 4px 0 0; font-size: 12px; color: #444; display: flex; justify-content: space-between; align-items: center;">
@@ -2121,6 +2127,22 @@
             }
         }
 
+        function togglePartenaireSelect() {
+            const mode = getEl('chart-annees-mode')?.value;
+            const ptfSelect = getEl('chart-annees-ptf');
+            if (!ptfSelect) return;
+            if (mode === 'cumul') {
+                ptfSelect.style.display = 'inline-block';
+                // Remplir avec tous les partenaires
+                const partenaires = [...new Set(allProjets.map(p => String(p['Partenaire'] || '').trim()).filter(Boolean))].sort();
+                const current = ptfSelect.value;
+                ptfSelect.innerHTML = partenaires.map(p => `<option value="${p}">${p}</option>`).join('');
+                if (current && partenaires.includes(current)) ptfSelect.value = current;
+            } else {
+                ptfSelect.style.display = 'none';
+            }
+        }
+
         function updateStats() {
             const scopedProjets = getScopedProjets();
             if (!scopedProjets || scopedProjets.length === 0) {
@@ -2163,32 +2185,68 @@
             });
             const sortedAnnees = Object.keys(anneesData).filter(a => a !== 'N/A' && parseInt(a) >= 2000 && parseInt(a) <= 2035).sort((a, b) => parseInt(b) - parseInt(a));
             const anneesMode = getEl('chart-annees-mode')?.value || 'count';
-            const maxVal = Math.max(...sortedAnnees.map(a => anneesMode === 'count' ? anneesData[a].count : anneesData[a].fcfa), 1);
             const chartAnnees = getEl('chart-annees');
             if (chartAnnees) {
                 chartAnnees.innerHTML = '';
-                sortedAnnees.forEach(annee => {
-                    const data = anneesData[annee];
-                    const val = anneesMode === 'count' ? data.count : data.fcfa;
-                    const pct = Math.max((val / maxVal) * 100, 2);
-                    const mainLabel = anneesMode === 'count'
-                        ? `${data.count} projet${data.count > 1 ? 's' : ''}`
-                        : `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} F`;
-                    const subLabel = anneesMode === 'count'
-                        ? `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} FCFA`
-                        : `${data.count} projet(s)`;
-                    chartAnnees.innerHTML += `
-                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;" title="${annee} : ${data.count} projet(s) — ${new Intl.NumberFormat('fr-BJ').format(data.fcfa)} FCFA">
-                        <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
-                        <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
-                            <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
-                            <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap; text-shadow:0 0 3px rgba(255,255,255,0.8);">
-                                ${subLabel}
+                if (anneesMode === 'cumul') {
+                    // Mode cumul par partenaire
+                    const chosenPtf = getEl('chart-annees-ptf')?.value;
+                    if (!chosenPtf) {
+                        chartAnnees.innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Sélectionnez un partenaire</div>';
+                    } else {
+                        const parAnnee = {};
+                        scopedProjets.forEach(p => {
+                            const ptf = String(p['Partenaire'] || '').trim();
+                            if (ptf !== chosenPtf) return;
+                            const a = parseInt(p['Annee de signature']);
+                            if (!a || a < 2000 || a > 2035) return;
+                            parAnnee[a] = (parAnnee[a] || 0) + parseNum(p['Montant_Total_FCFA']);
+                        });
+                        const anneesTriees = Object.keys(parAnnee).map(Number).sort((a, b) => a - b);
+                        if (anneesTriees.length === 0) {
+                            chartAnnees.innerHTML = '<div style="text-align:center;color:#999;font-size:10px;padding:10px;">Aucune donnée pour ce partenaire</div>';
+                        } else {
+                            const maxMontant = Math.max(...anneesTriees.map(a => parAnnee[a]), 1);
+                            anneesTriees.forEach(annee => {
+                                const montant = parAnnee[annee];
+                                const pct = Math.max((montant / maxMontant) * 100, 2);
+                                chartAnnees.innerHTML += `
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;" title="${annee} : ${new Intl.NumberFormat('fr-BJ').format(montant)} FCFA signes avec ${chosenPtf}">
+                                    <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
+                                    <div style="flex:1; background:#f0f0f0; border-radius:3px; height:18px; overflow:hidden;">
+                                        <div style="width:${pct}%; background:linear-gradient(90deg, #27ae60, #2ecc71); height:100%; border-radius:3px;"></div>
+                                    </div>
+                                    <div style="width:90px; font-size:9px; font-weight:800; text-align:right; color:#0e7a3a;">${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(montant)} F</div>
+                                </div>`;
+                            });
+                        }
+                    }
+                } else {
+                    // Mode nombre ou montant (logique existante)
+                    const maxVal = Math.max(...sortedAnnees.map(a => anneesMode === 'count' ? anneesData[a].count : anneesData[a].fcfa), 1);
+                    sortedAnnees.forEach(annee => {
+                        const data = anneesData[annee];
+                        const val = anneesMode === 'count' ? data.count : data.fcfa;
+                        const pct = Math.max((val / maxVal) * 100, 2);
+                        const mainLabel = anneesMode === 'count'
+                            ? `${data.count} projet${data.count > 1 ? 's' : ''}`
+                            : `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} F`;
+                        const subLabel = anneesMode === 'count'
+                            ? `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} FCFA`
+                            : `${data.count} projet(s)`;
+                        chartAnnees.innerHTML += `
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;" title="${annee} : ${data.count} projet(s) — ${new Intl.NumberFormat('fr-BJ').format(data.fcfa)} FCFA">
+                            <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
+                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
+                                <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
+                                <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap; text-shadow:0 0 3px rgba(255,255,255,0.8);">
+                                    ${subLabel}
+                                </div>
                             </div>
-                        </div>
-                        <div style="width:60px; font-size:9px; font-weight:800; text-align:right; color:#0f4c81;">${mainLabel}</div>
-                    </div>`;
-                });
+                            <div style="width:60px; font-size:9px; font-weight:800; text-align:right; color:#0f4c81;">${mainLabel}</div>
+                        </div>`;
+                    });
+                }
             }
 
             const anneeFiltre = getEl('filter-annee-ptf')?.value || '';
@@ -2222,6 +2280,8 @@
                     });
                 }
             }
+
+
 
             const statutData = {};
             scopedProjets.forEach(p => {
