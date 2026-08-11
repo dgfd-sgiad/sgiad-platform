@@ -541,9 +541,14 @@ def _veille_loop():
         try:
             from services import veille_service
             n = veille_service.scan_and_notify()
-            print(f'[veille] scan terminé : {n} nouvelle(s) alerte(s)')
-        except Exception:
-            traceback.print_exc()
+            if n > 0:
+                print(f'[veille] scan terminé : {n} nouvelle(s) alerte(s)')
+        except Exception as e:
+            err_msg = str(e)
+            if 'violates row-level security policy' in err_msg:
+                print("[veille] Permission RLS manquante pour veille_alertes")
+            else:
+                traceback.print_exc()
         time.sleep(6 * 3600)
 
 

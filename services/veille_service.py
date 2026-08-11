@@ -18,7 +18,12 @@ import json
 import time
 import urllib.request
 import urllib.parse
+import urllib.error
 import xml.etree.ElementTree as ET
+
+# Suivi des erreurs pour éviter le spam dans les logs
+_GDELT_429_LOGGED = False
+_RLS_ERROR_LOGGED = False
 
 # Requêtes de veille (mots-clés)
 REQUETES = [
@@ -48,6 +53,7 @@ def _pertinent(titre):
 
 def _scan_gdelt(query):
     """Articles récents via GDELT DOC API (gratuit, sans clé)."""
+    global _GDELT_429_LOGGED
     articles = []
     params = urllib.parse.urlencode({
         'query': query, 'mode': 'ArtList', 'format': 'JSON',
@@ -62,8 +68,20 @@ def _scan_gdelt(query):
                 'source': (a.get('domain') or a.get('sourcecountry') or 'GDELT').strip(),
                 'date_article': (a.get('seendate') or '').strip(),
             })
+    except urllib.error.HTTPError as e:
+        if e.code == 429:
+            if not _GDELT_429_LOGGED:
+                print("[veille] Scan ignoré : API GDELT surchargée (429)")
+                _GDELT_429_LOGGED = True
+        else:
+            print(f'[veille] GDELT erreur HTTP {e.code} :', e)
     except Exception as e:
-        print('[veille] GDELT erreur :', e)
+        if '429' in str(e) or 'Too Many Requests' in str(e):
+            if not _GDELT_429_LOGGED:
+                print("[veille] Scan ignoré : API GDELT surchargée (429)")
+                _GDELT_429_LOGGED = True
+        else:
+            print('[veille] GDELT erreur :', e)
     return articles
 
 
@@ -145,9 +163,22 @@ def scan_and_notify(max_nouveautes=10):
     """Scan des sources, dédoublonnage Supabase, résumé IA, notification Telegram.
 
     Renvoie le nombre de nouvelles alertes enregistrées."""
+    global _RLS_ERROR_LOGGED
     from db import get_supabase
     sb = get_supabase()
-    existants = {r['url'] for r in (sb.table('veille_alertes').select('url').execute().data or [])}
+    
+    try:
+        existants_resp = sb.table('veille_alertes').select('url').execute()
+        existants = {r['url'] for r in (existants_resp.data or [])}
+    except Exception as e:
+        err_msg = str(e)
+        if 'violates row-level security policy' in err_msg or 'veille_alertes' in err_msg:
+            if not _RLS_ERROR_LOGGED:
+                print("[veille] Permission RLS manquante pour veille_alertes")
+                _RLS_ERROR_LOGGED = True
+        else:
+            print('[veille] Erreur lecture veille_alertes :', e)
+        return 0
 
     nouvelles = []
     for query in REQUETES:
@@ -163,20 +194,29 @@ def scan_and_notify(max_nouveautes=10):
     for art in nouvelles[:max_nouveautes]:
         resume = _gemini_resume(art['titre'], art['source'])
         partenaire, montant = _extraire_champs(resume)
-        sb.table('veille_alertes').insert({
-            'url': art['url'],
-            'titre': art['titre'][:500],
-            'source': (art.get('source') or '')[:200],
-            'date_article': (art.get('date_article') or '')[:60],
-            'resume': resume or '',
-            'partenaire': partenaire[:200],
-            'montant': montant[:200],
-        }).execute()
-        enregistrees += 1
-        _notifier_telegram(
-            "📡 Accord signé détecté en ligne\n"
-            f"{art['titre']}\n"
-            f"Source : {art['source']}\n"
-            f"{art['url']}"
-        )
+        try:
+            sb.table('veille_alertes').insert({
+                'url': art['url'],
+                'titre': art['titre'][:500],
+                'source': (art.get('source') or '')[:200],
+                'date_article': (art.get('date_article') or '')[:60],
+                'resume': resume or '',
+                'partenaire': partenaire[:200],
+                'montant': montant[:200],
+            }).execute()
+            enregistrees += 1
+            _notifier_telegram(
+                "📡 Accord signé détecté en ligne\n"
+                f"{art['titre']}\n"
+                f"Source : {art['source']}\n"
+                f"{art['url']}"
+            )
+        except Exception as e:
+            err_msg = str(e)
+            if 'violates row-level security policy' in err_msg or 'veille_alertes' in err_msg:
+                if not _RLS_ERROR_LOGGED:
+                    print("[veille] Permission RLS manquante pour veille_alertes")
+                    _RLS_ERROR_LOGGED = True
+            else:
+                print('[veille] Erreur insertion veille_alertes :', e)
     return enregistrees
