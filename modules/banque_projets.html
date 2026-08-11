@@ -948,7 +948,13 @@
                 <!-- 4 graphiques alignés -->
                 <div style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto; gap:8px;">
                     <div class="dashboard-card" style="padding:8px;">
-                        <h4 style="font-size:11px; margin-bottom:4px;">📊 Par année de signature</h4>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h4 style="margin:0; font-size:11px;">📊 Par année de signature</h4>
+                            <select id="chart-annees-mode" onchange="updateStats()" style="padding:2px 5px; font-size:10px;">
+                                <option value="count">Nombre de projets</option>
+                                <option value="montant">Montant total (FCFA)</option>
+                            </select>
+                        </div>
                         <div id="chart-annees"></div>
                     </div>
                     <div class="dashboard-card" style="padding:8px;">
@@ -2156,24 +2162,32 @@
                 anneesData[a].fcfa += parseNum(p['Montant_Total_FCFA']);
             });
             const sortedAnnees = Object.keys(anneesData).filter(a => a !== 'N/A' && parseInt(a) >= 2000 && parseInt(a) <= 2035).sort((a, b) => parseInt(b) - parseInt(a));
-            const maxCount = Math.max(...sortedAnnees.map(a => anneesData[a].count), 1);
+            const anneesMode = getEl('chart-annees-mode')?.value || 'count';
+            const maxVal = Math.max(...sortedAnnees.map(a => anneesMode === 'count' ? anneesData[a].count : anneesData[a].fcfa), 1);
             const chartAnnees = getEl('chart-annees');
             if (chartAnnees) {
                 chartAnnees.innerHTML = '';
                 sortedAnnees.forEach(annee => {
                     const data = anneesData[annee];
-                    const pct = (data.count / maxCount) * 100;
+                    const val = anneesMode === 'count' ? data.count : data.fcfa;
+                    const pct = Math.max((val / maxVal) * 100, 2);
+                    const mainLabel = anneesMode === 'count'
+                        ? `${data.count} projet${data.count > 1 ? 's' : ''}`
+                        : `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} F`;
+                    const subLabel = anneesMode === 'count'
+                        ? `${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} FCFA`
+                        : `${data.count} projet(s)`;
                     chartAnnees.innerHTML += `
-                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                            <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
-                            <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
-                                <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
-                                <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap; text-shadow:0 0 3px rgba(255,255,255,0.8);">
-                                    ${new Intl.NumberFormat('fr-BJ', {notation:'compact'}).format(data.fcfa)} FCFA
-                                </div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;" title="${annee} : ${data.count} projet(s) — ${new Intl.NumberFormat('fr-BJ').format(data.fcfa)} FCFA">
+                        <div style="width:35px; font-size:10px; font-weight:700; color:var(--primary-blue);">${annee}</div>
+                        <div style="flex:1; background:#f0f0f0; border-radius:3px; height:20px; overflow:hidden; position:relative;">
+                            <div style="width:${pct}%; background:linear-gradient(90deg, var(--primary-blue), #2980b9); height:100%; border-radius:3px;"></div>
+                            <div style="position:absolute; left:${Math.min(pct + 2, 95)}%; top:50%; transform:translateY(-50%); font-size:8px; font-weight:700; color:#333; white-space:nowrap; text-shadow:0 0 3px rgba(255,255,255,0.8);">
+                                ${subLabel}
                             </div>
-                            <div style="width:20px; font-size:9px; text-align:right; color:#666;">${data.count}</div>
-                        </div>`;
+                        </div>
+                        <div style="width:60px; font-size:9px; font-weight:800; text-align:right; color:#0f4c81;">${mainLabel}</div>
+                    </div>`;
                 });
             }
 
