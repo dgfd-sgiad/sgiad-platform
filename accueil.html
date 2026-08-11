@@ -585,21 +585,48 @@
                 </div>`).join('') || '<div class="loading-hint">Aucune actualité.</div>';
         }
 
-        function renderProjets(PROJETS_UNE) {
-            document.getElementById('projects-grid').innerHTML = (PROJETS_UNE || []).map(p => `
-                <div class="project-card">
-                    <div style="position: relative;">
-                        <img src="${esc(p.image)}" class="project-image" alt="" onerror="this.style.display='none'">
-                        <span class="project-tag" style="background: ${esc(p.couleur)};">${esc(p.categorie)}</span>
-                    </div>
-                    <div class="project-body">
-                        <div class="project-title">${esc(p.titre)}</div>
-                        <div class="project-partner">${esc(p.partenaire)}</div>
-                        <div class="project-amount">${esc(p.montant)}</div>
-                        <a class="project-link" onclick="openLogin('Projets')">Voir le projet →</a>
-                    </div>
-                </div>`).join('') || '<div class="loading-hint" style="grid-column:1/-1;">Aucun projet.</div>';
-        }
+let PROJETS_UNE_LIST = [];
+let PROJETS_UNE_POS = 0;
+let PROJETS_UNE_TIMER = null;
+
+function renderProjets() {
+    const grid = document.getElementById('projects-grid');
+    if (!grid) return;
+    if (!PROJETS_UNE_LIST.length) {
+        grid.innerHTML = '<div class="loading-hint" style="grid-column:1/-1;">Aucun projet.</div>';
+        return;
+    }
+    const chunk = [];
+    for (let i = 0; i < 3; i++) {
+        chunk.push(PROJETS_UNE_LIST[(PROJETS_UNE_POS + i) % PROJETS_UNE_LIST.length]);
+    }
+    PROJETS_UNE_POS = (PROJETS_UNE_POS + 3) % PROJETS_UNE_LIST.length;
+    grid.style.transition = 'opacity 0.4s';
+    grid.style.opacity = '0';
+    setTimeout(() => {
+        grid.innerHTML = chunk.map(p => `
+            <div class="project-card">
+                <div style="position: relative;">
+                    <img src="${esc(p.image)}" class="project-image" alt="" onerror="this.style.display='none'">
+                    <span class="project-tag" style="background: ${esc(p.couleur)};">${esc(p.categorie)}</span>
+                </div>
+                <div class="project-body">
+                    <div class="project-title">${esc(p.titre)}</div>
+                    <div class="project-partner">${esc(p.partenaire)}</div>
+                    <div class="project-amount">${esc(p.montant)}</div>
+                    <a class="project-link" onclick="openLogin('Projets')">Voir le projet →</a>
+                </div>
+            </div>`).join('');
+        grid.style.opacity = '1';
+    }, 400);
+}
+
+function demarrerRotationProjets() {
+    if (PROJETS_UNE_TIMER) clearInterval(PROJETS_UNE_TIMER);
+    if (PROJETS_UNE_LIST.length > 3) {
+        PROJETS_UNE_TIMER = setInterval(renderProjets, 8000);
+    }
+}
 
         let DEPARTEMENTS = {};
         const PARTNER_COLORS = ['#28a745', '#1e5aa8', '#dc3545'];
@@ -751,7 +778,12 @@
                 if (data.STATS) renderStats(data.STATS);
                 if (data.TODAY_STATS) renderToday(data.TODAY_STATS);
                 renderNews(data.ACTUALITES);
-                renderProjets(data.PROJETS_UNE);
+                if (data.PROJETS_UNE) {
+                    PROJETS_UNE_LIST = data.PROJETS_UNE;
+                    PROJETS_UNE_POS = 0;
+                    renderProjets();
+                    demarrerRotationProjets();
+                }
                 renderDepartements(data.DEPARTEMENTS);
                 renderDonut(data);
                 renderEvents(data.EVENEMENTS);

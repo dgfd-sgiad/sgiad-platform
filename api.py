@@ -148,6 +148,33 @@ DEPARTEMENTS_BENIN = ['ALIBORI', 'ATACORA', 'ATLANTIQUE', 'BORGOU', 'COLLINES',
                       'COUFFO', 'DONGA', 'LITTORAL', 'MONO', 'OUEME', 'PLATEAU', 'ZOU']
 
 
+# ── Projets a la une : images/couleurs par secteur ──
+UNE_IMAGES = {
+    'INFRASTRUCTURE': 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400&h=260&fit=crop',
+    'SANTE': 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400&h=260&fit=crop',
+    'EDUCATION': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=260&fit=crop',
+    'AGRICULTURE': 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=260&fit=crop',
+    'EAU': 'https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=400&h=260&fit=crop',
+    'ENERGIE': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=260&fit=crop',
+    'TRANSPORT': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=260&fit=crop',
+    'PROTECTION_SOCIALE': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=260&fit=crop',
+    'CADRE_DE_VIE': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=260&fit=crop',
+    'DEFAUT': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=260&fit=crop',
+}
+UNE_COULEURS = {
+    'INFRASTRUCTURE': '#2563eb', 'SANTE': '#dc2626', 'EDUCATION': '#7c3aed',
+    'AGRICULTURE': '#0e7a3a', 'EAU': '#0891b2', 'ENERGIE': '#d97706',
+    'TRANSPORT': '#475569', 'PROTECTION_SOCIALE': '#db2777', 'CADRE_DE_VIE': '#0d9488', 'DEFAUT': '#0a2540',
+}
+
+def _secteur_cle(secteur):
+    s = strip_accents(str(secteur or '')).upper()
+    for kw, cle in [('PROTECTION', 'PROTECTION_SOCIALE'), ('CADRE', 'CADRE_DE_VIE'), ('INFRASTRUCTURE', 'INFRASTRUCTURE'), ('SANTE', 'SANTE'), ('EDUCATION', 'EDUCATION'), ('AGRICULTURE', 'AGRICULTURE'), ('EAU', 'EAU'), ('ENERGIE', 'ENERGIE'), ('TRANSPORT', 'TRANSPORT')]:
+        if kw in s:
+            return cle
+    return 'DEFAUT'
+
+
 def _extract_departements_zone(zone_str):
     """Extrait les departements officiels cites dans une zone (texte libre ou arbre)."""
     if not zone_str or not str(zone_str).strip():
@@ -206,6 +233,62 @@ def _repartition_projets(rows_actifs, champ, top=None, annee_cloture=None):
         result['AnneeCloture'] = int(annee_str)
     return result
 
+
+# ── Projets a la une : images/couleurs par secteur ──
+UNE_IMAGES = {
+    'INFRASTRUCTURE': 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=400&h=260&fit=crop',
+    'SANTE': 'https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=400&h=260&fit=crop',
+    'EDUCATION': 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=260&fit=crop',
+    'AGRICULTURE': 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=260&fit=crop',
+    'EAU': 'https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=400&h=260&fit=crop',
+    'ENERGIE': 'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400&h=260&fit=crop',
+    'TRANSPORT': 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=400&h=260&fit=crop',
+    'PROTECTION_SOCIALE': 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&h=260&fit=crop',
+    'CADRE_DE_VIE': 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=260&fit=crop',
+    'DEFAUT': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=260&fit=crop',
+}
+UNE_COULEURS = {
+    'INFRASTRUCTURE': '#2563eb', 'SANTE': '#dc2626', 'EDUCATION': '#7c3aed',
+    'AGRICULTURE': '#0e7a3a', 'EAU': '#0891b2', 'ENERGIE': '#d97706',
+    'TRANSPORT': '#475569', 'PROTECTION_SOCIALE': '#db2777', 'CADRE_DE_VIE': '#0d9488', 'DEFAUT': '#0a2540',
+}
+
+def _secteur_cle(secteur):
+    s = strip_accents(str(secteur or '')).upper()
+    for kw, cle in [('PROTECTION', 'PROTECTION_SOCIALE'), ('CADRE', 'CADRE_DE_VIE'), ('INFRASTRUCTURE', 'INFRASTRUCTURE'), ('SANTE', 'SANTE'), ('EDUCATION', 'EDUCATION'), ('AGRICULTURE', 'AGRICULTURE'), ('EAU', 'EAU'), ('ENERGIE', 'ENERGIE'), ('TRANSPORT', 'TRANSPORT')]:
+        if kw in s:
+            return cle
+    return 'DEFAUT'
+
+def _compute_projets_une(rows, nb=9):
+    """Les accords les plus recents (tous secteurs) pour la rotation de la une."""
+    signes = [r for r in rows if str(r.get('date_signature') or '')[:10]]
+    signes.sort(key=lambda r: str(r.get('date_signature'))[:10], reverse=True)
+    une = []
+    for r in signes[:nb]:
+        cle = _secteur_cle(r.get('secteur_principal'))
+        try:
+            m = float(r.get('montant_total_fcfa') or 0)
+        except (TypeError, ValueError):
+            m = 0.0
+        if m >= 1e9:
+            montant_str = f"{round(m / 1e9, 1):g} Md FCFA"
+        elif m >= 1e6:
+            montant_str = f"{round(m / 1e6):,} M FCFA".replace(',', ' ')
+        else:
+            montant_str = 'Montant non precise'
+        objet = str(r.get('objet_accord') or r.get('code_projet') or '').strip()
+        if len(objet) > 70:
+            objet = objet[:67] + '...'
+        une.append({
+            'image': UNE_IMAGES[cle],
+            'couleur': UNE_COULEURS[cle],
+            'categorie': str(r.get('secteur_principal') or 'Divers').strip().title(),
+            'titre': objet,
+            'partenaire': str(r.get('partenaire') or '').strip(),
+            'montant': montant_str,
+        })
+    return une
 
 def _compute_accueil_stats(rows):
     """Calcule les statistiques dynamiques : informations recentes et projets en cours."""
@@ -297,7 +380,32 @@ def _compute_accueil_stats(rows):
         {'icone': '📄', 'valeur': accords_12_mois, 'label': 'Accords signés (12 mois)'},
         {'icone': '🪙', 'valeur': montant_str, 'label': 'Milliards FCFA en cours'},
     ]
+    # Projets a la une dynamiques
+    projets_une_dyn = []
+    projets_tries_montant = sorted(
+        [r for r in rows_actifs if r.get('objet_accord') or r.get('code_projet')],
+        key=lambda r: float(r.get('montant_total_fcfa') or 0), reverse=True
+    )[:3]
+    for r in projets_tries_montant:
+        secteur = str(r.get('secteur_principal') or 'Développement').strip()
+        cle = _secteur_cle(secteur)
+        montant_fcfa = float(r.get('montant_total_fcfa') or 0)
+        milliards_p = montant_fcfa / 1_000_000_000
+        montant_str_p = f"{milliards_p:.1f} Mds FCFA" if milliards_p >= 1 else f"{montant_fcfa:,.0f} FCFA"
+        objet = str(r.get('objet_accord') or r.get('code_projet') or '').strip()
+        if len(objet) > 55:
+            objet = objet[:52] + '...'
+        projets_une_dyn.append({
+            'titre': objet,
+            'partenaire': str(r.get('partenaire') or 'Partenaire non spécifié').strip(),
+            'montant': montant_str_p,
+            'image': UNE_IMAGES.get(cle, UNE_IMAGES['DEFAUT']),
+            'categorie': secteur.upper(),
+            'couleur': UNE_COULEURS.get(cle, UNE_COULEURS['DEFAUT']),
+        })
+
     return {'STATS': stats, 'TODAY_STATS': today_stats, 'ACCORDS': accords_recents,
+            'PROJETS_UNE': projets_une_dyn,
             'REPARTITION': _repartition_projets(rows_actifs, 'secteur_principal', annee_cloture=aujourd_hui.year),
             'REPARTITION_PARTENAIRES': _repartition_projets(rows_actifs, 'partenaire', top=15, annee_cloture=aujourd_hui.year)}
 
@@ -326,10 +434,15 @@ def _build_accueil_data():
         content['TODAY_STATS'] = dyn['TODAY_STATS']
         if dyn['ACCORDS']:
             content['ACCORDS'] = dyn['ACCORDS']
+        if dyn['PROJETS_UNE']:
+            content['PROJETS_UNE'] = dyn['PROJETS_UNE']
         if dyn['REPARTITION']:
             content['REPARTITION'] = dyn['REPARTITION']
         if dyn['REPARTITION_PARTENAIRES']:
             content['REPARTITION_PARTENAIRES'] = dyn['REPARTITION_PARTENAIRES']
+        une = _compute_projets_une(resp.data or [])
+        if une:
+            content['PROJETS_UNE'] = une
         content['source'] = 'supabase'
     except Exception:
         traceback.print_exc()
