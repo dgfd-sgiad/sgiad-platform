@@ -950,7 +950,17 @@ function demarrerRotationProjets() {
         }
 
         chargerAccueil();
+
+        // Force le rechargement des donnees quand on revient sur la page (pour voir les modifs de l'admin)
+        window.addEventListener('pageshow', function(e) {
+            if (e.persisted) {
+                chargerAccueil();
+            }
+        });
         
+        // Recharge automatique toutes les 2 minutes pour garder les donnees fraiches
+        setInterval(chargerAccueil, 120000);
+
         // Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render
         setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
     </script>

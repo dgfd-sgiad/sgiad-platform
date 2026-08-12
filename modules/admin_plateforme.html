@@ -1,104 +1,270 @@
-Remplace TOUT le contenu du fichier modules/admin_plateforme.html par le code ci-dessous, sans rien modifier d'autre.
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>DGFD Admin — Gestion de la plateforme</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGFD Admin — Interface de gestion des données</title>
 <style>
-  body { margin:0; font-family:'Segoe UI',Arial,sans-serif; background:#f1f5f9; }
-  .topbar { background:#0a2540; color:#fff; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
-  .topbar h1 { font-size:16px; margin:0; }
-  .layout { display:flex; min-height:calc(100vh - 49px); }
-  .sidebar { width:210px; background:#fff; border-right:1px solid #e2e8f0; padding:12px 0; }
-  .sidebar button { display:block; width:100%; text-align:left; padding:10px 16px; border:none; background:none; cursor:pointer; font-size:13px; color:#334155; }
-  .sidebar button.active { background:#e0e7ff; color:#1e40af; font-weight:700; border-left:3px solid #1e40af; }
-  .main { flex:1; padding:20px; }
-  .card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:16px; }
-  .card h3 { margin:0 0 12px 0; font-size:14px; color:#0a2540; }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th, td { padding:8px 10px; border-bottom:1px solid #e2e8f0; text-align:left; }
-  th { background:#f8fafc; color:#64748b; text-transform:uppercase; font-size:10px; }
-  .btn { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
-  .btn-blue { background:#1e40af; color:#fff; }
-  .btn-red { background:#dc2626; color:#fff; }
-  .btn-gray { background:#e2e8f0; color:#334155; }
-  .field { width:100%; padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-bottom:6px; box-sizing:border-box; }
-  .rowbox { border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:8px; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  body { background:#f3f4f6; color:#374151; }
+  
+  .topbar { background:#0a2540; color:#fff; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:500; }
+  .topbar-user { display:flex; align-items:center; gap:8px; }
+  .badge { background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge.ok { background:#dcfce7; color:#166534; }
+  .badge.no { background:#fee2e2; color:#991b1b; }
+
+  .layout { display:flex; min-height:calc(100vh - 44px); }
+  .sidebar { width:280px; background:#fff; border-right:1px solid #e5e7eb; padding:16px; flex-shrink:0; }
+  .sidebar-title { font-size:10px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; padding:0 8px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:500; color:#374151; margin-bottom:2px; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+  .nav-item:hover { background:#f3f4f6; }
+  .nav-item.active { background:#eff6ff; color:#0a2540; font-weight:600; }
+  .nav-icon { width:20px; text-align:center; font-size:14px; }
+
+  .main { flex:1; padding:24px; overflow:auto; }
+  .page-title { font-size:22px; font-weight:700; color:#0a2540; margin-bottom:4px; }
+  .page-desc { font-size:13px; color:#6b7280; margin-bottom:20px; }
+  .card { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:20px; margin-bottom:20px; }
+  .card-title { font-size:14px; font-weight:600; color:#0a2540; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .alert { background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px; border-radius:6px; font-size:13px; color:#92400e; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .btn { padding:6px 14px; border-radius:6px; border:1px solid #d1d5db; background:#fff; font-size:12px; font-weight:500; color:#374151; cursor:pointer; }
+  .btn-primary { background:#0a2540; color:#fff; border-color:#0a2540; }
+  .btn-danger { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+  .btn-green { background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; }
+  .btn-gray { background:#e2e8f0; color:#334155; border-color:#cbd5e1; }
+  .flex-between { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .flex-end { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+  /* Table */
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:10px; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
+  .table td { padding:10px; font-size:12px; color:#374151; border-bottom:1px solid #f3f4f6; }
+  .table tr:hover td { background:#f9fafb; }
+  .table input, .table select { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+
+  .form-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .form-group { }
+  .form-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:4px; display:block; }
+  .form-input { width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; }
+  .form-textarea { width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; min-height:60px; resize:vertical; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .stat-edit { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
+  .stat-edit-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:6px; }
+  .stat-edit-row { display:flex; gap:8px; margin-bottom:6px; }
+  .stat-edit-row input { flex:1; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+  .stat-edit-row input.small { width:60px; flex:none; }
+
+  .pie-preview { width:200px; height:200px; border-radius:50%; background:conic-gradient(#28a745 0% 28%, #1e5aa8 28% 48%, #dc3545 48% 68%, #f2c94c 68% 85%, #6c757d 85% 100%); margin:12px auto; position:relative; }
+  .pie-preview-center { position:absolute; top:25%; left:25%; width:50%; height:50%; background:#fff; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .pie-preview-val { font-size:24px; font-weight:800; color:#0a2540; }
+  .pie-preview-label { font-size:10px; color:#6b7280; }
+
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+  .tag-blue { background:#eff6ff; color:#1e40af; }
+  .tag-green { background:#f0fdf4; color:#166534; }
+  .tag-red { background:#fef2f2; color:#991b1b; }
+  .tag-yellow { background:#fefce8; color:#854d0e; }
+
+  .color-dot { display:inline-block; width:12px; height:12px; border-radius:50%; vertical-align:middle; margin-right:4px; border:1px solid rgba(0,0,0,0.1); }
+  .rowbox { border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:8px; background:#f9fafb; }
   .msg { padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:600; display:none; }
   .msg.ok { display:block; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
   .msg.err { display:block; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
-  .badge { padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
-  .badge.ok { background:#dcfce7; color:#166534; }
-  .badge.no { background:#fee2e2; color:#991b1b; }
 </style>
 </head>
 <body>
+
 <div class="topbar">
-  <h1>🔐 DGFD Admin — Gestion de la plateforme</h1>
-  <span id="admin-email" style="font-size:12px;"></span>
+  <div>🔒 <b>DGFD Admin</b> — Interface de gestion des données</div>
+  <div class="topbar-user">👤 <span id="admin-email">Admin</span> <span class="badge ok">En ligne</span> <button class="btn" style="background:rgba(255,255,255,0.15); color:#fff; border:none; margin-left:8px;" onclick="location.href='/'">Déconnexion / Accueil</button></div>
 </div>
+
 <div class="layout">
   <div class="sidebar" id="sidebar">
-    <button class="active" onclick="showSection('users', this)">👥 Utilisateurs</button>
-    <button onclick="showSection('actus', this)">📰 Actualités</button>
-    <button onclick="showSection('events', this)">📆 Événements</button>
-    <button onclick="showSection('docs', this)">📄 Documents</button>
-    <button onclick="showSection('tags', this)">🏷️ Mots-clés</button>
-    <button onclick="location.href='/'" style="margin-top:20px; color:#0a2540;">🌐 Voir le site public</button>
+    <div class="sidebar-title">Menu</div>
+    <button class="nav-item active" onclick="showSection('users', this)"><span class="nav-icon">👥</span> Utilisateurs</button>
+    <button class="nav-item" onclick="showSection('stats', this)"><span class="nav-icon">📈</span> Stats (6 indicateurs)</button>
+    <button class="nav-item" onclick="showSection('today', this)"><span class="nav-icon">📅</span> Aujourd'hui</button>
+    <button class="nav-item" onclick="showSection('actus', this)"><span class="nav-icon">📰</span> Actualités</button>
+    <button class="nav-item" onclick="showSection('projets', this)"><span class="nav-icon">🚀</span> Projets à la une</button>
+    <button class="nav-item" onclick="showSection('repartition', this)"><span class="nav-icon">🥧</span> Répartition (camembert)</button>
+    <button class="nav-item" onclick="showSection('departements', this)"><span class="nav-icon">🗺️</span> Départements</button>
+    <button class="nav-item" onclick="showSection('evenements', this)"><span class="nav-icon">📆</span> Événements</button>
+    <button class="nav-item" onclick="showSection('accords', this)"><span class="nav-icon">📋</span> Accords</button>
+    <button class="nav-item" onclick="showSection('documents', this)"><span class="nav-icon">📄</span> Documents</button>
+    <button class="nav-item" onclick="showSection('motscles', this)"><span class="nav-icon">🏷️</span> Mots-clés</button>
+    <div style="border-top:1px solid #e5e7eb; margin:12px 0;"></div>
+    <button class="nav-item" style="color:#dc2626;" onclick="location.href='/'"><span class="nav-icon">🌐</span> Voir le site public</button>
   </div>
+
   <div class="main">
     <div id="access-denied" class="card" style="display:none; border-color:#fecaca; background:#fef2f2;">
-      <h3 style="color:#991b1b;">Accès refusé</h3>
-      <p style="font-size:12px; color:#7f1d1d;">Cette page est réservée à l'administrateur. Connectez-vous d'abord sur la page d'accueil avec un compte autorisé.</p>
-      <button class="btn btn-blue" onclick="location.href='/'">Retour à l'accueil</button>
+      <h3 style="color:#991b1b; margin-bottom:8px;">Accès réservé à l'administrateur</h3>
+      <p style="font-size:13px; color:#7f1d1d; margin-bottom:12px;">Cette page est strictement réservée à l'administrateur. Connectez-vous d'abord sur la page d'accueil avec un compte administrateur autorisé.</p>
+      <button class="btn btn-primary" onclick="location.href='/'">Retour à l'accueil</button>
     </div>
+
     <div id="msg" class="msg"></div>
 
+    <div class="alert">⚠️ Toutes les modifications sont enregistrées automatiquement dans le fichier JSON.</div>
+
+    <!-- 1. USERS -->
     <div id="section-users" class="card">
-      <h3>👥 Utilisateurs de la plateforme</h3>
-      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-        <input type="email" id="new-email" placeholder="email@finances.bj" style="width:240px;">
-        <input type="password" id="new-password" placeholder="Mot de passe (8 car. min)" style="width:200px;">
-        <button class="btn btn-blue" onclick="createUser()">➕ Créer le compte</button>
+      <div class="page-title">👥 Gestion des utilisateurs</div>
+      <div class="page-desc">Créez, consultez ou supprimez les comptes administrateurs de la plateforme.</div>
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <input type="email" id="new-email" class="form-input" placeholder="email@finances.bj" style="width:260px;">
+        <input type="password" id="new-password" class="form-input" placeholder="Mot de passe (8 car. min)" style="width:200px;">
+        <button class="btn btn-primary" onclick="createUser()">➕ Créer le compte</button>
         <button class="btn btn-gray" onclick="loadUsers()">🔄 Actualiser</button>
       </div>
-      <table>
+      <table class="table">
         <thead><tr><th>Email</th><th>Créé le</th><th>Dernière connexion</th><th>Statut</th><th>Actions</th></tr></thead>
         <tbody id="users-body"><tr><td colspan="5">Chargement…</td></tr></tbody>
       </table>
     </div>
 
+    <!-- 2. STATS -->
+    <div id="section-stats" class="card" style="display:none;">
+      <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:6px; font-size:13px; color:#1e40af; margin-bottom:16px;">🔒 Données réelles de la plateforme (Supabase) — lecture seule. Pour modifier ces valeurs, mettez à jour les accords dans le module Gestion des Accords Financiers.</div>
+      <div class="page-title">📈 Stats (6 indicateurs)</div>
+      <div class="page-desc">Modifiez les 6 chiffres clés de la page d'accueil. Les changements sont visibles instantanément sur la page publique.</div>
+      <div class="stats-grid" id="stats-container"></div>
+      <div class="flex-end">
+        <button class="btn" onclick="loadContent()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveStats()" disabled>💾 Sauvegarder les stats</button>
+      </div>
+    </div>
+
+    <!-- 3. TODAY STATS -->
+    <div id="section-today" class="card" style="display:none;">
+      <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:6px; font-size:13px; color:#1e40af; margin-bottom:16px;">🔒 Données réelles de la plateforme (Supabase) — lecture seule. Pour modifier ces valeurs, mettez à jour les accords dans le module Gestion des Accords Financiers.</div>
+      <div class="page-title">📅 Aujourd'hui</div>
+      <div class="page-desc">Chiffres clés du jour.</div>
+      <div class="flex-between">
+        <div class="card-title">📅 Liste Aujourd'hui</div>
+        <div><button class="btn btn-green" onclick="addTodayStat()">+ Ajouter</button></div>
+      </div>
+      <div id="today-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveToday()" disabled>💾 Sauvegarder</button></div>
+    </div>
+
+    <!-- 4. ACTUALITES -->
     <div id="section-actus" class="card" style="display:none;">
-      <h3>📰 Actualités</h3>
-      <button class="btn btn-blue" onclick="addActu()" style="margin-bottom:12px;">➕ Ajouter une actualité</button>
+      <div class="page-title">📰 Actualités</div>
+      <div class="page-desc">Ajoutez, modifiez ou supprimez des articles.</div>
+      <div class="flex-between">
+        <div class="card-title">📰 Liste des actualités</div>
+        <div><button class="btn btn-green" onclick="addActu()">+ Ajouter</button></div>
+      </div>
       <div id="actus-list"></div>
-      <button class="btn btn-blue" onclick="saveActus()" style="margin-top:12px;">💾 Sauvegarder les actualités</button>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveActus()">💾 Sauvegarder</button></div>
     </div>
 
-    <div id="section-events" class="card" style="display:none;">
-      <h3>📆 Événements</h3>
-      <button class="btn btn-blue" onclick="addEvent()" style="margin-bottom:12px;">➕ Ajouter un événement</button>
-      <div id="events-list"></div>
-      <button class="btn btn-blue" onclick="saveEvents()" style="margin-top:12px;">💾 Sauvegarder les événements</button>
+    <!-- 5. PROJETS UNE -->
+    <div id="section-projets" class="card" style="display:none;">
+      <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:6px; font-size:13px; color:#1e40af; margin-bottom:16px;">🔒 Données réelles de la plateforme (Supabase) — lecture seule. Pour modifier ces valeurs, mettez à jour les accords dans le module Gestion des Accords Financiers.</div>
+      <div class="page-title">🚀 Projets à la une</div>
+      <div class="page-desc">Gérez les projets phares mis en avant.</div>
+      <div class="flex-between">
+        <div class="card-title">🚀 Projets à la une</div>
+        <div><button class="btn btn-green" onclick="addProjetUne()">+ Ajouter</button></div>
+      </div>
+      <div id="projets-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveProjetsUne()" disabled>💾 Sauvegarder</button></div>
     </div>
 
-    <div id="section-docs" class="card" style="display:none;">
-      <h3>📄 Documents</h3>
-      <button class="btn btn-blue" onclick="addDoc()" style="margin-bottom:12px;">➕ Ajouter un document</button>
-      <div id="docs-list"></div>
-      <button class="btn btn-blue" onclick="saveDocs()" style="margin-top:12px;">💾 Sauvegarder les documents</button>
+    <!-- 6. REPARTITION -->
+    <div id="section-repartition" class="card" style="display:none;">
+      <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:6px; font-size:13px; color:#1e40af; margin-bottom:16px;">🔒 Données réelles de la plateforme (Supabase) — lecture seule. Pour modifier ces valeurs, mettez à jour les accords dans le module Gestion des Accords Financiers.</div>
+      <div class="page-title">🥧 Répartition (camembert)</div>
+      <div class="page-desc">Modifiez les secteurs et leurs pourcentages. L'aperçu se met à jour en temps réel.</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+        <div>
+          <div class="card-title">📝 Données du camembert</div>
+          <div id="repartition-rows"></div>
+          <div class="form-group" style="margin-top:12px;">
+            <label class="form-label">Total Projets</label>
+            <input type="number" id="rep-total" class="form-input" oninput="updatePiePreview()">
+          </div>
+          <div class="flex-end"><button class="btn btn-primary" onclick="saveRepartition()" disabled>💾 Sauvegarder</button></div>
+        </div>
+        <div style="text-align:center;">
+          <div class="card-title">📊 Aperçu du camembert</div>
+          <div class="pie-preview" id="pie-preview-el">
+            <div class="pie-preview-center"><div class="pie-preview-val" id="pie-center-val">0</div><div class="pie-preview-label">Projets</div></div>
+          </div>
+          <div id="pie-legend" style="display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; max-width:220px; margin:0 auto; text-align:left;"></div>
+        </div>
+      </div>
     </div>
 
-    <div id="section-tags" class="card" style="display:none;">
-      <h3>🏷️ Mots-clés</h3>
-      <p style="font-size:12px; color:#64748b; margin-bottom:8px;">Séparez les mots-clés par des virgules</p>
-      <textarea id="tags-input" class="field" style="height:120px;" placeholder="mot1, mot2, mot3"></textarea>
-      <br>
-      <button class="btn btn-blue" onclick="saveTags()" style="margin-top:12px;">💾 Sauvegarder les mots-clés</button>
+    <!-- 7. DEPARTEMENTS -->
+    <div id="section-departements" class="card" style="display:none;">
+      <div class="page-title">🗺️ Départements</div>
+      <div class="page-desc">Données par département (partenaires séparés par des virgules).</div>
+      <div class="flex-between">
+        <div class="card-title">🗺️ Données par département</div>
+        <div><button class="btn btn-green" onclick="addDepartement()">+ Ajouter</button></div>
+      </div>
+      <div id="departements-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveDepartements()">💾 Sauvegarder</button></div>
     </div>
+
+    <!-- 8. EVENEMENTS -->
+    <div id="section-evenements" class="card" style="display:none;">
+      <div class="page-title">📆 Événements</div>
+      <div class="page-desc">Calendrier des événements.</div>
+      <div class="flex-between">
+        <div class="card-title">📆 Liste des événements</div>
+        <div><button class="btn btn-green" onclick="addEvenement()">+ Ajouter</button></div>
+      </div>
+      <div id="evenements-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveEvenements()">💾 Sauvegarder</button></div>
+    </div>
+
+    <!-- 9. ACCORDS -->
+    <div id="section-accords" class="card" style="display:none;">
+      <div style="background:#eff6ff; border-left:4px solid #3b82f6; padding:12px 16px; border-radius:6px; font-size:13px; color:#1e40af; margin-bottom:16px;">🔒 Données réelles de la plateforme (Supabase) — lecture seule. Pour modifier ces valeurs, mettez à jour les accords dans le module Gestion des Accords Financiers.</div>
+      <div class="page-title">📋 Accords</div>
+      <div class="page-desc">Derniers accords signés.</div>
+      <div class="flex-between">
+        <div class="card-title">📋 Liste des accords</div>
+        <div><button class="btn btn-green" onclick="addAccord()">+ Ajouter</button></div>
+      </div>
+      <div id="accords-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveAccords()" disabled>💾 Sauvegarder</button></div>
+    </div>
+
+    <!-- 10. DOCUMENTS -->
+    <div id="section-documents" class="card" style="display:none;">
+      <div class="page-title">📄 Documents</div>
+      <div class="page-desc">Documents récents disponibles au téléchargement.</div>
+      <div class="flex-between">
+        <div class="card-title">📄 Liste des documents</div>
+        <div><button class="btn btn-green" onclick="addDocument()">+ Ajouter</button></div>
+      </div>
+      <div id="documents-list"></div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveDocuments()">💾 Sauvegarder</button></div>
+    </div>
+
+    <!-- 11. MOTS-CLES -->
+    <div id="section-motscles" class="card" style="display:none;">
+      <div class="page-title">🏷️ Mots-clés</div>
+      <div class="page-desc">Séparez les mots-clés par des virgules.</div>
+      <div class="form-group">
+        <label class="form-label">Mots-clés</label>
+        <textarea id="motscles-input" class="form-textarea" placeholder="mot1, mot2, mot3"></textarea>
+      </div>
+      <div class="flex-end"><button class="btn btn-primary" onclick="saveMotsCles()">💾 Sauvegarder</button></div>
+    </div>
+
   </div>
 </div>
+
 <script src="/js/auth_client.js"></script>
 <script>
 var API = window.location.origin;
@@ -106,16 +272,19 @@ var contentData = {};
 
 function esc(s) {
   if (s === undefined || s === null) return '';
-  return String(s).replace(/[&<>"']/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-  });
+  return String(s)
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, "'");
 }
 
 function showSection(name, btn) {
-  var buttons = document.querySelectorAll('.sidebar button');
+  var buttons = document.querySelectorAll('.sidebar .nav-item');
   for (var i = 0; i < buttons.length; i++) buttons[i].classList.remove('active');
-  btn.classList.add('active');
-  var names = ['users', 'actus', 'events', 'docs', 'tags'];
+  if (btn) btn.classList.add('active');
+  var names = ['users', 'stats', 'today', 'actus', 'projets', 'repartition', 'departements', 'evenements', 'accords', 'documents', 'motscles'];
   for (var j = 0; j < names.length; j++) {
     var el = document.getElementById('section-' + names[j]);
     if (el) el.style.display = (names[j] === name) ? 'block' : 'none';
@@ -138,11 +307,17 @@ async function init() {
   if (!res.ok) {
     document.getElementById('access-denied').style.display = 'block';
     document.getElementById('sidebar').style.display = 'none';
-    document.getElementById('section-users').style.display = 'none';
+    var mainChildren = document.querySelector('.main').children;
+    for (var i = 0; i < mainChildren.length; i++) {
+      if (mainChildren[i].id !== 'access-denied' && mainChildren[i].id !== 'msg') {
+        mainChildren[i].style.display = 'none';
+      }
+    }
     return;
   }
   var me = await res.json();
-  document.getElementById('admin-email').textContent = 'Connecté : ' + me.email;
+  var emailEl = document.getElementById('admin-email');
+  if (emailEl) emailEl.textContent = me.email || 'Admin';
   loadUsers();
   loadContent();
 }
@@ -165,7 +340,7 @@ async function loadUsers() {
       '<td>' + (u.confirmed ? '<span class="badge ok">Confirmé</span>' : '<span class="badge no">Non confirmé</span>') + '</td>' +
       '<td>' +
         '<button class="btn btn-gray" onclick="resetUser(\'' + esc(u.email) + '\')">🔑 Mot de passe</button> ' +
-        '<button class="btn btn-red" onclick="deleteUser(\'' + esc(u.id) + '\',\'' + esc(u.email) + '\')">🗑️</button>' +
+        '<button class="btn btn-danger" onclick="deleteUser(\'' + esc(u.id) + '\',\'' + esc(u.email) + '\')">🗑️</button>' +
       '</td></tr>';
   }
   body.innerHTML = html;
@@ -199,32 +374,123 @@ async function loadContent() {
   var res = await api('/api/admin/contenu');
   if (!res.ok) return;
   contentData = await res.json();
+  renderStats();
+  renderToday();
   renderActus();
-  renderEvents();
-  renderDocs();
-  renderTags();
+  renderProjetsUne();
+  renderRepartition();
+  renderDepartements();
+  renderEvenements();
+  renderAccords();
+  renderDocuments();
+  renderMotsCles();
 }
 
-function renderActus() {
-  var list = contentData.ACTUALITES || [];
+async function saveSection(sectionKey, valeurData) {
+  var res = await api('/api/admin/contenu', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ section: sectionKey, valeur: valeurData })
+  });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+}
+
+/* 1. STATS */
+function renderStats() {
+  var stats = contentData.STATS || {
+    accords: {valeur: "945", icone: "📄", label: "Accords signés", sublabel: "2016 - 2025"},
+    projets: {valeur: "623", icone: "📁", label: "Projets actifs", sublabel: "En cours"},
+    partenaires: {valeur: "78", icone: "👥", label: "Partenaires", sublabel: "T&F"},
+    montant: {valeur: "8 452", icone: "🪙", label: "Milliards FCFA", sublabel: "Mobilisés"},
+    departements: {valeur: "12", icone: "🏛️", label: "Départements", sublabel: "Couvert"},
+    clotures: {valeur: "212", icone: "✅", label: "Projets clôturés", sublabel: "Depuis 2016"}
+  };
+  var keys = Object.keys(stats);
   var html = '';
-  for (var i = 0; i < list.length; i++) {
-    var a = list[i];
-    html += '<div class="rowbox">' +
-      '<input class="field" type="text" placeholder="Titre" value="' + esc(a.titre) + '" onchange="contentData.ACTUALITES[' + i + '].titre=this.value">' +
-      '<input class="field" type="text" placeholder="Date" value="' + esc(a.date) + '" onchange="contentData.ACTUALITES[' + i + '].date=this.value">' +
-      '<input class="field" type="text" placeholder="Catégorie" value="' + esc(a.categorie) + '" onchange="contentData.ACTUALITES[' + i + '].categorie=this.value">' +
-      '<input class="field" type="text" placeholder="URL image" value="' + esc(a.image) + '" onchange="contentData.ACTUALITES[' + i + '].image=this.value">' +
-      '<textarea class="field" placeholder="Résumé" onchange="contentData.ACTUALITES[' + i + '].resume=this.value">' + esc(a.resume) + '</textarea>' +
-      '<button class="btn btn-red" onclick="removeActu(' + i + ')">🗑️ Supprimer</button>' +
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var s = stats[k] || {};
+    html += '<div class="stat-edit" data-stat-key="' + esc(k) + '">' +
+      '<div class="stat-edit-label">' + esc(s.icone || '') + ' ' + esc(s.label || k) + '</div>' +
+      '<div class="stat-edit-row"><input class="stat-val" value="' + esc(s.valeur || '') + '" placeholder="Valeur"><input class="small stat-icon" value="' + esc(s.icone || '') + '" placeholder="Icône"></div>' +
+      '<div class="stat-edit-row"><input class="stat-label" value="' + esc(s.label || '') + '" placeholder="Label"><input class="stat-sub" value="' + esc(s.sublabel || '') + '" placeholder="Sublabel"></div>' +
       '</div>';
   }
-  document.getElementById('actus-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucune actualité.</p>';
+  document.getElementById('stats-container').innerHTML = html;
+}
+
+async function saveStats() {
+  var boxes = document.querySelectorAll('.stat-edit');
+  var stats = {};
+  for (var i = 0; i < boxes.length; i++) {
+    var box = boxes[i];
+    var k = box.getAttribute('data-stat-key');
+    stats[k] = {
+      valeur: box.querySelector('.stat-val').value,
+      icone: box.querySelector('.stat-icon').value,
+      label: box.querySelector('.stat-label').value,
+      sublabel: box.querySelector('.stat-sub').value
+    };
+  }
+  contentData.STATS = stats;
+  await saveSection('STATS', stats);
+}
+
+/* 2. TODAY_STATS */
+function renderToday() {
+  var list = contentData.TODAY_STATS || [];
+  var html = '<table class="table"><thead><tr><th>Icône</th><th>Valeur</th><th>Label</th><th>Actions</th></tr></thead><tbody>';
+  for (var i = 0; i < list.length; i++) {
+    var t = list[i];
+    html += '<tr>' +
+      '<td><input style="width:60px;" value="' + esc(t.icone) + '" onchange="contentData.TODAY_STATS[' + i + '].icone=this.value"></td>' +
+      '<td><input value="' + esc(t.valeur) + '" onchange="contentData.TODAY_STATS[' + i + '].valeur=this.value"></td>' +
+      '<td><input value="' + esc(t.label) + '" onchange="contentData.TODAY_STATS[' + i + '].label=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeTodayStat(' + i + ')">🗑️</button></td>' +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('today-list').innerHTML = html;
+}
+
+function addTodayStat() {
+  if (!contentData.TODAY_STATS) contentData.TODAY_STATS = [];
+  contentData.TODAY_STATS.push({ icone: '📌', valeur: '0', label: 'Nouveau' });
+  renderToday();
+}
+
+function removeTodayStat(i) {
+  contentData.TODAY_STATS.splice(i, 1);
+  renderToday();
+}
+
+async function saveToday() {
+  await saveSection('TODAY_STATS', contentData.TODAY_STATS || []);
+}
+
+/* 3. ACTUALITES */
+function renderActus() {
+  var list = contentData.ACTUALITES || [];
+  var html = '<table class="table"><thead><tr><th>#</th><th>Titre</th><th>Date</th><th>Catégorie</th><th>Image</th><th>Actions</th></tr></thead><tbody>';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    html += '<tr>' +
+      '<td>' + (i + 1) + '</td>' +
+      '<td><input value="' + esc(a.titre) + '" onchange="contentData.ACTUALITES[' + i + '].titre=this.value"></td>' +
+      '<td><input value="' + esc(a.date) + '" onchange="contentData.ACTUALITES[' + i + '].date=this.value"></td>' +
+      '<td><input value="' + esc(a.categorie) + '" onchange="contentData.ACTUALITES[' + i + '].categorie=this.value"></td>' +
+      '<td><input value="' + esc(a.image) + '" style="width:140px;" onchange="contentData.ACTUALITES[' + i + '].image=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeActu(' + i + ')">🗑️</button></td>' +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('actus-list').innerHTML = html;
 }
 
 function addActu() {
   if (!contentData.ACTUALITES) contentData.ACTUALITES = [];
-  contentData.ACTUALITES.push({ titre: '', date: '', categorie: '', image: '', resume: '' });
+  contentData.ACTUALITES.push({ titre: '', date: '', categorie: 'Accord', image: '', resume: '' });
   renderActus();
 }
 
@@ -234,92 +500,282 @@ function removeActu(i) {
 }
 
 async function saveActus() {
-  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'ACTUALITES', valeur: contentData.ACTUALITES }) });
-  var data = await res.json();
-  flash(data.message || data.error, res.ok);
+  await saveSection('ACTUALITES', contentData.ACTUALITES || []);
 }
 
-function renderEvents() {
-  var list = contentData.EVENEMENTS || [];
+/* 4. PROJETS_UNE */
+function renderProjetsUne() {
+  var list = contentData.PROJETS_UNE || [];
+  var html = '<table class="table"><thead><tr><th>Titre</th><th>Partenaire</th><th>Montant</th><th>Catégorie</th><th>Couleur</th><th>Actions</th></tr></thead><tbody>';
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    html += '<tr>' +
+      '<td><input value="' + esc(p.titre) + '" onchange="contentData.PROJETS_UNE[' + i + '].titre=this.value"></td>' +
+      '<td><input value="' + esc(p.partenaire) + '" onchange="contentData.PROJETS_UNE[' + i + '].partenaire=this.value"></td>' +
+      '<td><input value="' + esc(p.montant) + '" onchange="contentData.PROJETS_UNE[' + i + '].montant=this.value"></td>' +
+      '<td><input value="' + esc(p.categorie) + '" onchange="contentData.PROJETS_UNE[' + i + '].categorie=this.value"></td>' +
+      '<td><input style="width:80px;" value="' + esc(p.couleur || '#0a2540') + '" onchange="contentData.PROJETS_UNE[' + i + '].couleur=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeProjetUne(' + i + ')">🗑️</button></td>' +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('projets-list').innerHTML = html;
+}
+
+function addProjetUne() {
+  if (!contentData.PROJETS_UNE) contentData.PROJETS_UNE = [];
+  contentData.PROJETS_UNE.push({ titre: '', partenaire: '', montant: '', image: '', categorie: 'Infrastructure', couleur: '#0a2540' });
+  renderProjetsUne();
+}
+
+function removeProjetUne(i) {
+  contentData.PROJETS_UNE.splice(i, 1);
+  renderProjetsUne();
+}
+
+async function saveProjetsUne() {
+  await saveSection('PROJETS_UNE', contentData.PROJETS_UNE || []);
+}
+
+/* 5. REPARTITION */
+function renderRepartition() {
+  var rep = contentData.REPARTITION || { Secteurs: ["Infrastructure", "Santé"], Pourcentages: [60, 40], Couleurs: ["#28a745", "#dc3545"], Total: 100 };
+  document.getElementById('rep-total').value = rep.Total || 0;
   var html = '';
+  var sects = rep.Secteurs || [];
+  var pcts = rep.Pourcentages || [];
+  var cols = rep.Couleurs || [];
+  for (var i = 0; i < sects.length; i++) {
+    html += '<div class="form-row" style="margin-bottom:8px;">' +
+      '<div class="form-group"><label class="form-label">Secteur</label><input class="form-input rep-secteur" value="' + esc(sects[i]) + '" oninput="updatePiePreview()"></div>' +
+      '<div class="form-group"><label class="form-label">%</label><input class="form-input rep-pct" type="number" value="' + esc(pcts[i]) + '" oninput="updatePiePreview()"></div>' +
+      '<div class="form-group"><label class="form-label">Couleur</label><input class="form-input rep-color" value="' + esc(cols[i] || '#6c757d') + '" oninput="updatePiePreview()"></div>' +
+      '</div>';
+  }
+  document.getElementById('repartition-rows').innerHTML = html;
+  updatePiePreview();
+}
+
+function updatePiePreview() {
+  var rows = document.querySelectorAll('#repartition-rows .form-row');
+  var totalVal = document.getElementById('rep-total').value;
+  document.getElementById('pie-center-val').textContent = totalVal;
+
+  var secteurs = [];
+  var pourcentages = [];
+  var couleurs = [];
+  var legendHtml = '';
+  var cumulative = 0;
+  var gradientParts = [];
+
+  for (var i = 0; i < rows.length; i++) {
+    var s = rows[i].querySelector('.rep-secteur').value;
+    var p = parseFloat(rows[i].querySelector('.rep-pct').value) || 0;
+    var c = rows[i].querySelector('.rep-color').value || '#6c757d';
+    secteurs.push(s);
+    pourcentages.push(p);
+    couleurs.push(c);
+
+    var start = cumulative;
+    cumulative += p;
+    var end = cumulative;
+    gradientParts.push(c + ' ' + start + '% ' + end + '%');
+
+    legendHtml += '<div style="font-size:11px; color:#374151;"><span class="color-dot" style="background:' + esc(c) + ';"></span> ' + esc(s) + ' <b>' + p + '%</b></div>';
+  }
+
+  if (gradientParts.length > 0) {
+    document.getElementById('pie-preview-el').style.background = 'conic-gradient(' + gradientParts.join(', ') + ')';
+  }
+  document.getElementById('pie-legend').innerHTML = legendHtml;
+
+  contentData.REPARTITION = {
+    Secteurs: secteurs,
+    Pourcentages: pourcentages,
+    Couleurs: couleurs,
+    Total: parseInt(totalVal) || 0
+  };
+}
+
+async function saveRepartition() {
+  updatePiePreview();
+  await saveSection('REPARTITION', contentData.REPARTITION || {});
+}
+
+/* 6. DEPARTEMENTS */
+function renderDepartements() {
+  var deps = contentData.DEPARTEMENTS || {};
+  var keys = Object.keys(deps);
+  var html = '';
+  for (var i = 0; i < keys.length; i++) {
+    var nom = keys[i];
+    var d = deps[nom] || {};
+    var ptfs = Array.isArray(d.partenaires) ? d.partenaires.join(', ') : (d.partenaires || '');
+    html += '<div class="rowbox">' +
+      '<div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:0;">' +
+      '<div><label class="form-label">Département</label><input class="form-input dep-nom" value="' + esc(nom) + '"></div>' +
+      '<div><label class="form-label">Projets</label><input class="form-input dep-proj" value="' + esc(d.projets) + '"></div>' +
+      '<div><label class="form-label">Montant (Mds)</label><input class="form-input dep-montant" value="' + esc(d.montant) + '"></div>' +
+      '<div><label class="form-label">Partenaires</label><input class="form-input dep-ptfs" value="' + esc(ptfs) + '"></div>' +
+      '</div>' +
+      '<div style="margin-top:8px; text-align:right;"><button class="btn btn-danger" onclick="removeDepartement(this)">Supprimer</button></div>' +
+      '</div>';
+  }
+  document.getElementById('departements-list').innerHTML = html;
+}
+
+function addDepartement() {
+  var list = document.getElementById('departements-list');
+  var div = document.createElement('div');
+  div.className = 'rowbox';
+  div.innerHTML = '<div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; margin-bottom:0;">' +
+    '<div><label class="form-label">Département</label><input class="form-input dep-nom" value="Nouveau"></div>' +
+    '<div><label class="form-label">Projets</label><input class="form-input dep-proj" value="0"></div>' +
+    '<div><label class="form-label">Montant (Mds)</label><input class="form-input dep-montant" value="0"></div>' +
+    '<div><label class="form-label">Partenaires</label><input class="form-input dep-ptfs" value=""></div>' +
+    '</div>' +
+    '<div style="margin-top:8px; text-align:right;"><button class="btn btn-danger" onclick="removeDepartement(this)">Supprimer</button></div>';
+  list.appendChild(div);
+}
+
+function removeDepartement(btn) {
+  var row = btn.closest('.rowbox');
+  if (row) row.remove();
+}
+
+async function saveDepartements() {
+  var boxes = document.querySelectorAll('#departements-list .rowbox');
+  var newDeps = {};
+  for (var i = 0; i < boxes.length; i++) {
+    var box = boxes[i];
+    var nom = box.querySelector('.dep-nom').value.trim();
+    if (!nom) continue;
+    var projets = box.querySelector('.dep-proj').value;
+    var montant = box.querySelector('.dep-montant').value;
+    var ptfsStr = box.querySelector('.dep-ptfs').value;
+    var partenaires = ptfsStr.split(',').map(function (p) { return p.trim(); }).filter(function (p) { return p; });
+    newDeps[nom] = {
+      projets: projets,
+      montant: montant,
+      partenaires: partenaires
+    };
+  }
+  contentData.DEPARTEMENTS = newDeps;
+  await saveSection('DEPARTEMENTS', newDeps);
+}
+
+/* 7. EVENEMENTS */
+function renderEvenements() {
+  var list = contentData.EVENEMENTS || [];
+  var html = '<table class="table"><thead><tr><th>Jour</th><th>Mois</th><th>Titre</th><th>Lieu</th><th>Actions</th></tr></thead><tbody>';
   for (var i = 0; i < list.length; i++) {
     var e = list[i];
-    html += '<div class="rowbox">' +
-      '<input type="number" style="width:60px;" placeholder="Jour" value="' + esc(e.jour) + '" onchange="contentData.EVENEMENTS[' + i + '].jour=this.value"> ' +
-      '<input type="text" style="width:90px;" placeholder="Mois" value="' + esc(e.mois) + '" onchange="contentData.EVENEMENTS[' + i + '].mois=this.value"> ' +
-      '<input type="text" style="width:220px;" placeholder="Titre" value="' + esc(e.titre) + '" onchange="contentData.EVENEMENTS[' + i + '].titre=this.value"> ' +
-      '<input type="text" style="width:220px;" placeholder="Lieu" value="' + esc(e.lieu) + '" onchange="contentData.EVENEMENTS[' + i + '].lieu=this.value"> ' +
-      '<button class="btn btn-red" onclick="removeEvent(' + i + ')">🗑️</button>' +
-      '</div>';
+    html += '<tr>' +
+      '<td><input style="width:60px;" value="' + esc(e.jour) + '" onchange="contentData.EVENEMENTS[' + i + '].jour=this.value"></td>' +
+      '<td><input style="width:90px;" value="' + esc(e.mois) + '" onchange="contentData.EVENEMENTS[' + i + '].mois=this.value"></td>' +
+      '<td><input value="' + esc(e.titre) + '" onchange="contentData.EVENEMENTS[' + i + '].titre=this.value"></td>' +
+      '<td><input value="' + esc(e.lieu) + '" onchange="contentData.EVENEMENTS[' + i + '].lieu=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeEvenement(' + i + ')">🗑️</button></td>' +
+      '</tr>';
   }
-  document.getElementById('events-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucun événement.</p>';
+  html += '</tbody></table>';
+  document.getElementById('evenements-list').innerHTML = html;
 }
 
-function addEvent() {
+function addEvenement() {
   if (!contentData.EVENEMENTS) contentData.EVENEMENTS = [];
-  contentData.EVENEMENTS.push({ jour: 1, mois: 'Jan', titre: '', lieu: '' });
-  renderEvents();
+  contentData.EVENEMENTS.push({ jour: 1, mois: 'JAN', titre: '', lieu: '' });
+  renderEvenements();
 }
 
-function removeEvent(i) {
+function removeEvenement(i) {
   contentData.EVENEMENTS.splice(i, 1);
-  renderEvents();
+  renderEvenements();
 }
 
-async function saveEvents() {
-  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'EVENEMENTS', valeur: contentData.EVENEMENTS }) });
-  var data = await res.json();
-  flash(data.message || data.error, res.ok);
+async function saveEvenements() {
+  await saveSection('EVENEMENTS', contentData.EVENEMENTS || []);
 }
 
-function renderDocs() {
+/* 8. ACCORDS */
+function renderAccords() {
+  var list = contentData.ACCORDS || [];
+  var html = '<table class="table"><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    html += '<tr>' +
+      '<td><input value="' + esc(a.code) + '" onchange="contentData.ACCORDS[' + i + '].code=this.value"></td>' +
+      '<td><input value="' + esc(a.projet) + '" onchange="contentData.ACCORDS[' + i + '].projet=this.value"></td>' +
+      '<td><input value="' + esc(a.partenaire) + '" onchange="contentData.ACCORDS[' + i + '].partenaire=this.value"></td>' +
+      '<td><input value="' + esc(a.date) + '" onchange="contentData.ACCORDS[' + i + '].date=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeAccord(' + i + ')">🗑️</button></td>' +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('accords-list').innerHTML = html;
+}
+
+function addAccord() {
+  if (!contentData.ACCORDS) contentData.ACCORDS = [];
+  contentData.ACCORDS.push({ code: '', projet: '', partenaire: '', date: '' });
+  renderAccords();
+}
+
+function removeAccord(i) {
+  contentData.ACCORDS.splice(i, 1);
+  renderAccords();
+}
+
+async function saveAccords() {
+  await saveSection('ACCORDS', contentData.ACCORDS || []);
+}
+
+/* 9. DOCUMENTS */
+function renderDocuments() {
   var list = contentData.DOCUMENTS || [];
-  var html = '';
+  var html = '<table class="table"><thead><tr><th>Titre</th><th>Type</th><th>Taille</th><th>Actions</th></tr></thead><tbody>';
   for (var i = 0; i < list.length; i++) {
     var d = list[i];
-    html += '<div class="rowbox">' +
-      '<input class="field" type="text" placeholder="Titre" value="' + esc(d.titre) + '" onchange="contentData.DOCUMENTS[' + i + '].titre=this.value">' +
-      '<input type="text" style="width:150px;" placeholder="Type" value="' + esc(d.type) + '" onchange="contentData.DOCUMENTS[' + i + '].type=this.value"> ' +
-      '<input type="text" style="width:100px;" placeholder="Taille" value="' + esc(d.taille) + '" onchange="contentData.DOCUMENTS[' + i + '].taille=this.value"> ' +
-      '<button class="btn btn-red" onclick="removeDoc(' + i + ')">🗑️</button>' +
-      '</div>';
+    html += '<tr>' +
+      '<td><input value="' + esc(d.titre) + '" onchange="contentData.DOCUMENTS[' + i + '].titre=this.value"></td>' +
+      '<td><input value="' + esc(d.type) + '" onchange="contentData.DOCUMENTS[' + i + '].type=this.value"></td>' +
+      '<td><input value="' + esc(d.taille) + '" onchange="contentData.DOCUMENTS[' + i + '].taille=this.value"></td>' +
+      '<td><button class="btn btn-danger" onclick="removeDocument(' + i + ')">🗑️</button></td>' +
+      '</tr>';
   }
-  document.getElementById('docs-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucun document.</p>';
+  html += '</tbody></table>';
+  document.getElementById('documents-list').innerHTML = html;
 }
 
-function addDoc() {
+function addDocument() {
   if (!contentData.DOCUMENTS) contentData.DOCUMENTS = [];
-  contentData.DOCUMENTS.push({ titre: '', type: '', taille: '' });
-  renderDocs();
+  contentData.DOCUMENTS.push({ titre: '', type: 'PDF', taille: '1.0 Mo' });
+  renderDocuments();
 }
 
-function removeDoc(i) {
+function removeDocument(i) {
   contentData.DOCUMENTS.splice(i, 1);
-  renderDocs();
+  renderDocuments();
 }
 
-async function saveDocs() {
-  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'DOCUMENTS', valeur: contentData.DOCUMENTS }) });
-  var data = await res.json();
-  flash(data.message || data.error, res.ok);
+async function saveDocuments() {
+  await saveSection('DOCUMENTS', contentData.DOCUMENTS || []);
 }
 
-function renderTags() {
+/* 10. MOTS_CLES */
+function renderMotsCles() {
   var tags = contentData.MOTS_CLES || [];
-  document.getElementById('tags-input').value = tags.join(', ');
+  document.getElementById('motscles-input').value = tags.join(', ');
 }
 
-async function saveTags() {
-  var text = document.getElementById('tags-input').value;
+async function saveMotsCles() {
+  var text = document.getElementById('motscles-input').value;
   var tags = text.split(',').map(function (t) { return t.trim(); }).filter(function (t) { return t; });
-  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'MOTS_CLES', valeur: tags }) });
-  var data = await res.json();
-  flash(data.message || data.error, res.ok);
+  contentData.MOTS_CLES = tags;
+  await saveSection('MOTS_CLES', tags);
 }
 
 init();
 </script>
 </body>
 </html>
-
-Ne modifie aucun autre fichier.

@@ -131,40 +131,52 @@ def admin_delete_user():
         return jsonify({'error': f'Erreur suppression : {e}'}), 500
 
 
-@bp.route('/api/admin/contenu', methods=['GET', 'POST'])
+@bp.route('/api/admin/contenu', methods=['GET'])
 @admin_required
-def admin_contenu():
+def admin_contenu_get():
     try:
-        if not DATA_JSON.exists():
-            DATA_JSON.parent.mkdir(parents=True, exist_ok=True)
-            default_data = {
-                "STATS": {
-                    "accords": {"valeur": "945", "icone": "📄", "label": "Accords signés", "sublabel": "2016 - 2025"},
-                    "projets": {"valeur": "623", "icone": "📁", "label": "Projets actifs", "sublabel": "En cours"},
-                    "partenaires": {"valeur": "78", "icone": "👥", "label": "Partenaires", "sublabel": "T&F"},
-                    "montant": {"valeur": "8 452", "icone": "🪙", "label": "Milliards FCFA", "sublabel": "Mobilisés"},
-                    "departements": {"valeur": "12", "icone": "🏛️", "label": "Départements", "sublabel": "Couvert"},
-                    "clotures": {"valeur": "212", "icone": "✅", "label": "Projets clôturés", "sublabel": "Depuis 2016"}
-                },
-                "TODAY_STATS": [],
-                "ACTUALITES": [],
-                "PROJETS_UNE": [],
-                "REPARTITION": {"Secteurs": ["Infrastructure", "Santé", "Éducation", "Agriculture", "Autres"], "Pourcentages": [28, 20, 20, 17, 15], "Couleurs": ["#28a745", "#dc3545", "#1e5aa8", "#f2c94c", "#6c757d"], "Total": 128},
-                "DEPARTEMENTS": {},
-                "EVENEMENTS": [],
-                "ACCORDS": [],
-                "DOCUMENTS": [],
-                "MOTS_CLES": []
-            }
-            DATA_JSON.write_text(json.dumps(default_data, ensure_ascii=False, indent=2), encoding='utf-8')
-        
-        if request.method == 'POST':
-            payload = request.get_json(force=True) or {}
-            DATA_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
-            return jsonify({'ok': True, 'message': 'Données enregistrées avec succès.'})
-        else:
-            content = json.loads(DATA_JSON.read_text(encoding='utf-8'))
-            return jsonify(content)
+        from api import _build_accueil_data
+        return jsonify(_build_accueil_data())
+    except Exception:
+        traceback.print_exc()
+        try:
+            with open(DATA_JSON, 'r', encoding='utf-8') as f:
+                return jsonify(json.load(f))
+        except Exception as e2:
+            return jsonify({'error': f'Erreur lecture contenu : {e2}'}), 500
+
+
+ALLOWED_CONTENT_KEYS = {'STATS', 'TODAY_STATS', 'ACTUALITES', 'PROJETS_UNE', 'REPARTITION',
+                        'REPARTITION_PARTENAIRES', 'DEPARTEMENTS', 'EVENEMENTS', 'ACCORDS',
+                        'DOCUMENTS', 'MOTS_CLES'}
+
+
+@bp.route('/api/admin/contenu', methods=['POST'])
+@admin_required
+def admin_contenu_save():
+    data = request.get_json(force=True) or {}
+    section = str(data.get('section') or '').strip()
+    valeur = data.get('valeur')
+    if section not in ALLOWED_CONTENT_KEYS:
+        return jsonify({'error': f'Section inconnue : {section}'}), 400
+    if valeur is None:
+        return jsonify({'error': 'Valeur manquante.'}), 400
+    try:
+        with open(DATA_JSON, 'r', encoding='utf-8') as f:
+            contenu = json.load(f)
+        if not isinstance(contenu, dict) or not ALLOWED_CONTENT_KEYS.intersection(contenu.keys()):
+            return jsonify({'error': 'Fichier de contenu invalide, sauvegarde refusee.'}), 500
+        contenu[section] = valeur
+        with open(DATA_JSON, 'w', encoding='utf-8') as f:
+            json.dump(contenu, f, ensure_ascii=False, indent=2)
+        # Invalide le cache de la page d'accueil pour voir les changements immediatement
+        try:
+            from api import _accueil_cache
+            _accueil_cache['ts'] = 0
+            _accueil_cache['data'] = None
+        except Exception:
+            pass
+        return jsonify({'ok': True, 'message': f'Section {section} sauvegardee.'})
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': f'Erreur contenu : {e}'}), 500
+        return jsonify({'error': f'Erreur sauvegarde : {e}'}), 500

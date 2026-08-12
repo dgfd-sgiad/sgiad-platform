@@ -1,13 +1,12 @@
 // js/app.js
 async function estAdmin() {
   try {
-    const token = localStorage.getItem('sgiad_token') || localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token') || '';
-    if (!token) return false;
-    const res = await fetch('/api/admin/me', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
+    // Le header Authorization est injecte automatiquement par js/auth_client.js
+    const res = await fetch('/api/admin/me');
     return res.ok;
-  } catch (e) { return false; }
+  } catch (e) {
+    return false;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
