@@ -1,3 +1,5 @@
+Remplace TOUT le contenu du fichier modules/admin_plateforme.html par le code ci-dessous, sans rien modifier d'autre.
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -21,7 +23,8 @@
   .btn-blue { background:#1e40af; color:#fff; }
   .btn-red { background:#dc2626; color:#fff; }
   .btn-gray { background:#e2e8f0; color:#334155; }
-  input { padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; }
+  .field { width:100%; padding:7px 9px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; margin-bottom:6px; box-sizing:border-box; }
+  .rowbox { border:1px solid #e2e8f0; border-radius:6px; padding:12px; margin-bottom:8px; }
   .msg { padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:12px; font-weight:600; display:none; }
   .msg.ok { display:block; background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
   .msg.err { display:block; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
@@ -38,10 +41,10 @@
 <div class="layout">
   <div class="sidebar" id="sidebar">
     <button class="active" onclick="showSection('users', this)">👥 Utilisateurs</button>
-    <button onclick="showSection('actus', this)">📰 Actualités (étape 2)</button>
-    <button onclick="showSection('events', this)">📆 Événements (étape 2)</button>
-    <button onclick="showSection('docs', this)">📄 Documents (étape 2)</button>
-    <button onclick="showSection('tags', this)">🏷️ Mots-clés (étape 2)</button>
+    <button onclick="showSection('actus', this)">📰 Actualités</button>
+    <button onclick="showSection('events', this)">📆 Événements</button>
+    <button onclick="showSection('docs', this)">📄 Documents</button>
+    <button onclick="showSection('tags', this)">🏷️ Mots-clés</button>
     <button onclick="location.href='/'" style="margin-top:20px; color:#0a2540;">🌐 Voir le site public</button>
   </div>
   <div class="main">
@@ -51,6 +54,7 @@
       <button class="btn btn-blue" onclick="location.href='/'">Retour à l'accueil</button>
     </div>
     <div id="msg" class="msg"></div>
+
     <div id="section-users" class="card">
       <h3>👥 Utilisateurs de la plateforme</h3>
       <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
@@ -64,107 +68,258 @@
         <tbody id="users-body"><tr><td colspan="5">Chargement…</td></tr></tbody>
       </table>
     </div>
-    <div id="section-actus" class="card" style="display:none;"><h3>📰 Actualités</h3><p style="font-size:12px;color:#64748b;">Éditeur disponible à l'étape 2.</p></div>
-    <div id="section-events" class="card" style="display:none;"><h3>📆 Événements</h3><p style="font-size:12px;color:#64748b;">Éditeur disponible à l'étape 2.</p></div>
-    <div id="section-docs" class="card" style="display:none;"><h3>📄 Documents</h3><p style="font-size:12px;color:#64748b;">Éditeur disponible à l'étape 2.</p></div>
-    <div id="section-tags" class="card" style="display:none;"><h3>🏷️ Mots-clés</h3><p style="font-size:12px;color:#64748b;">Éditeur disponible à l'étape 2.</p></div>
+
+    <div id="section-actus" class="card" style="display:none;">
+      <h3>📰 Actualités</h3>
+      <button class="btn btn-blue" onclick="addActu()" style="margin-bottom:12px;">➕ Ajouter une actualité</button>
+      <div id="actus-list"></div>
+      <button class="btn btn-blue" onclick="saveActus()" style="margin-top:12px;">💾 Sauvegarder les actualités</button>
+    </div>
+
+    <div id="section-events" class="card" style="display:none;">
+      <h3>📆 Événements</h3>
+      <button class="btn btn-blue" onclick="addEvent()" style="margin-bottom:12px;">➕ Ajouter un événement</button>
+      <div id="events-list"></div>
+      <button class="btn btn-blue" onclick="saveEvents()" style="margin-top:12px;">💾 Sauvegarder les événements</button>
+    </div>
+
+    <div id="section-docs" class="card" style="display:none;">
+      <h3>📄 Documents</h3>
+      <button class="btn btn-blue" onclick="addDoc()" style="margin-bottom:12px;">➕ Ajouter un document</button>
+      <div id="docs-list"></div>
+      <button class="btn btn-blue" onclick="saveDocs()" style="margin-top:12px;">💾 Sauvegarder les documents</button>
+    </div>
+
+    <div id="section-tags" class="card" style="display:none;">
+      <h3>🏷️ Mots-clés</h3>
+      <p style="font-size:12px; color:#64748b; margin-bottom:8px;">Séparez les mots-clés par des virgules</p>
+      <textarea id="tags-input" class="field" style="height:120px;" placeholder="mot1, mot2, mot3"></textarea>
+      <br>
+      <button class="btn btn-blue" onclick="saveTags()" style="margin-top:12px;">💾 Sauvegarder les mots-clés</button>
+    </div>
   </div>
 </div>
 <script src="/js/auth_client.js"></script>
 <script>
-const API = window.location.origin;
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'''}[c]));
-function showSection(name, btn) {
-  document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  ['users','actus','events','docs','tags'].forEach(s => {
-    document.getElementById('section-' + s).style.display = (s === name) ? 'block' : 'none';
+var API = window.location.origin;
+var contentData = {};
+
+function esc(s) {
+  if (s === undefined || s === null) return '';
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
+
+function showSection(name, btn) {
+  var buttons = document.querySelectorAll('.sidebar button');
+  for (var i = 0; i < buttons.length; i++) buttons[i].classList.remove('active');
+  btn.classList.add('active');
+  var names = ['users', 'actus', 'events', 'docs', 'tags'];
+  for (var j = 0; j < names.length; j++) {
+    var el = document.getElementById('section-' + names[j]);
+    if (el) el.style.display = (names[j] === name) ? 'block' : 'none';
+  }
+}
+
 function flash(text, ok) {
-  const m = document.getElementById('msg');
+  var m = document.getElementById('msg');
   m.textContent = text;
   m.className = 'msg ' + (ok ? 'ok' : 'err');
-  setTimeout(() => { m.className = 'msg'; }, 5000);
+  setTimeout(function () { m.className = 'msg'; }, 5000);
 }
-async function api(path, options = {}) {
-  // Le header Authorization est injecté automatiquement par auth_client.js
-  return fetch(API + path, options);
+
+function api(path, options) {
+  return fetch(API + path, options || {});
 }
+
 async function init() {
-  const res = await api('/api/admin/me');
+  var res = await api('/api/admin/me');
   if (!res.ok) {
     document.getElementById('access-denied').style.display = 'block';
+    document.getElementById('sidebar').style.display = 'none';
     document.getElementById('section-users').style.display = 'none';
     return;
   }
-  const data = await res.json();
-  document.getElementById('admin-email').textContent = data.email || '';
+  var me = await res.json();
+  document.getElementById('admin-email').textContent = 'Connecté : ' + me.email;
   loadUsers();
+  loadContent();
 }
+
 async function loadUsers() {
-  const tbody = document.getElementById('users-body');
-  tbody.innerHTML = '<tr><td colspan="5">Chargement…</td></tr>';
-  const res = await api('/api/admin/users');
-  if (!res.ok) {
-    flash('Erreur chargement utilisateurs', false);
-    tbody.innerHTML = '<tr><td colspan="5">Erreur</td></tr>';
-    return;
+  var body = document.getElementById('users-body');
+  body.innerHTML = '<tr><td colspan="5">Chargement…</td></tr>';
+  var res = await api('/api/admin/users');
+  if (!res.ok) { body.innerHTML = '<tr><td colspan="5">Erreur de chargement.</td></tr>'; return; }
+  var data = await res.json();
+  var users = data.users || [];
+  if (!users.length) { body.innerHTML = '<tr><td colspan="5">Aucun utilisateur.</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < users.length; i++) {
+    var u = users[i];
+    html += '<tr>' +
+      '<td><b>' + esc(u.email) + '</b></td>' +
+      '<td>' + esc(u.created_at) + '</td>' +
+      '<td>' + esc(u.last_sign_in_at || '-') + '</td>' +
+      '<td>' + (u.confirmed ? '<span class="badge ok">Confirmé</span>' : '<span class="badge no">Non confirmé</span>') + '</td>' +
+      '<td>' +
+        '<button class="btn btn-gray" onclick="resetUser(\'' + esc(u.email) + '\')">🔑 Mot de passe</button> ' +
+        '<button class="btn btn-red" onclick="deleteUser(\'' + esc(u.id) + '\',\'' + esc(u.email) + '\')">🗑️</button>' +
+      '</td></tr>';
   }
-  const data = await res.json();
-  const users = data.users || [];
-  if (users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5">Aucun utilisateur</td></tr>';
-    return;
-  }
-  tbody.innerHTML = users.map(u => `
-    <tr>
-      <td>${esc(u.email)}</td>
-      <td>${esc(u.created_at)}</td>
-      <td>${esc(u.last_sign_in_at || 'Jamais')}</td>
-      <td><span class="badge ${u.email_confirmed_at ? 'ok' : 'no'}">${u.email_confirmed_at ? 'Actif' : 'Inactif'}</span></td>
-      <td>
-        <button class="btn btn-red" onclick="deleteUser('${esc(u.id)}')">Supprimer</button>
-      </td>
-    </tr>
-  `).join('');
+  body.innerHTML = html;
 }
+
 async function createUser() {
-  const email = document.getElementById('new-email').value.trim();
-  const password = document.getElementById('new-password').value;
-  if (!email || !password) {
-    flash('Email et mot de passe requis', false);
-    return;
-  }
-  const res = await api('/api/admin/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  });
-  const data = await res.json();
-  if (res.ok) {
-    flash('Utilisateur créé avec succès', true);
-    document.getElementById('new-email').value = '';
-    document.getElementById('new-password').value = '';
-    loadUsers();
-  } else {
-    flash(data.error || 'Erreur lors de la création', false);
-  }
+  var email = document.getElementById('new-email').value.trim();
+  var password = document.getElementById('new-password').value;
+  var res = await api('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email, password: password }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+  if (res.ok) { document.getElementById('new-email').value = ''; document.getElementById('new-password').value = ''; loadUsers(); }
 }
-async function deleteUser(id) {
-  if (!confirm('Voulez-vous vraiment supprimer cet utilisateur ?')) return;
-  const res = await api('/api/admin/users/' + id, {
-    method: 'DELETE'
-  });
-  const data = await res.json();
-  if (res.ok) {
-    flash('Utilisateur supprimé', true);
-    loadUsers();
-  } else {
-    flash(data.error || 'Erreur lors de la suppression', false);
-  }
+
+async function resetUser(email) {
+  if (!confirm('Envoyer un email de réinitialisation à ' + email + ' ?')) return;
+  var res = await api('/api/admin/users/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
 }
+
+async function deleteUser(id, email) {
+  if (!confirm('Supprimer définitivement le compte ' + email + ' ?')) return;
+  var res = await api('/api/admin/users/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+  if (res.ok) loadUsers();
+}
+
+async function loadContent() {
+  var res = await api('/api/admin/contenu');
+  if (!res.ok) return;
+  contentData = await res.json();
+  renderActus();
+  renderEvents();
+  renderDocs();
+  renderTags();
+}
+
+function renderActus() {
+  var list = contentData.ACTUALITES || [];
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    html += '<div class="rowbox">' +
+      '<input class="field" type="text" placeholder="Titre" value="' + esc(a.titre) + '" onchange="contentData.ACTUALITES[' + i + '].titre=this.value">' +
+      '<input class="field" type="text" placeholder="Date" value="' + esc(a.date) + '" onchange="contentData.ACTUALITES[' + i + '].date=this.value">' +
+      '<input class="field" type="text" placeholder="Catégorie" value="' + esc(a.categorie) + '" onchange="contentData.ACTUALITES[' + i + '].categorie=this.value">' +
+      '<input class="field" type="text" placeholder="URL image" value="' + esc(a.image) + '" onchange="contentData.ACTUALITES[' + i + '].image=this.value">' +
+      '<textarea class="field" placeholder="Résumé" onchange="contentData.ACTUALITES[' + i + '].resume=this.value">' + esc(a.resume) + '</textarea>' +
+      '<button class="btn btn-red" onclick="removeActu(' + i + ')">🗑️ Supprimer</button>' +
+      '</div>';
+  }
+  document.getElementById('actus-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucune actualité.</p>';
+}
+
+function addActu() {
+  if (!contentData.ACTUALITES) contentData.ACTUALITES = [];
+  contentData.ACTUALITES.push({ titre: '', date: '', categorie: '', image: '', resume: '' });
+  renderActus();
+}
+
+function removeActu(i) {
+  contentData.ACTUALITES.splice(i, 1);
+  renderActus();
+}
+
+async function saveActus() {
+  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'ACTUALITES', valeur: contentData.ACTUALITES }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+}
+
+function renderEvents() {
+  var list = contentData.EVENEMENTS || [];
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    html += '<div class="rowbox">' +
+      '<input type="number" style="width:60px;" placeholder="Jour" value="' + esc(e.jour) + '" onchange="contentData.EVENEMENTS[' + i + '].jour=this.value"> ' +
+      '<input type="text" style="width:90px;" placeholder="Mois" value="' + esc(e.mois) + '" onchange="contentData.EVENEMENTS[' + i + '].mois=this.value"> ' +
+      '<input type="text" style="width:220px;" placeholder="Titre" value="' + esc(e.titre) + '" onchange="contentData.EVENEMENTS[' + i + '].titre=this.value"> ' +
+      '<input type="text" style="width:220px;" placeholder="Lieu" value="' + esc(e.lieu) + '" onchange="contentData.EVENEMENTS[' + i + '].lieu=this.value"> ' +
+      '<button class="btn btn-red" onclick="removeEvent(' + i + ')">🗑️</button>' +
+      '</div>';
+  }
+  document.getElementById('events-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucun événement.</p>';
+}
+
+function addEvent() {
+  if (!contentData.EVENEMENTS) contentData.EVENEMENTS = [];
+  contentData.EVENEMENTS.push({ jour: 1, mois: 'Jan', titre: '', lieu: '' });
+  renderEvents();
+}
+
+function removeEvent(i) {
+  contentData.EVENEMENTS.splice(i, 1);
+  renderEvents();
+}
+
+async function saveEvents() {
+  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'EVENEMENTS', valeur: contentData.EVENEMENTS }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+}
+
+function renderDocs() {
+  var list = contentData.DOCUMENTS || [];
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var d = list[i];
+    html += '<div class="rowbox">' +
+      '<input class="field" type="text" placeholder="Titre" value="' + esc(d.titre) + '" onchange="contentData.DOCUMENTS[' + i + '].titre=this.value">' +
+      '<input type="text" style="width:150px;" placeholder="Type" value="' + esc(d.type) + '" onchange="contentData.DOCUMENTS[' + i + '].type=this.value"> ' +
+      '<input type="text" style="width:100px;" placeholder="Taille" value="' + esc(d.taille) + '" onchange="contentData.DOCUMENTS[' + i + '].taille=this.value"> ' +
+      '<button class="btn btn-red" onclick="removeDoc(' + i + ')">🗑️</button>' +
+      '</div>';
+  }
+  document.getElementById('docs-list').innerHTML = html || '<p style="font-size:12px;color:#64748b;">Aucun document.</p>';
+}
+
+function addDoc() {
+  if (!contentData.DOCUMENTS) contentData.DOCUMENTS = [];
+  contentData.DOCUMENTS.push({ titre: '', type: '', taille: '' });
+  renderDocs();
+}
+
+function removeDoc(i) {
+  contentData.DOCUMENTS.splice(i, 1);
+  renderDocs();
+}
+
+async function saveDocs() {
+  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'DOCUMENTS', valeur: contentData.DOCUMENTS }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+}
+
+function renderTags() {
+  var tags = contentData.MOTS_CLES || [];
+  document.getElementById('tags-input').value = tags.join(', ');
+}
+
+async function saveTags() {
+  var text = document.getElementById('tags-input').value;
+  var tags = text.split(',').map(function (t) { return t.trim(); }).filter(function (t) { return t; });
+  var res = await api('/api/admin/contenu', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'MOTS_CLES', valeur: tags }) });
+  var data = await res.json();
+  flash(data.message || data.error, res.ok);
+}
+
 init();
 </script>
 </body>
 </html>
+
+Ne modifie aucun autre fichier.
