@@ -56,25 +56,25 @@
   ],
   "ACTUALITES": [
     {
-      "titre": "Signature d'un nouvel accord entre le Bénin et la BAD",
+      "categorie": "Accord",
       "date": "02 Août 2026",
-      "resume": "Le Gouvernement du Bénin et la Banque Africaine de Développement ont signé un nouvel accord destiné à renforcer...",
       "image": "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=250&fit=crop",
-      "categorie": "Accord"
+      "resume": "Le Gouvernement du Bénin et la Banque Africaine de Développement ont signé un nouvel accord destiné à renforcer...",
+      "titre": "Signature d'un nouvel accord entre le Bénin et la BAD"
     },
     {
-      "titre": "Lancement officiel du Programme AQUA-VIE",
+      "categorie": "Lancement",
       "date": "28 Juillet 2026",
-      "resume": "Les travaux du programme AQUA-VIE sont officiellement lancés pour améliorer l'accès à l'eau potable...",
       "image": "https://images.unsplash.com/photo-1538300342682-cf57afb97285?w=400&h=250&fit=crop",
-      "categorie": "Lancement"
+      "resume": "Les travaux du programme AQUA-VIE sont officiellement lancés pour améliorer l'accès à l'eau potable...",
+      "titre": "Lancement officiel du Programme AQUA-VIE"
     },
     {
-      "titre": "Atelier sur le Financement Vert et Climatique",
+      "categorie": "Atelier",
       "date": "20 Juillet 2026",
-      "resume": "Le Ministère de l'Économie et des Finances organise un atelier de renforcement des capacités sur le financement vert...",
       "image": "https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=400&h=250&fit=crop",
-      "categorie": "Atelier"
+      "resume": "Le Ministère de l'Économie et des Finances organise un atelier de renforcement des capacités sur le financement vert...",
+      "titre": "Atelier sur le Financement Vert"
     }
   ],
   "PROJETS_UNE": [
