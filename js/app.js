@@ -1,5 +1,16 @@
 // js/app.js
-document.addEventListener('DOMContentLoaded', () => {
+async function estAdmin() {
+  try {
+    const token = localStorage.getItem('sgiad_token') || localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token') || '';
+    if (!token) return false;
+    const res = await fetch('/api/admin/me', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    return res.ok;
+  } catch (e) { return false; }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render ---
     setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
@@ -35,7 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('modulesGrid');
 
     if (grid && typeof modules !== 'undefined') {
+        const isAdminUser = await estAdmin();
+
         modules.forEach(mod => {
+            if (mod.id === 'gestion_utilisateurs' && !isAdminUser) {
+                return;
+            }
+
             const actif = mod.actif !== false;
             const card = document.createElement('div');
             card.className = 'module-card' + (actif ? '' : ' module-inactive');
@@ -55,6 +72,10 @@ document.addEventListener('DOMContentLoaded', () => {
             card.onclick = () => {
                 if (!actif) {
                     alert(`Le module « ${mod.title} » n'est pas encore actif.`);
+                    return;
+                }
+                if (mod.id === 'gestion_utilisateurs') {
+                    window.location.href = '/admin/plateforme';
                     return;
                 }
                 window.location.href = mod.file;

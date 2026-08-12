@@ -67,8 +67,8 @@ const modules = [
         id: 'gestion_utilisateurs',
         title: 'Gestion des Utilisateurs',
         icon: '👥',
-        file: 'modules/utilisateurs.html',
-        actif: false
+        file: '/admin/plateforme',
+        actif: true
     },
     {
         id: 'generation_rapports',
