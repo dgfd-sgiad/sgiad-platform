@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DGFD Admin - Administration Plateforme</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+  body { background:#f3f4f6; color:#374151; }
+
+  .topbar { background:#0a2540; color:#fff; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; font-size:13px; font-weight:500; }
+  .topbar-user { display:flex; align-items:center; gap:8px; }
+  .badge { background:rgba(255,255,255,0.15); padding:4px 12px; border-radius:20px; font-size:11px; }
+
+  .layout { display:flex; min-height:calc(100vh - 44px); }
+  .sidebar { width:280px; background:#fff; border-right:1px solid #e5e7eb; padding:16px; flex-shrink:0; }
+  .sidebar-title { font-size:10px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; padding:0 8px; }
+  .nav-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px; font-size:13px; font-weight:500; color:#374151; margin-bottom:2px; cursor:pointer; text-decoration:none; }
+  .nav-item:hover { background:#f3f4f6; }
+  .nav-item.active { background:#eff6ff; color:#0a2540; font-weight:600; }
+  .nav-icon { width:20px; text-align:center; font-size:14px; }
+
+  .main { flex:1; padding:24px; overflow:auto; }
+  .page-title { font-size:22px; font-weight:700; color:#0a2540; margin-bottom:4px; }
+  .page-desc { font-size:13px; color:#6b7280; margin-bottom:20px; }
+  .card { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:20px; margin-bottom:20px; }
+  .card-title { font-size:14px; font-weight:600; color:#0a2540; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .alert { background:#fef3c7; border-left:4px solid #f59e0b; padding:12px 16px; border-radius:6px; font-size:13px; color:#92400e; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .btn { padding:6px 14px; border-radius:6px; border:1px solid #d1d5db; background:#fff; font-size:12px; font-weight:500; color:#374151; cursor:pointer; }
+  .btn-primary { background:#0a2540; color:#fff; border-color:#0a2540; }
+  .btn-danger { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+  .btn-green { background:#f0fdf4; color:#16a34a; border-color:#bbf7d0; }
+  .flex-between { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .flex-end { display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
+
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; padding:10px; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e5e7eb; background:#f9fafb; }
+  .table td { padding:10px; font-size:12px; color:#374151; border-bottom:1px solid #f3f4f6; }
+  .table tr:hover td { background:#f9fafb; }
+  .table input, .table select { width:100%; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+
+  .form-row { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .form-group { }
+  .form-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:4px; display:block; }
+  .form-input { width:100%; padding:8px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:12px; }
+  .stat-edit { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px; }
+  .stat-edit-label { font-size:11px; font-weight:600; color:#374151; margin-bottom:6px; }
+  .stat-edit-row { display:flex; gap:8px; margin-bottom:6px; }
+  .stat-edit-row input { flex:1; padding:6px 8px; border:1px solid #d1d5db; border-radius:4px; font-size:12px; }
+  .stat-edit-row input.small { width:60px; flex:none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>🔒 <b>DGFD Admin Plateforme</b> — Gestion des contenus et utilisateurs</div>
+  <div class="topbar-user">👤 <span id="admin-email">Chargement...</span> <span class="badge">En ligne</span> <button class="btn" onclick="logout()" style="background:rgba(255,255,255,0.15); color:#fff; border:none; margin-left:8px;">Déconnexion</button></div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-title">Menu Administration</div>
+    <div class="nav-item active" onclick="switchTab('contenu')"><span class="nav-icon">📊</span> Contenu & Statistiques</div>
+    <div class="nav-item" onclick="switchTab('users')"><span class="nav-icon">👥</span> Gestion Utilisateurs (@finances.bj)</div>
+    <div style="border-top:1px solid #e5e7eb; margin:12px 0;"></div>
+    <a href="/" class="nav-item" style="color:#0a2540;"><span class="nav-icon">🌐</span> Voir le site public</a>
+  </div>
+
+  <div class="main">
+    <div id="tab-contenu">
+      <div class="alert">⚠️ Sauvegardez vos modifications pour les appliquer instantanément sur la plateforme.</div>
+      <div class="flex-between">
+        <div>
+          <div class="page-title">📈 Paramétrage & Contenu de la Plateforme</div>
+          <div class="page-desc">Modifier les indicateurs, actualités, projets et accords affichés sur le portail DGFD.</div>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="saveContent()">💾 Sauvegarder tout le contenu</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📊 6 Indicateurs Clés (Statistiques Accueil)</div>
+        <div class="stats-grid" id="stats-container">
+          <!-- Dynamically loaded -->
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title">📰 Actualités</div>
+          <button class="btn btn-green" onclick="addNewsRow()">+ Ajouter actualité</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Titre</th><th>Date</th><th>Catégorie</th><th>Image URL</th><th>Résumé</th><th>Action</th></tr></thead>
+          <tbody id="news-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-title">📋 Accords récents</div>
+          <button class="btn btn-green" onclick="addAccordRow()">+ Ajouter accord</button>
+        </div>
+        <table class="table">
+          <thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody id="acords-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-users" style="display:none;">
+      <div class="page-title">👥 Gestion des utilisateurs de la plateforme</div>
+      <div class="page-desc">Créer des comptes administrateurs ou agents (extension @finances.bj obligatoire).</div>
+
+      <div class="card">
+        <div class="card-title">➕ Créer un nouvel utilisateur</div>
+        <form onsubmit="createUser(event)" style="display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:flex-end;">
+          <div>
+            <label class="form-label">Email professionnel (@finances.bj)</label>
+            <input type="email" id="new-user-email" class="form-input" placeholder="agent@finances.bj" required>
+          </div>
+          <div>
+            <label class="form-label">Mot de passe temporaire (8 car. min)</label>
+            <input type="password" id="new-user-pass" class="form-input" placeholder="••••••••" required minlength="8">
+          </div>
+          <div>
+            <button type="submit" class="btn btn-primary" style="height:38px;">Créer le compte</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Liste des utilisateurs enregistrés dans Supabase Auth</div>
+        <table class="table">
+          <thead><tr><th>Email</th><th>Créé le</th><th>Dernière connexion</th><th>Confirmé</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/js/auth_client.js"></script>
+<script>
+let globalData = {};
+
+async function checkAdminAuth() {
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    if (!token) {
+        window.location.href = '/modules/login.html';
+        return;
+    }
+    try {
+        const res = await fetch('/api/admin/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('Non autorisé');
+        const data = await res.json();
+        document.getElementById('admin-email').textContent = data.email;
+        loadContentData();
+        loadUsersData();
+    } catch (e) {
+        alert('Accès administrateur requis.');
+        window.location.href = '/modules/login.html';
+    }
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    if (tab === 'contenu') {
+        document.querySelector('.sidebar .nav-item:nth-child(1)').classList.add('active');
+        document.getElementById('tab-contenu').style.display = 'block';
+        document.getElementById('tab-users').style.display = 'none';
+    } else {
+        document.querySelector('.sidebar .nav-item:nth-child(2)').classList.add('active');
+        document.getElementById('tab-contenu').style.display = 'none';
+        document.getElementById('tab-users').style.display = 'block';
+    }
+}
+
+async function loadContentData() {
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/contenu', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.ok) {
+        globalData = await res.json();
+        renderStatsForm();
+        renderNewsTable();
+        renderAccordsTable();
+    }
+}
+
+function renderStatsForm() {
+    const container = document.getElementById('stats-container');
+    container.innerHTML = '';
+    const stats = globalData.STATS || {};
+    for (const [k, st] of Object.entries(stats)) {
+        container.innerHTML += `
+        <div class="stat-edit" data-key="${k}">
+            <div class="stat-edit-label">${st.icone} ${st.label}</div>
+            <div class="stat-edit-row"><input class="stat-val" value="${st.valeur}"><input class="stat-icon small" value="${st.icone}"></div>
+            <div class="stat-edit-row"><input class="stat-label" value="${st.label}"><input class="stat-sub" value="${st.sublabel || ''}"></div>
+        </div>`;
+    }
+}
+
+function renderNewsTable() {
+    const tbody = document.getElementById('news-tbody');
+    tbody.innerHTML = '';
+    const list = globalData.ACTUALITES || [];
+    list.forEach((item, idx) => {
+        tbody.innerHTML += `
+        <tr data-idx="${idx}">
+            <td><input class="news-titre" value="${item.titre || ''}"></td>
+            <td><input class="news-date" value="${item.date || ''}" style="width:110px;"></td>
+            <td><input class="news-cat" value="${item.categorie || ''}" style="width:100px;"></td>
+            <td><input class="news-img" value="${item.image || ''}" style="width:140px;"></td>
+            <td><input class="news-resume" value="${item.resume || ''}"></td>
+            <td><button class="btn btn-danger" onclick="removeNews(${idx})">🗑️</button></td>
+        </tr>`;
+    });
+}
+
+function addNewsRow() {
+    if (!globalData.ACTUALITES) globalData.ACTUALITES = [];
+    globalData.ACTUALITES.unshift({ titre: 'Nouvelle actualité', date: 'Aujourd\'hui', categorie: 'Actualité', image: 'https://images.unsplash.com/...', resume: 'Description...' });
+    renderNewsTable();
+}
+
+function removeNews(idx) {
+    globalData.ACTUALITES.splice(idx, 1);
+    renderNewsTable();
+}
+
+function renderAccordsTable() {
+    const tbody = document.getElementById('acords-tbody');
+    tbody.innerHTML = '';
+    const list = globalData.ACCORDS || [];
+    list.forEach((item, idx) => {
+        tbody.innerHTML += `
+        <tr data-idx="${idx}">
+            <td><input class="acc-code" value="${item.code || ''}"></td>
+            <td><input class="acc-proj" value="${item.projet || ''}"></td>
+            <td><input class="acc-part" value="${item.partenaire || ''}"></td>
+            <td><input class="acc-date" value="${item.date || ''}" style="width:110px;"></td>
+            <td><button class="btn btn-danger" onclick="removeAccord(${idx})">🗑️</button></td>
+        </tr>`;
+    });
+}
+
+function addAccordRow() {
+    if (!globalData.ACCORDS) globalData.ACCORDS = [];
+    globalData.ACCORDS.unshift({ code: 'ACC-2026-00X', projet: 'Nouveau projet', partenaire: 'BAD', date: '01/01/2026' });
+    renderAccordsTable();
+}
+
+function removeAccord(idx) {
+    globalData.ACCORDS.splice(idx, 1);
+    renderAccordsTable();
+}
+
+async function saveContent() {
+    // Gather stats
+    document.querySelectorAll('.stat-edit').forEach(card => {
+        const k = card.getAttribute('data-key');
+        if (globalData.STATS && globalData.STATS[k]) {
+            globalData.STATS[k].valeur = card.querySelector('.stat-val').value;
+            globalData.STATS[k].icone = card.querySelector('.stat-icon').value;
+            globalData.STATS[k].label = card.querySelector('.stat-label').value;
+            globalData.STATS[k].sublabel = card.querySelector('.stat-sub').value;
+        }
+    });
+
+    // Gather news
+    const newsRows = document.querySelectorAll('#news-tbody tr');
+    globalData.ACTUALITES = Array.from(newsRows).map(row => ({
+        titre: row.querySelector('.news-titre').value,
+        date: row.querySelector('.news-date').value,
+        categorie: row.querySelector('.news-cat').value,
+        image: row.querySelector('.news-img').value,
+        resume: row.querySelector('.news-resume').value
+    }));
+
+    // Gather accords
+    const accRows = document.querySelectorAll('#acords-tbody tr');
+    globalData.ACCORDS = Array.from(accRows).map(row => ({
+        code: row.querySelector('.acc-code').value,
+        projet: row.querySelector('.acc-proj').value,
+        partenaire: row.querySelector('.acc-part').value,
+        date: row.querySelector('.acc-date').value
+    }));
+
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/contenu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify(globalData)
+    });
+    const json = await res.json();
+    if (res.ok) {
+        alert('Contenu enregistré avec succès !');
+    } else {
+        alert('Erreur: ' + (json.error || 'Erreur inconnue'));
+    }
+}
+
+async function loadUsersData() {
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/users', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.ok) {
+        const data = await res.json();
+        const tbody = document.getElementById('users-tbody');
+        tbody.innerHTML = '';
+        (data.users || []).forEach(u => {
+            tbody.innerHTML += `
+            <tr>
+                <td><b>${u.email}</b></td>
+                <td>${u.created_at}</td>
+                <td>${u.last_sign_in_at || 'Jamais'}</td>
+                <td>${u.confirmed ? '✅ Oui' : '❌ Non'}</td>
+                <td>
+                    <button class="btn" onclick="resetPassword('${u.email}')">🔑 Réinit</button>
+                    <button class="btn btn-danger" onclick="deleteUser('${u.id}')">🗑️ Suppr</button>
+                </td>
+            </tr>`;
+        });
+    }
+}
+
+async function createUser(e) {
+    e.preventDefault();
+    const email = document.getElementById('new-user-email').value;
+    const password = document.getElementById('new-user-pass').value;
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ email, password })
+    });
+    const json = await res.json();
+    if (res.ok) {
+        alert(json.message);
+        document.getElementById('new-user-email').value = '';
+        document.getElementById('new-user-pass').value = '';
+        loadUsersData();
+    } else {
+        alert('Erreur: ' + (json.error || 'Erreur'));
+    }
+}
+
+async function resetPassword(email) {
+    if (!confirm(`Envoyer un email de réinitialisation à ${email} ?`)) return;
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/users/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ email })
+    });
+    const json = await res.json();
+    alert(json.message || json.error);
+}
+
+async function deleteUser(id) {
+    if (!confirm('Supprimer cet utilisateur ?')) return;
+    const token = localStorage.getItem('supabase_token') || sessionStorage.getItem('supabase_token');
+    const res = await fetch('/api/admin/users/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ id })
+    });
+    const json = await res.json();
+    if (res.ok) {
+        alert(json.message);
+        loadUsersData();
+    } else {
+        alert('Erreur: ' + (json.error || 'Erreur'));
+    }
+}
+
+function logout() {
+    localStorage.removeItem('supabase_token');
+    sessionStorage.removeItem('supabase_token');
+    window.location.href = '/modules/login.html';
+}
+
+checkAdminAuth();
+</script>
+
+</body>
+</html>

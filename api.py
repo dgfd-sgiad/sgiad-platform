@@ -56,6 +56,10 @@ app.register_blueprint(accords_financiers_bp)
 from auth import bp as auth_bp, require_auth
 app.register_blueprint(auth_bp)
 
+# ── Module Administration de la Plateforme ──
+from admin_plateforme import bp as admin_plateforme_bp
+app.register_blueprint(admin_plateforme_bp)
+
 
 @app.after_request
 def add_security_headers(resp):
