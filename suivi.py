@@ -7,7 +7,7 @@ import unicodedata
 from datetime import date, timedelta
 from flask import Blueprint, jsonify, request, send_from_directory
 
-from db import get_supabase
+from auth import get_supabase, require_auth
 
 bp = Blueprint('suivi', __name__)
 
@@ -186,12 +186,58 @@ def _current_role():
 
 
 @bp.route('/api/suivi/role')
+@require_auth
 def suivi_role():
     role, email = _current_role()
     return jsonify({'role': role, 'email': email})
 
 
+@bp.route('/api/suivi/saisie', methods=['GET', 'POST'])
+@require_auth
+def suivi_saisie():
+    role, email = _current_role()
+    if request.method == 'GET':
+        try:
+            sb = get_supabase()
+            resp = sb.table('suivi_trimestriel').select('*').execute()
+            return jsonify({'suivis': resp.data or []})
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
+    else:
+        if role not in ('admin', 'saisie'):
+            return jsonify({'error': 'Droit de saisie requis.'}), 403
+        data = request.get_json(force=True) or {}
+        code = data.get('code_projet')
+        annee = data.get('annee')
+        trimestre = data.get('trimestre')
+        if not code or not annee or not trimestre:
+            return jsonify({'error': 'Code, année et trimestre requis.'}), 400
+        try:
+            sb = get_supabase()
+            payload = {
+                'code_projet': code,
+                'annee': int(annee),
+                'trimestre': trimestre,
+                'cible_physique': _to_float(data.get('cible_physique')) if data.get('cible_physique') is not None else None,
+                'realise_physique': _to_float(data.get('realise_physique')) if data.get('realise_physique') is not None else None,
+                'cible_financiere': _to_float(data.get('cible_financiere')) if data.get('cible_financiere') is not None else None,
+                'realise_financier': _to_float(data.get('realise_financier')) if data.get('realise_financier') is not None else None,
+                'montant_decaisse_trimestre': int(data.get('montant_decaisse_trimestre') or 0),
+                'montant_cumule': int(data.get('montant_cumule') or 0),
+                'faits_marquants': data.get('faits_marquants') or '',
+                'difficultes': data.get('difficultes') or '',
+                'saisi_par': email or data.get('saisi_par') or '',
+            }
+            sb.table('suivi_trimestriel').upsert(payload, on_conflict='code_projet,annee,trimestre').execute()
+            return jsonify({'ok': True, 'message': 'Saisie trimestrielle enregistrée.'})
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/suivi/revues', methods=['POST'])
+@require_auth
 def suivi_add_revue():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -218,6 +264,7 @@ def suivi_add_revue():
 
 
 @bp.route('/api/suivi/recommandations', methods=['POST'])
+@require_auth
 def suivi_add_reco():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -250,6 +297,7 @@ def suivi_add_reco():
 
 
 @bp.route('/api/suivi/revues/executer', methods=['POST'])
+@require_auth
 def suivi_executer_revue():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -267,6 +315,7 @@ def suivi_executer_revue():
 
 
 @bp.route('/api/suivi/revues/annuler', methods=['POST'])
+@require_auth
 def suivi_annuler_revue():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -285,6 +334,7 @@ def suivi_annuler_revue():
 
     
 @bp.route('/api/suivi/recommandations/executer', methods=['POST'])
+@require_auth
 def suivi_executer_reco():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -302,6 +352,7 @@ def suivi_executer_reco():
 
 
 @bp.route('/api/suivi/revues/update', methods=['POST'])
+@require_auth
 def suivi_update_revue():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -326,6 +377,7 @@ def suivi_update_revue():
         return jsonify({'error': str(e)}), 500
 
 @bp.route('/api/suivi/recommandations/update', methods=['POST'])
+@require_auth
 def suivi_update_reco():
     role, email = _current_role()
     if role not in ('admin', 'saisie'):
@@ -354,6 +406,7 @@ def suivi_update_reco():
 
 
 @bp.route('/api/suivi/valider', methods=['POST'])
+@require_auth
 def suivi_valider():
     role, email = _current_role()
     if role != 'admin':
@@ -371,6 +424,7 @@ def suivi_valider():
 
 
 @bp.route('/api/suivi/rejeter', methods=['POST'])
+@require_auth
 def suivi_rejeter():
     role, email = _current_role()
     if role != 'admin':
