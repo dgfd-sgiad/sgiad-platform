@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SGIAD-Bénin — Suivi des Projets</title>
+<script src="/js/auth_client.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{display:flex;background:#f1f5f9;min-height:100vh}
+.sidebar{width:230px;background:#0a2540;color:#fff;padding:16px 0;position:fixed;top:0;bottom:0;overflow-y:auto}
+.brand{padding:0 16px 14px;border-bottom:1px solid rgba(255,255,255,.15);font-weight:700;font-size:15px}
+.brand small{font-weight:400;font-size:11px;color:#9fb3c8}
+.menu{padding:12px 0}
+.menu button{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:10px 16px;border:none;background:none;color:#cfd8e3;font-size:13px;cursor:pointer}
+.menu button.active{background:#1e5aa8;color:#fff;font-weight:600}
+.menu a.back{display:block;padding:10px 16px;color:#9fb3c8;font-size:12px;text-decoration:none}
+.badge{background:#dc2626;color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700}
+.main{margin-left:230px;flex:1;padding:20px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.topbar h1{font-size:20px;color:#0a2540}
+#trim-label{font-size:12px;color:#64748b;font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:12px}
+.kpi .ic{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:8px}
+.kpi .val{font-size:20px;font-weight:800;color:#0a2540}
+.kpi .lbl{font-size:11px;color:#64748b}
+.row3{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:12px;margin-bottom:16px}
+.row2{display:grid;grid-template-columns:1fr 1.4fr;gap:12px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:12px}
+.card h3{font-size:13px;color:#0a2540;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px 8px;border-bottom:1px solid #f1f5f9;text-align:left;vertical-align:top}
+th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;letter-spacing:.5px}
+.st{padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;white-space:nowrap}
+.st.ok{background:#dcfce7;color:#166534}.st.warn{background:#fef9c3;color:#854d0e}.st.bad{background:#fee2e2;color:#991b1b}.st.info{background:#e0e7ff;color:#3730a3}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px}
+.bar-row .lbl{width:120px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-row .track{flex:1;background:#f1f5f9;border-radius:4px;height:10px}
+.bar-row .fill{height:10px;border-radius:4px}
+.bar-row .cnt{width:80px;text-align:right;color:#64748b}
+.donut-wrap{position:relative;width:150px;height:150px;margin:0 auto 10px}
+.donut-hole{position:absolute;inset:22%;background:#fff;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.al{display:flex;gap:8px;align-items:flex-start;padding:8px;border:1px solid #f1f5f9;border-radius:8px;margin-bottom:6px;font-size:11px}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.empty{font-size:11px;color:#94a3b8;padding:10px 0}
+.filters{display:flex;gap:8px;margin-bottom:10px}
+.filters input,.filters select{padding:7px 9px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <div class="brand">🇧 SGIAD-Bénin<br><small>Suivi des Projets & Revues</small></div>
+  <div class="menu">
+    <button class="active" onclick="showView('dash', this)">🏠 Tableau de bord</button>
+    <button onclick="showView('projets', this)">📁 Projets</button>
+    <button onclick="showView('alertes', this)">🚨 Alertes <span id="alert-badge" class="badge" style="display:none"></span></button>
+    <a class="back" href="/app">← Retour plateforme</a>
+  </div>
+</div>
+<div class="main">
+  <div class="topbar"><h1 id="page-title">Tableau de bord</h1><div id="trim-label"></div></div>
+
+  <div id="view-dash">
+    <div class="kpis" id="kpis"></div>
+    <div class="row3">
+      <div class="card"><h3>Répartition par secteur (Mds FCFA)</h3><div class="donut-wrap"><div class="donut" id="donut"></div><div class="donut-hole"><div id="donut-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Mds FCFA</div></div></div><div id="secteur-legend"></div></div>
+      <div class="card"><h3>Projets par statut</h3><div id="statut-bars"></div></div>
+      <div class="card"><h3>Évolution des engagements (cumul Mds FCFA)</h3><svg id="trend" viewBox="0 0 320 150" width="100%" height="160"></svg></div>
+    </div>
+    <div class="row2">
+      <div class="card"><h3>🚨 Alertes du portefeuille</h3><div id="alert-summary"></div><div id="alert-list"></div></div>
+      <div class="card"><h3>Principaux projets en cours</h3><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="top-projets"></tbody></table></div>
+    </div>
+  </div>
+
+  <div id="view-projets" style="display:none">
+    <div class="card">
+      <h3>📁 Projets en cours</h3>
+      <div class="filters"><input id="search-proj" placeholder="Rechercher code, objet, partenaire..." style="width:280px" oninput="renderProjetsTable()"><select id="filter-secteur" onchange="renderProjetsTable()"></select></div>
+      <table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Partenaire</th><th>Montant</th><th>Clôture</th><th>T. phys</th><th>T. fin</th><th>Statut</th></tr></thead><tbody id="projets-body"></tbody></table>
+    </div>
+  </div>
+
+  <div id="view-alertes" style="display:none">
+    <div class="card"><h3>🚨 Centre des alertes</h3><div id="alertes-full"></div></div>
+  </div>
+</div>
+<script>
+var DATA = {};
+function esc(s){ if(s===undefined||s===null) return ''; return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"'); }
+function fmtMds(v){ return (Math.round(v*10)/10).toLocaleString('fr-FR') + ' Mds'; }
+function mds(fcfa){ return Math.round((fcfa/1e9)*10)/10; }
+function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9;color:#94a3b8">—</span>'; if(t>=70) return '<span class="st ok">'+t+'%</span>'; if(t>=40) return '<span class="st warn">'+t+'%</span>'; return '<span class="st bad">'+t+'%</span>'; }
+function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
+var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
+
+function showView(name, btn){
+  var bs = document.querySelectorAll('.menu button');
+  for(var i=0;i<bs.length;i++) bs[i].classList.remove('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('view-dash').style.display = (name==='dash')?'block':'none';
+  document.getElementById('view-projets').style.display = (name==='projets')?'block':'none';
+  document.getElementById('view-alertes').style.display = (name==='alertes')?'block':'none';
+  document.getElementById('page-title').textContent = (name==='dash')?'Tableau de bord':(name==='projets'?'Projets':'Centre des alertes');
+}
+
+function renderKpis(){
+  var k = DATA.kpis || {};
+  var cards = [
+    ['📁','#eff6ff', k.total_projets, 'Projets au total'],
+    ['💰','#f0fdf4', k.montant_total_mds, 'Mds FCFA engagés (en cours)'],
+    ['🔄','#faf5ff', k.projets_en_cours, 'Projets en cours'],
+    ['🤝','#fefce8', k.partenaires_actifs, 'Partenaires actifs'],
+    ['🏗️','#f0fdfa', (k.taux_physique_moyen||0)+'%', 'Exécution physique moy.'],
+    ['🏦','#fff1f2', (k.taux_financier_moyen||0)+'%', 'Exécution financière moy.']
+  ];
+  var html='';
+  for(var i=0;i<cards.length;i++){
+    html += '<div class="kpi"><div class="ic" style="background:'+cards[i][1]+'">'+cards[i][0]+'</div><div class="val">'+esc(cards[i][2])+'</div><div class="lbl">'+esc(cards[i][3])+'</div></div>';
+  }
+  document.getElementById('kpis').innerHTML = html;
+  document.getElementById('trim-label').textContent = 'Situation au ' + new Date().toLocaleDateString('fr-FR') + ' — ' + (k.trimestre_courant||'') + ' ' + (k.annee_courante||'');
+}
+
+function renderDonut(){
+  var list = DATA.secteurs || [];
+  var total=0; for(var i=0;i<list.length;i++) total+=list[i].montant_mds;
+  if(!total){ document.getElementById('donut').style.background='#e5e7eb'; return; }
+  var acc=0, stops=[], leg='';
+  var palette=['#28a745','#1e5aa8','#f2c94c','#dc3545','#7b5aa6','#0d9488','#94a3b8'];
+  for(var i=0;i<list.length;i++){
+    var pct = list[i].montant_mds*100/total;
+    stops.push(palette[i%7]+' '+acc+'% '+(acc+pct)+'%');
+    acc+=pct;
+    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%7]+'"></span><span class="lbl">'+esc(list[i].label)+'</span><span class="cnt">'+list[i].montant_mds+' Mds</span></div>';
+  }
+  document.getElementById('donut').style.background = 'conic-gradient('+stops.join(', ')+')';
+  document.getElementById('donut-total').textContent = Math.round(total);
+  document.getElementById('secteur-legend').innerHTML = leg;
+}
+
+function renderStatuts(){
+  var st = DATA.statuts || {};
+  var keys = Object.keys(st); var max=0;
+  for(var i=0;i<keys.length;i++) if(st[keys[i]]>max) max=st[keys[i]];
+  var total=0; for(var i=0;i<keys.length;i++) total+=st[keys[i]];
+  var palette=['#28a745','#94a3b8','#f59e0b','#1e5aa8','#dc3545'];
+  var html='';
+  for(var i=0;i<keys.length;i++){
+    var pct = total? Math.round(st[keys[i]]*100/total) : 0;
+    html += '<div class="bar-row"><span class="lbl">'+esc(keys[i])+'</span><span class="track"><span class="fill" style="display:block;width:'+(st[keys[i]]*100/max)+'%;background:'+palette[i%5]+'"></span></span><span class="cnt">'+st[keys[i]]+' ('+pct+'%)</span></div>';
+  }
+  document.getElementById('statut-bars').innerHTML = html || '<p class="empty">Aucune donnée.</p>';
+}
+
+function renderTrend(){
+  var ev = DATA.evolution || [];
+  var svg = document.getElementById('trend');
+  if(!ev.length){ svg.innerHTML = '<text x="10" y="70" font-size="10" fill="#94a3b8">Pas de données.</text>'; return; }
+  var max=0; for(var i=0;i<ev.length;i++) if(ev[i].cumul_mds>max) max=ev[i].cumul_mds;
+  var W=320,H=150,P=20, pts='', circ='', lab='';
+  for(var i=0;i<ev.length;i++){
+    var x = P + i*(W-2*P)/Math.max(1,ev.length-1);
+    var y = H-P - (ev[i].cumul_mds/max)*(H-2*P);
+    pts += x+','+y+' ';
+    circ += '<circle cx="'+x+'" cy="'+y+'" r="3" fill="#1e5aa8"></circle>';
+    if(i%4===0 || i===ev.length-1) lab += '<text x="'+x+'" y="'+(H-6)+'" font-size="8" fill="#94a3b8" text-anchor="middle">'+ev[i].annee+'</text><text x="'+x+'" y="'+(y-6)+'" font-size="8" fill="#1e5aa8" text-anchor="middle">'+Math.round(ev[i].cumul_mds)+'</text>';
+  }
+  svg.innerHTML = '<polyline points="'+pts+'" fill="none" stroke="#1e5aa8" stroke-width="2"></polyline>'+circ+lab;
+}
+
+function alertRow(a){
+  var n = NIVEAUX[a.niveau] || ['#94a3b8','?'];
+  return '<div class="al"><span class="dot" style="background:'+n[0]+'"></span><div><b>'+esc(a.code)+'</b> — '+esc(a.type)+'<br><span style="color:#64748b">'+esc(a.partenaire)+' · '+esc(a.detail)+'</span></div></div>';
+}
+
+function renderAlertes(){
+  var al = DATA.alertes || [];
+  var c = DATA.alertes_count || {};
+  var b = document.getElementById('alert-badge');
+  if(c.critique){ b.style.display='inline'; b.textContent=c.critique; } 
+  var sum = '<div style="display:flex;gap:14px;margin-bottom:10px;font-size:11px;font-weight:600">'
+    + '<span style="color:#dc2626">🔴 '+ (c.critique||0) +' critiques</span>'
+    + '<span style="color:#f59e0b">🟠 '+ (c.eleve||0) +' élevées</span>'
+    + '<span style="color:#eab308">🟡 '+ (c.moyen||0) +' moyennes</span></div>';
+  document.getElementById('alert-summary').innerHTML = sum;
+  var html=''; for(var i=0;i<Math.min(8,al.length);i++) html+=alertRow(al[i]);
+  document.getElementById('alert-list').innerHTML = html || '<p class="empty">Aucune alerte. 🎉</p>';
+  var full=''; for(var i=0;i<al.length;i++) full+=alertRow(al[i]);
+  document.getElementById('alertes-full').innerHTML = sum + (full || '<p class="empty">Aucune alerte.</p>');
+}
+
+function renderTopProjets(){
+  var p = DATA.projets || [];
+  var html='';
+  for(var i=0;i<Math.min(10,p.length);i++){
+    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+  }
+  document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+}
+
+function buildFiltres(){
+  var p = DATA.projets || [];
+  var sel = document.getElementById('filter-secteur');
+  var seen={}; var html='<option value="">Tous les secteurs</option>';
+  for(var i=0;i<p.length;i++){ var s=p[i].secteur; if(s&&!seen[s]){seen[s]=1; html+='<option value="'+esc(s)+'">'+esc(s)+'</option>'; } }
+  sel.innerHTML = html;
+}
+
+function renderProjetsTable(){
+  var p = DATA.projets || [];
+  var q = (document.getElementById('search-proj').value||'').toLowerCase();
+  var sec = document.getElementById('filter-secteur').value;
+  var html='';
+  for(var i=0;i<p.length;i++){
+    var hay = (p[i].code+' '+p[i].objet+' '+p[i].partenaire).toLowerCase();
+    if(q && hay.indexOf(q)<0) continue;
+    if(sec && p[i].secteur!==sec) continue;
+    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+esc(p[i].date_cloture)+'</td><td>'+tauxBadge(p[i].taux_phys)+'</td><td>'+tauxBadge(p[i].taux_fin)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+  }
+  document.getElementById('projets-body').innerHTML = html || '<tr><td colspan="9" class="empty">Aucun résultat.</td></tr>';
+}
+
+async function init(){
+  var res = await fetch('/api/suivi/dashboard');
+  if(!res.ok){ document.getElementById('kpis').innerHTML = '<p class="empty">Erreur de chargement.</p>'; return; }
+  DATA = await res.json();
+  renderKpis(); renderDonut(); renderStatuts(); renderTrend(); renderAlertes(); renderTopProjets(); buildFiltres(); renderProjetsTable();
+}
+init();
+</script>
+</body>
+</html>

@@ -59,6 +59,8 @@ app.register_blueprint(auth_bp)
 # ── Module Administration de la Plateforme ──
 from admin_plateforme import bp as admin_plateforme_bp
 app.register_blueprint(admin_plateforme_bp)
+from suivi import bp as suivi_bp
+app.register_blueprint(suivi_bp)
 
 
 @app.after_request

@@ -23,10 +23,10 @@ const modules = [
     },
     {
         id: 'suivi_des_projets',
-        title: 'Suivi Financier des Projets',
-        icon: '🎓',
-        file: 'modules/suivi.html',
-        actif: false
+        title: 'Suivi des Projets & Revues',
+        icon: '📊',
+        file: '/suivi',
+        actif: true
     },
     {
         id: 'investissements_etrangers',
