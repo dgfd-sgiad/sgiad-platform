@@ -8,6 +8,11 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
 body{display:flex;background:#f1f5f9;min-height:100vh}
 .sidebar{width:230px;background:#0a2540;color:#fff;padding:16px 0;position:fixed;top:0;bottom:0;overflow-y:auto}
+.sec{padding:10px 16px 4px;font-size:9px;letter-spacing:1px;color:#7b8fa3;font-weight:700}
+.grp .caret{float:right;color:#7b8fa3;font-size:10px}
+.group{display:none}
+.group.open{display:block}
+.sub{padding:7px 16px 7px 30px !important;font-size:12px !important}
 .brand{padding:0 16px 14px;border-bottom:1px solid rgba(255,255,255,.15);font-weight:700;font-size:15px}
 .brand small{font-weight:400;font-size:11px;color:#9fb3c8}
 .menu{padding:12px 0}
@@ -49,34 +54,86 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
 </head>
 <body>
 <div class="sidebar">
-  <div class="brand">🇧 SGIAD-Bénin<br><small>Suivi des Projets & Revues</small></div>
+  <div class="brand">🇧🇯 SGIAD-Bénin<br><small>Suivi des Projets & Revues</small></div>
   <div class="menu">
     <button class="active" onclick="showView('dash', this)">🏠 Tableau de bord</button>
-    <button onclick="showView('projets', this)">📁 Projets</button>
-    <button onclick="showView('alertes', this)">🚨 Alertes <span id="alert-badge" class="badge" style="display:none"></span></button>
+    <div class="sec">PROJETS</div>
+    <button class="grp" onclick="toggleGroup('g-projets')">📁 Projets <span class="caret">▾</span></button>
+    <div id="g-projets" class="group open">
+      <button class="sub" onclick="showView('projets', this)">Tous les projets</button>
+      <button class="sub" onclick="showView('par-statut', this)">Par statut</button>
+      <button class="sub" onclick="showView('par-secteur', this)">Par secteur</button>
+      <button class="sub" onclick="showView('par-partenaire', this)">Par partenaire</button>
+      <button class="sub" onclick="bientot()">Carte des projets</button>
+    </div>
+    <div class="sec">ALERTES & RISQUES</div>
+    <button onclick="showView('alertes', this)">🚨 Centre des alertes <span id="alert-badge" class="badge" style="display:none"></span></button>
+    <div class="sec">REVUES DE PORTEFEUILLE</div>
+    <button onclick="showView('revues', this)">📅 Calendrier des revues</button>
+    <button onclick="showView('historique', this)">📜 Historique des revues</button>
+    <button class="grp" onclick="toggleGroup('g-reco')">✅ Recommandations <span class="caret">▾</span></button>
+    <div id="g-reco" class="group open">
+      <button class="sub" onclick="showView('recos', this)">Toutes les recommandations</button>
+      <button class="sub" onclick="showView('ajout', this)">Ajouter des recommandations</button>
+      <button class="sub" onclick="showView('actions', this)">Suivi des actions</button>
+    </div>
+    <div class="sec">RAPPORTS & ANALYSES</div>
+    <button onclick="bientot()">💹 Suivi financier</button>
+    <button onclick="showView('par-secteur', this)">📈 Analyses sectorielles</button>
+    <button onclick="showView('indicateurs', this)">🔑 Indicateurs clés</button>
+    <button onclick="bientot()">📄 Rapports</button>
+    <div class="sec">PARTENAIRES</div>
+    <button onclick="bientot()">🤝 Partenaires techniques</button>
+    <button onclick="bientot()">📑 Accords & conventions</button>
+    <div class="sec">DOCUMENTS</div>
+    <button onclick="bientot()">📂 Documents & fichiers</button>
+    <div class="sec">PARAMÈTRES</div>
+    <button onclick="bientot()">⚙️ Paramètres</button>
+    <a class="back" href="/admin/plateforme">👥 Utilisateurs & rôles</a>
     <a class="back" href="/app">← Retour plateforme</a>
   </div>
 </div>
 <div class="main">
-  <div class="topbar"><h1 id="page-title">Tableau de bord</h1><div id="trim-label"></div></div>
+  <div class="topbar"><h1 id="page-title">Tableau de bord</h1><div id="trim-label"></div><div id="role-label" style="font-size:11px;color:#64748b;margin-top:2px"></div></div>
+<div id="flash-suivi" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600;"></div>
 
   <div id="view-dash">
     <div class="kpis" id="kpis"></div>
     <div class="row3">
       <div class="card"><h3>Répartition par secteur (Mds FCFA)</h3><div class="donut-wrap"><div class="donut" id="donut"></div><div class="donut-hole"><div id="donut-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Mds FCFA</div></div></div><div id="secteur-legend"></div></div>
-      <div class="card"><h3>Projets par statut</h3><div id="statut-bars"></div></div>
+      <div class="card"><h3>État d'avancement des projets</h3><div id="statut-bars"></div></div>
       <div class="card"><h3>Évolution des engagements (cumul Mds FCFA)</h3><svg id="trend" viewBox="0 0 320 150" width="100%" height="160"></svg></div>
     </div>
     <div class="row2">
       <div class="card"><h3>🚨 Alertes du portefeuille</h3><div id="alert-summary"></div><div id="alert-list"></div></div>
       <div class="card"><h3>Principaux projets en cours</h3><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="top-projets"></tbody></table></div>
     </div>
+    <div class="row3" style="grid-template-columns:1.2fr 1.2fr 0.9fr;">
+      <div class="card"><h3>📅 Prochaines revues de portefeuille <span style="float:right;color:#1e5aa8;cursor:pointer;font-size:10px" onclick="showView('revues', null)">Voir tout →</span></h3>
+<table><thead><tr><th>Date</th><th>Partenaire</th><th>Type</th><th>Lieu</th><th>Statut</th></tr></thead><tbody id="revues-body-dash"></tbody></table></div>
+      <div class="card"><h3>✅ Dernières recommandations <span style="float:right;color:#1e5aa8;cursor:pointer;font-size:10px" onclick="showView('recos', null)">Voir tout →</span></h3>
+<table><thead><tr><th>Action</th><th>Partenaire</th><th>Statut</th><th>Échéance</th></tr></thead><tbody id="reco-body-dash"></tbody></table></div>
+      <div>
+        <div class="card">
+            <h3>📅 Calendrier des revues</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><button class="st info" style="cursor:pointer" onclick="calNav(-1)">‹</button><span id="cal-mois" style="font-size:12px;font-weight:700;color:#0a2540"></span><button class="st info" style="cursor:pointer" onclick="calNav(1)">›</button></div>
+          <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:10px;text-align:center;margin-bottom:8px"></div>
+          <div id="cal-list" style="font-size:11px;max-height:150px;overflow-y:auto"></div>
+        </div>
+        <div class="card"><h3>🚨 Alertes <span style="float:right;color:#1e5aa8;cursor:pointer;font-size:10px" onclick="showView('alertes', null)">Tout voir →</span></h3><div id="alertes-agreg"></div></div>
+      </div>
+    </div>
   </div>
 
   <div id="view-projets" style="display:none">
     <div class="card">
       <h3>📁 Projets en cours</h3>
-      <div class="filters"><input id="search-proj" placeholder="Rechercher code, objet, partenaire..." style="width:280px" oninput="renderProjetsTable()"><select id="filter-secteur" onchange="renderProjetsTable()"></select></div>
+      <div class="filters">
+        <input id="search-proj" placeholder="Rechercher code, objet, partenaire..." style="width:260px" oninput="renderProjetsTable()">
+        <select id="filter-statut" onchange="renderProjetsTable()"></select>
+        <select id="filter-secteur" onchange="renderProjetsTable()"></select>
+        <select id="filter-partenaire" onchange="renderProjetsTable()"></select>
+      </div>
       <table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Partenaire</th><th>Montant</th><th>Clôture</th><th>T. phys</th><th>T. fin</th><th>Statut</th></tr></thead><tbody id="projets-body"></tbody></table>
     </div>
   </div>
@@ -84,9 +141,120 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
   <div id="view-alertes" style="display:none">
     <div class="card"><h3>🚨 Centre des alertes</h3><div id="alertes-full"></div></div>
   </div>
+
+    <div id="view-indicateurs" style="display:none">
+      <div class="kpis" id="ind-kpis"></div>
+      <div class="card"><h3>🚨 Synthèse des risques</h3><div id="ind-alertes"></div></div>
+    </div>
+
+    <div id="view-par-statut" style="display:none">
+      <div class="row2">
+        <div class="card"><h3>Répartition par statut</h3><div class="donut-wrap"><div class="donut" id="donut-statut"></div><div class="donut-hole"><div id="donut-statut-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Projets</div></div></div><div id="statut-legend"></div></div>
+        <div class="card"><h3>Liste des projets par statut</h3><div class="filters" id="statut-tabs"></div><table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="statut-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="view-par-secteur" style="display:none">
+      <div class="row2">
+        <div class="card"><h3>Répartition par secteur (Mds FCFA)</h3><div class="donut-wrap"><div class="donut" id="donut-secteur"></div><div class="donut-hole"><div id="donut-secteur-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Mds FCFA</div></div></div><div id="secteur-legend2"></div></div>
+        <div class="card"><h3>Liste des projets par secteur</h3><div class="filters"><select id="select-secteur2" onchange="SECTEUR_COURANT=this.value; renderParSecteur()"></select></div><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="secteur-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="view-par-partenaire" style="display:none">
+      <div class="row2">
+        <div class="card"><h3>Répartition par partenaire (Mds FCFA)</h3><div class="donut-wrap"><div class="donut" id="donut-partenaire"></div><div class="donut-hole"><div id="donut-partenaire-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Mds FCFA</div></div></div><div id="partenaire-legend"></div></div>
+        <div class="card"><h3>Liste des projets par partenaire</h3><div class="filters"><select id="select-partenaire2" onchange="PARTENAIRE_COURANT=this.value; renderParPartenaire()"></select></div><table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="partenaire-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="view-revues" style="display:none">
+      <div class="card">
+        <h3>📅 Revues à venir & rattrapage <button id="btn-add-revue2" class="st info" style="display:none;cursor:pointer;float:right" onclick="ouvrirFormRevue()">➕ Programmer une revue</button></h3>
+        <div id="form-revue2" class="filters" style="display:none">
+          <input type="date" id="fr-date">
+          <input type="date" id="fr-tenue" title="Date de tenue (si exécutée)">
+          <select id="fr-part" style="width:200px"></select>
+          <select id="fr-type" style="width:150px"><option>Revue semestrielle</option><option>Revue annuelle</option><option>Revue trimestrielle</option><option>Revue technique</option><option>Mission de supervision</option><option>Comité de pilotage</option></select>
+          <input id="fr-lieu" placeholder="Lieu" style="width:100px">
+          <button class="st ok" style="cursor:pointer" onclick="addRevue()">Enregistrer</button>
+        </div>
+        <table><thead><tr><th>Date</th><th>Partenaire</th><th>Type</th><th>Lieu</th><th>Statut</th><th>Exécution</th><th>Actions</th></tr></thead><tbody id="revues-body"></tbody></table>
+      </div>
+    </div>
+
+    <div id="view-historique" style="display:none">
+      <div class="card"><h3>📜 Historique des revues exécutées</h3>
+        <table><thead><tr><th>Partenaire</th><th>Type</th><th>Lieu</th><th>Programmée le</th><th>Tenue le</th><th>Recommandations</th><th></th></tr></thead><tbody id="historique-body"></tbody></table>
+      </div>
+    </div>
+
+    <div id="view-recos" style="display:none">
+      <div class="card">
+        <h3>✅ Toutes les recommandations <button id="btn-add-reco2" class="st info" style="display:none;cursor:pointer;float:right" onclick="ouvrirFormReco()">➕ Ajouter une recommandation</button></h3>
+        <div class="filters">
+          <select id="flt-part" onchange="renderRecos()"></select>
+          <select id="flt-revue" onchange="renderRecos()"></select>
+          <select id="flt-statut" onchange="renderRecos()"><option value="">Tous statuts</option><option value="retard">En retard</option><option value="encours">Jours restants</option><option value="execute">Exécuté</option><option value="sansdelai">Sans délai</option></select>
+        </div>
+        <div class="filters">
+          <select id="flt-secteur" onchange="renderRecos()"></select>
+          <input type="date" id="flt-du" onchange="renderRecos()" title="Du">
+          <input type="date" id="flt-au" onchange="renderRecos()" title="Au">
+          <button class="st info" style="cursor:pointer" onclick="exportExcelRecos()">⬇️ Export Excel</button>
+        </div>
+        <div id="point-titre" style="display:none;text-align:center;font-weight:800;color:#0a2540;font-size:13px;margin:8px 0;"></div>
+        <div id="form-reco2" style="display:none;margin-bottom:10px">
+          <div class="filters">
+            <select id="fc-revue-id" style="width:320px" onchange="autoPartenaire()"></select>
+            <select id="fc-part" style="width:200px"></select>
+            <select id="fc-proj" style="width:260px"></select>
+            <input type="date" id="fc-ech">
+          </div>
+          <div style="margin-bottom:6px"><textarea id="fc-diff" placeholder="Difficulté / constat" style="width:100%;height:40px"></textarea></div>
+          <div style="margin-bottom:6px"><textarea id="fc-texte" placeholder="Action recommandée" style="width:100%;height:40px"></textarea></div>
+          <div class="filters">
+            <input id="fc-resp" placeholder="Responsable direct" style="width:160px">
+            <input id="fc-assoc" placeholder="Associé" style="width:140px">
+          </div>
+          <div style="margin-bottom:6px"><textarea id="fc-comm" placeholder="Commentaires / suivi" style="width:100%;height:40px"></textarea></div>
+          <button class="st ok" style="cursor:pointer" onclick="addReco()">Enregistrer la recommandation</button>
+        </div>
+        <table><thead><tr><th>Revue d'origine</th><th>Action</th><th>Projet</th><th>Responsable</th><th>Échéance</th><th>Statut</th><th>Commentaires</th><th>Actions</th></tr></thead><tbody id="recos-body"></tbody></table>
+      </div>
+    </div>
+
+    <div id="view-actions" style="display:none">
+      <div class="card">
+        <h3>🎯 Suivi des actions</h3>
+        <div class="filters">
+          <select id="act-part" onchange="renderActions()"><option value="">Tous partenaires</option></select>
+          <select id="act-statut" onchange="renderActions()"><option value="">Tous statuts</option><option value="retard">En retard</option><option value="encours">Jours restants</option><option value="execute">Exécuté</option><option value="sansdelai">Sans délai</option></select>
+        </div>
+        <div id="actions-content"></div>
+      </div>
+    </div>
+
+    <div id="view-ajout" style="display:none">
+      <div class="card">
+        <h3 id="ajout-titre">➕ Ajouter des recommandations</h3>
+        <div class="filters">
+          <select id="aj-revue" style="width:380px" onchange="ajoutChangeRevue()"></select>
+          <input id="aj-part" style="width:220px;background:#f1f5f9" disabled>
+          <select id="aj-proj" style="width:340px" onchange="ajoutChangeProjet()"></select>
+        </div>
+        <div id="aj-autre-wrap" style="display:none;margin-bottom:6px"><input id="aj-autre" placeholder="Nom du programme / projet (hors portefeuille)" style="width:340px"></div>
+        <div id="ajout-zone" style="display:none">
+          <div id="ajout-lignes"></div>
+          <button class="st info" style="cursor:pointer;margin-bottom:8px" onclick="ajoutLigne()">➕ Ajouter une recommandation</button>
+          <button class="st ok" style="cursor:pointer" onclick="ajoutEnregistrer()">💾 Enregistrer les recommandations</button>
+        </div>
+      </div>
+    </div>
 </div>
 <script>
 var DATA = {};
+var CODE_SECTEUR = {};
 function esc(s){ if(s===undefined||s===null) return ''; return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"'); }
 function fmtMds(v){ return (Math.round(v*10)/10).toLocaleString('fr-FR') + ' Mds'; }
 function mds(fcfa){ return Math.round((fcfa/1e9)*10)/10; }
@@ -94,14 +262,151 @@ function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9
 function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
 var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
 
+var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','saisie','revues','historique','recos','ajout','actions'];
+var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions' };
+
 function showView(name, btn){
   var bs = document.querySelectorAll('.menu button');
   for(var i=0;i<bs.length;i++) bs[i].classList.remove('active');
   if(btn) btn.classList.add('active');
-  document.getElementById('view-dash').style.display = (name==='dash')?'block':'none';
-  document.getElementById('view-projets').style.display = (name==='projets')?'block':'none';
-  document.getElementById('view-alertes').style.display = (name==='alertes')?'block':'none';
-  document.getElementById('page-title').textContent = (name==='dash')?'Tableau de bord':(name==='projets'?'Projets':'Centre des alertes');
+  for(var i=0;i<VUES.length;i++){
+    var el = document.getElementById('view-' + VUES[i]);
+    if(el) el.style.display = (VUES[i]===name) ? 'block' : 'none';
+  }
+  document.getElementById('page-title').textContent = TITRES[name] || 'Tableau de bord';
+  if(name==='indicateurs') renderIndicateurs();
+  if(name==='par-statut') renderParStatut();
+  if(name==='par-secteur') renderParSecteur();
+  if(name==='par-partenaire') renderParPartenaire();
+  if(name==='saisie'){ buildSaisie(); renderSaisies(); }
+  if(name==='revues') renderRevues();
+  if(name==='historique') renderHistorique();
+  if(name==='recos') renderRecos();
+  if(name==='ajout') buildAjout();
+  if(name==='actions') renderActions();
+}
+
+function toggleGroup(id){
+  var g = document.getElementById(id);
+  if(!g) return;
+  if(g.className.indexOf('open') >= 0) g.className = 'group';
+  else g.className = 'group open';
+}
+
+function countAlertType(t){ var n=0; var al=DATA.alertes||[]; for(var i=0;i<al.length;i++) if(al[i].type===t) n++; return n; }
+
+function renderIndicateurs(){
+  var k = DATA.kpis || {}; var c = DATA.alertes_count || {};
+  var cards = [
+    ['📁','#eff6ff', k.projets_en_cours, 'Projets en cours'],
+    ['🏗️','#f0fdfa', (k.taux_physique_moyen||0)+'%', 'Exécution physique moyenne'],
+    ['🏦','#fff1f2', (k.taux_financier_moyen||0)+'%', 'Exécution financière moyenne'],
+    ['⏰','#fee2e2', countAlertType('Retard'), 'Projets en retard'],
+    ['⚠️','#fef9c3', (c.critique||0), 'Projets à risque élevé'],
+    ['📅','#e0e7ff', countAlertType('Cloture proche'), 'Clôtures < 12 mois']
+  ];
+  var html='';
+  for(var i=0;i<cards.length;i++){
+    html += '<div class="kpi"><div class="ic" style="background:'+cards[i][1]+'">'+cards[i][0]+'</div><div class="val">'+esc(cards[i][2])+'</div><div class="lbl">'+esc(cards[i][3])+'</div></div>';
+  }
+  document.getElementById('ind-kpis').innerHTML = html;
+  document.getElementById('ind-alertes').innerHTML = document.getElementById('alert-summary').innerHTML;
+}
+
+var STATUT_COURANT = '';
+function choisirStatut(s){ STATUT_COURANT = s; renderParStatut(); }
+
+function renderParStatut(){
+  var st = DATA.statuts || {}; var keys = Object.keys(st);
+  var total=0; for(var i=0;i<keys.length;i++) total+=st[keys[i]];
+  var palette=['#28a745','#1e5aa8','#f59e0b','#7b5aa6','#94a3b8','#dc3545'];
+  var acc=0, stops=[], leg='';
+  for(var i=0;i<keys.length;i++){
+    var pct = total? st[keys[i]]*100/total : 0;
+    stops.push(palette[i%6]+' '+acc+'% '+(acc+pct)+'%'); acc+=pct;
+    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%6]+'"></span><span class="lbl">'+esc(keys[i])+'</span><span class="cnt">'+st[keys[i]]+' ('+Math.round(pct)+'%)</span></div>';
+  }
+  document.getElementById('donut-statut').style.background = 'conic-gradient('+stops.join(', ')+')';
+  document.getElementById('donut-statut-total').textContent = total;
+  document.getElementById('statut-legend').innerHTML = leg;
+  if(!STATUT_COURANT && keys.length) STATUT_COURANT = keys[0];
+  var tabs='';
+  for(var i=0;i<keys.length;i++){
+    tabs += '<button class="st '+(keys[i]===STATUT_COURANT?'ok':'info')+'" style="cursor:pointer" onclick="choisirStatut(\''+esc(keys[i])+'\')">'+esc(keys[i])+' ('+st[keys[i]]+')</button>';
+  }
+  document.getElementById('statut-tabs').innerHTML = tabs;
+  var p = DATA.projets || []; var html='';
+  for(var i=0;i<p.length;i++){
+    if(p[i].statut!==STATUT_COURANT) continue;
+    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+  }
+  document.getElementById('statut-body').innerHTML = html || '<tr><td colspan="6" class="empty">Aucun projet.</td></tr>';
+}
+
+var SECTEUR_COURANT = '';
+function renderParSecteur(){
+  var list = DATA.secteurs || [];
+  var total=0; for(var i=0;i<list.length;i++) total+=list[i].montant_mds;
+  var palette=['#28a745','#1e5aa8','#f59e0b','#7b5aa6','#0d9488','#dc3545','#94a3b8'];
+  var acc=0, stops=[], leg='';
+  for(var i=0;i<list.length;i++){
+    var pct = total? list[i].montant_mds*100/total : 0;
+    stops.push(palette[i%7]+' '+acc+'% '+(acc+pct)+'%'); acc+=pct;
+    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%7]+'"></span><span class="lbl">'+esc(list[i].label)+'</span><span class="cnt">'+list[i].montant_mds+' Mds</span></div>';
+  }
+  document.getElementById('donut-secteur').style.background = 'conic-gradient('+stops.join(', ')+')';
+  document.getElementById('donut-secteur-total').textContent = Math.round(total);
+  document.getElementById('secteur-legend2').innerHTML = leg;
+  if(!SECTEUR_COURANT && list.length) SECTEUR_COURANT = list[0].label;
+  var sel = document.getElementById('select-secteur2'); var opts='';
+  for(var i=0;i<list.length;i++) opts += '<option value="'+esc(list[i].label)+'"'+(list[i].label===SECTEUR_COURANT?' selected':'')+'>'+esc(list[i].label)+'</option>';
+  sel.innerHTML = opts;
+  var p = DATA.projets || []; var html='';
+  for(var i=0;i<p.length;i++){
+    if(p[i].secteur!==SECTEUR_COURANT) continue;
+    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+  }
+  document.getElementById('secteur-body').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+}
+
+var PARTENAIRE_COURANT = '';
+function aggPartenaires(){
+  var p = DATA.projets || []; var m = {};
+  for(var i=0;i<p.length;i++){
+    var k = p[i].partenaire || 'Non précisé';
+    if(!m[k]) m[k] = 0;
+    m[k] += mds(p[i].montant_fcfa);
+  }
+  var arr = [];
+  for(var k in m) arr.push([k, Math.round(m[k]*10)/10]);
+  arr.sort(function(a,b){ return b[1]-a[1]; });
+  return arr;
+}
+
+function renderParPartenaire(){
+  var arr = aggPartenaires();
+  var total=0; for(var i=0;i<arr.length;i++) total+=arr[i][1];
+  var palette=['#1e5aa8','#28a745','#f59e0b','#7b5aa6','#0d9488','#dc3545','#94a3b8'];
+  var top = arr.slice(0,7);
+  var acc=0, stops=[], leg='';
+  for(var i=0;i<top.length;i++){
+    var pct = total? top[i][1]*100/total : 0;
+    stops.push(palette[i%7]+' '+acc+'% '+(acc+pct)+'%'); acc+=pct;
+    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%7]+'"></span><span class="lbl">'+esc(top[i][0])+'</span><span class="cnt">'+top[i][1]+' Mds</span></div>';
+  }
+  document.getElementById('donut-partenaire').style.background = 'conic-gradient('+stops.join(', ')+')';
+  document.getElementById('donut-partenaire-total').textContent = Math.round(total);
+  document.getElementById('partenaire-legend').innerHTML = leg;
+  if(!PARTENAIRE_COURANT && arr.length) PARTENAIRE_COURANT = arr[0][0];
+  var sel = document.getElementById('select-partenaire2'); var opts='';
+  for(var i=0;i<arr.length;i++) opts += '<option value="'+esc(arr[i][0])+'"'+(arr[i][0]===PARTENAIRE_COURANT?' selected':'')+'>'+esc(arr[i][0])+'</option>';
+  sel.innerHTML = opts;
+  var p = DATA.projets || []; var html='';
+  for(var i=0;i<p.length;i++){
+    if((p[i].partenaire||'Non précisé')!==PARTENAIRE_COURANT) continue;
+    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+  }
+  document.getElementById('partenaire-body').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
 }
 
 function renderKpis(){
@@ -124,7 +429,7 @@ function renderKpis(){
 
 function renderDonut(){
   var list = DATA.secteurs || [];
-  var total=0; for(var i=0;i<list.length;i++) total+=list[i].montant_mds;
+  var total=0; var maxMds=0; for(var i=0;i<list.length;i++){ total+=list[i].montant_mds; if(list[i].montant_mds>maxMds) maxMds=list[i].montant_mds; }
   if(!total){ document.getElementById('donut').style.background='#e5e7eb'; return; }
   var acc=0, stops=[], leg='';
   var palette=['#28a745','#1e5aa8','#f2c94c','#dc3545','#7b5aa6','#0d9488','#94a3b8'];
@@ -132,23 +437,33 @@ function renderDonut(){
     var pct = list[i].montant_mds*100/total;
     stops.push(palette[i%7]+' '+acc+'% '+(acc+pct)+'%');
     acc+=pct;
-    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%7]+'"></span><span class="lbl">'+esc(list[i].label)+'</span><span class="cnt">'+list[i].montant_mds+' Mds</span></div>';
+    leg += '<div class="bar-row"><span class="dot" style="background:'+palette[i%7]+'"></span><span class="lbl">'+esc(list[i].label)+'</span><span class="track"><span class="fill" style="display:block;width:'+(list[i].montant_mds*100/maxMds)+'%;background:'+palette[i%7]+'"></span></span><span class="cnt">'+list[i].montant_mds+' Mds</span></div>';
   }
   document.getElementById('donut').style.background = 'conic-gradient('+stops.join(', ')+')';
   document.getElementById('donut-total').textContent = Math.round(total);
   document.getElementById('secteur-legend').innerHTML = leg;
 }
 
-function renderStatuts(){
-  var st = DATA.statuts || {};
-  var keys = Object.keys(st); var max=0;
-  for(var i=0;i<keys.length;i++) if(st[keys[i]]>max) max=st[keys[i]];
-  var total=0; for(var i=0;i<keys.length;i++) total+=st[keys[i]];
-  var palette=['#28a745','#94a3b8','#f59e0b','#1e5aa8','#dc3545'];
-  var html='';
-  for(var i=0;i<keys.length;i++){
-    var pct = total? Math.round(st[keys[i]]*100/total) : 0;
-    html += '<div class="bar-row"><span class="lbl">'+esc(keys[i])+'</span><span class="track"><span class="fill" style="display:block;width:'+(st[keys[i]]*100/max)+'%;background:'+palette[i%5]+'"></span></span><span class="cnt">'+st[keys[i]]+' ('+pct+'%)</span></div>';
+function renderAvancement(){
+  var av = DATA.avancement || {};
+  var items = [
+    ['En préparation', av.en_preparation || 0, '#d1d5db'],
+    ['En cours d\'exécution', av.en_cours_execution || 0, '#28a745'],
+    ['À surveiller', av.a_surveiller || 0, '#f59e0b'],
+    ['En difficulté', av.en_difficulte || 0, '#dc3545'],
+    ['Clôturés', av.clotures || 0, '#334155']
+  ];
+  var total = 0; var max = 0;
+  for(var i=0; i<items.length; i++){
+    total += items[i][1];
+    if(items[i][1] > max) max = items[i][1];
+  }
+  var html = '';
+  for(var i=0; i<items.length; i++){
+    var val = items[i][1];
+    var pct = total ? Math.round(val * 100 / total) : 0;
+    var w = max ? (val * 100 / max) : 0;
+    html += '<div class="bar-row"><span class="lbl">'+esc(items[i][0])+'</span><span class="track"><span class="fill" style="display:block;width:'+w+'%;background:'+items[i][2]+'"></span></span><span class="cnt">'+val+' ('+pct+'%)</span></div>';
   }
   document.getElementById('statut-bars').innerHTML = html || '<p class="empty">Aucune donnée.</p>';
 }
@@ -199,33 +514,612 @@ function renderTopProjets(){
   document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
 }
 
+function bientot(){ alert('Cette rubrique arrivera dans une prochaine phase du chantier Suivi.'); }
+function setFiltre(k){ var el = document.getElementById('filter-' + k); if(el){ el.focus(); } }
+
 function buildFiltres(){
   var p = DATA.projets || [];
-  var sel = document.getElementById('filter-secteur');
-  var seen={}; var html='<option value="">Tous les secteurs</option>';
-  for(var i=0;i<p.length;i++){ var s=p[i].secteur; if(s&&!seen[s]){seen[s]=1; html+='<option value="'+esc(s)+'">'+esc(s)+'</option>'; } }
-  sel.innerHTML = html;
+  var specs = [['filter-statut','statut','Tous les statuts'],['filter-secteur','secteur','Tous les secteurs'],['filter-partenaire','partenaire','Tous les partenaires']];
+  for(var s=0;s<specs.length;s++){
+    var seen={}; var html='<option value="">'+specs[s][2]+'</option>';
+    for(var i=0;i<p.length;i++){ var v=p[i][specs[s][1]]; if(v&&!seen[v]){seen[v]=1; html+='<option value="'+esc(v)+'">'+esc(v)+'</option>'; } }
+    document.getElementById(specs[s][0]).innerHTML = html;
+  }
 }
 
 function renderProjetsTable(){
   var p = DATA.projets || [];
   var q = (document.getElementById('search-proj').value||'').toLowerCase();
   var sec = document.getElementById('filter-secteur').value;
+  var stt = document.getElementById('filter-statut').value;
+  var prt = document.getElementById('filter-partenaire').value;
   var html='';
   for(var i=0;i<p.length;i++){
     var hay = (p[i].code+' '+p[i].objet+' '+p[i].partenaire).toLowerCase();
     if(q && hay.indexOf(q)<0) continue;
     if(sec && p[i].secteur!==sec) continue;
+    if(stt && p[i].statut!==stt) continue;
+    if(prt && p[i].partenaire!==prt) continue;
     html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+esc(p[i].date_cloture)+'</td><td>'+tauxBadge(p[i].taux_phys)+'</td><td>'+tauxBadge(p[i].taux_fin)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
   document.getElementById('projets-body').innerHTML = html || '<tr><td colspan="9" class="empty">Aucun résultat.</td></tr>';
 }
 
+function dateFr(iso){ var d = String(iso||'').slice(0,10); if(d.length<10) return esc(iso); return d.substr(8,2)+'/'+d.substr(5,2)+'/'+d.substr(0,4); }
+
+function revueBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('confirm')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('preparation')>=0) return '<span class="st warn">'+esc(s)+'</span>'; return '<span class="st info">'+esc(s)+'</span>'; }
+
+var ROLE = 'lecture';
+
+async function loadRole(){
+  try {
+    var res = await fetch('/api/suivi/role');
+    if(res.ok){
+      var d = await res.json();
+      ROLE = d.role || 'lecture';
+      var rl = document.getElementById('role-label');
+      if(rl) rl.textContent = (d.email || 'Non connecté') + ' — rôle : ' + ROLE;
+    }
+  } catch(e) {}
+  var b1 = document.getElementById('btn-add-revue2');
+  var b2 = document.getElementById('btn-add-reco2');
+  var b3 = document.getElementById('btn-save-saisie');
+  if(ROLE !== 'lecture'){
+    if(b1) b1.style.display = 'inline';
+    if(b2) b2.style.display = 'inline';
+  } else {
+    if(b3) b3.style.display = 'none';
+  }
+}
+
+function flashSuivi(msg, ok){
+  var el = document.getElementById('flash-suivi');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = ok ? '#f0fdf4' : '#fef2f2';
+  el.style.color = ok ? '#166534' : '#991b1b';
+  el.style.border = '1px solid ' + (ok ? '#bbf7d0' : '#fecaca');
+  setTimeout(function(){ el.style.display = 'none'; }, 5000);
+}
+
+function toggleForm(id){ var el = document.getElementById(id); el.style.display = (el.style.display === 'none') ? 'flex' : 'none'; }
+
+var REVUE_EDIT_ID = null;
+var RECO_EDIT_ID = null;
+
+function ouvrirFormRevue(){ REVUE_EDIT_ID = null; toggleForm('form-revue2'); }
+function ouvrirFormReco(){ RECO_EDIT_ID = null; toggleForm('form-reco2'); }
+
+function editRevue(id){
+  var rv = findRevue(id); if(!rv) return;
+  REVUE_EDIT_ID = id;
+  document.getElementById('fr-date').value = String(rv.date_revue||'').slice(0,10);
+  document.getElementById('fr-tenue').value = String(rv.date_reelle||'').slice(0,10);
+  document.getElementById('fr-part').value = rv.partenaire||'';
+  document.getElementById('fr-type').value = rv.type_revue||'';
+  document.getElementById('fr-lieu').value = rv.lieu||'';
+  document.getElementById('form-revue2').style.display = 'flex';
+  flashSuivi('Modification de la revue du ' + dateFr(rv.date_revue) + ' — ajustez puis Enregistrer.', true);
+}
+
+function editReco(id){
+  var rc = DATA.recommandations||[]; var r = null;
+  for(var i=0;i<rc.length;i++) if(rc[i].id===id) r = rc[i];
+  if(!r) return;
+  RECO_EDIT_ID = id;
+  document.getElementById('fc-revue-id').value = r.revue_id ? String(r.revue_id) : '';
+  document.getElementById('fc-part').value = r.partenaire||'';
+  document.getElementById('fc-proj').value = r.projet||'';
+  document.getElementById('fc-ech').value = String(r.echeance||'').slice(0,10);
+  document.getElementById('fc-diff').value = r.difficulte||'';
+  document.getElementById('fc-texte').value = r.texte||'';
+  document.getElementById('fc-resp').value = r.responsable_direct||'';
+  document.getElementById('fc-assoc').value = r.associe||'';
+  document.getElementById('fc-comm').value = r.commentaires||'';
+  document.getElementById('form-reco2').style.display = 'block';
+  flashSuivi('Modification de la recommandation — ajustez puis Enregistrer.', true);
+}
+
+async function addRevue(){
+  var body = { date_revue: document.getElementById('fr-date').value, date_reelle: document.getElementById('fr-tenue').value || null, partenaire: document.getElementById('fr-part').value, type_revue: document.getElementById('fr-type').value, lieu: document.getElementById('fr-lieu').value };
+  var url = '/api/suivi/revues';
+  if(REVUE_EDIT_ID){ url = '/api/suivi/revues/update'; body.id = REVUE_EDIT_ID; }
+  var res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok){ REVUE_EDIT_ID = null; document.getElementById('form-revue2').style.display = 'none'; init(); }
+}
+
+async function addReco(){
+  var body = {
+    texte: document.getElementById('fc-texte').value,
+    revue_id: parseInt(document.getElementById('fc-revue-id').value, 10) || null,
+    partenaire: document.getElementById('fc-part').value,
+    projet: document.getElementById('fc-proj').value,
+    difficulte: document.getElementById('fc-diff').value,
+    responsable_direct: document.getElementById('fc-resp').value,
+    associe: document.getElementById('fc-assoc').value,
+    echeance: document.getElementById('fc-ech').value,
+    commentaires: document.getElementById('fc-comm').value
+  };
+  var url = '/api/suivi/recommandations';
+  if(RECO_EDIT_ID){ url = '/api/suivi/recommandations/update'; body.id = RECO_EDIT_ID; }
+  var res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok){ RECO_EDIT_ID = null; document.getElementById('form-reco2').style.display = 'none'; init(); }
+}
+
+async function validerLigne(table, id){
+  var res = await fetch('/api/suivi/valider', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table: table, id: id }) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok) init();
+}
+
+async function rejeterLigne(table, id){
+  if(!confirm('Rejeter et supprimer cette proposition ?')) return;
+  var res = await fetch('/api/suivi/rejeter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table: table, id: id }) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok) init();
+}
+
+function statutReco(r){
+  if(r.executee) return '<span class="st ok">Exécuté</span>';
+  if(!r.echeance) return '<span class="st" style="background:#f1f5f9;color:#64748b">Sans délai</span>';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ech = new Date(String(r.echeance).slice(0,10));
+  var jours = Math.round((ech - today)/86400000);
+  if(jours < 0) return '<span class="st bad">'+(-jours)+' jours de retard</span>';
+  return '<span class="st info">'+jours+' jours restants</span>';
+}
+
+function buildPartenaires(){
+  var list = DATA.partenaires_ptf || [];
+  var opts = '<option value="">— Partenaire —</option>';
+  for(var i=0;i<list.length;i++) opts += '<option value="'+esc(list[i])+'">'+esc(list[i])+'</option>';
+  document.getElementById('fr-part').innerHTML = opts;
+  document.getElementById('fc-part').innerHTML = opts;
+  var revs = DATA.revues || [];
+  var o2 = '<option value="">— Revue d\'origine (exécutées) —</option>';
+  for(var i=0;i<revs.length;i++){ if(revs[i].executee) o2 += '<option value="'+revs[i].id+'">'+esc((revs[i].partenaire||'')+' — '+(revs[i].type_revue||'')+' du '+dateFr(revs[i].date_revue))+'</option>'; }
+  document.getElementById('fc-revue-id').innerHTML = o2;
+  var ps = DATA.codes_projets || [];
+  var o3 = '<option value="">— Projet —</option>';
+  for(var i=0;i<ps.length;i++) o3 += '<option value="'+esc(ps[i].code)+'">'+esc(ps[i].code+' — '+ps[i].objet)+'</option>';
+  document.getElementById('fc-proj').innerHTML = o3;
+}
+
+function autoPartenaire(){
+  var id = parseInt(document.getElementById('fc-revue-id').value, 10);
+  var revs = DATA.revues || [];
+  for(var i=0;i<revs.length;i++){ if(revs[i].id === id){ document.getElementById('fc-part').value = revs[i].partenaire || ''; break; } }
+}
+
+async function executerRevue(id){
+  var d = prompt('Date de tenue de la revue / mission (AAAA-MM-JJ) :', new Date().toISOString().slice(0,10));
+  if(d === null) return;
+  var res = await fetch('/api/suivi/revues/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id, date_reelle: d }) });
+  var r = await res.json();
+  flashSuivi(r.message || r.error, res.ok);
+  if(res.ok) init();
+}
+
+async function annulerRevue(id){
+  if(!confirm('Annuler l\'exécution de cette revue ? (correction d\'erreur)')) return;
+  var res = await fetch('/api/suivi/revues/annuler', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok) init();
+}
+
+async function executerReco(id){
+  if(!confirm('Marquer cette recommandation comme exécutée ?')) return;
+  var res = await fetch('/api/suivi/recommandations/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
+  var d = await res.json();
+  flashSuivi(d.message || d.error, res.ok);
+  if(res.ok) init();
+}
+
+function catReco(r){
+  if(r.executee) return 'execute';
+  if(!r.echeance) return 'sansdelai';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ech = new Date(String(r.echeance).slice(0,10));
+  return ((ech - today)/86400000 < 0) ? 'retard' : 'encours';
+}
+function revueLabel(rv){ return (rv.partenaire||'') + ' — ' + (rv.type_revue||'') + ' du ' + dateFr(rv.date_revue); }
+function findRevue(id){ var revs = DATA.revues||[]; for(var i=0;i<revs.length;i++) if(revs[i].id===id) return revs[i]; return null; }
+
+function renderRevuesDash(){
+  var today = new Date().toISOString().slice(0,10);
+  var rv = (DATA.revues||[]).filter(function(r){ return !r.executee && String(r.date_revue||'').slice(0,10) >= today; }).slice(0,4);
+  var html='';
+  for(var i=0;i<rv.length;i++) html += '<tr><td style="white-space:nowrap"><b>'+dateFr(rv[i].date_revue)+'</b></td><td>'+esc(rv[i].partenaire)+'</td><td>'+esc(rv[i].type_revue)+'</td><td>'+esc(rv[i].lieu)+'</td><td>'+revueBadge(rv[i].statut)+'</td></tr>';
+  document.getElementById('revues-body-dash').innerHTML = html || '<tr><td colspan="5" class="empty">Aucune revue planifiée.</td></tr>';
+}
+
+function renderRecoDash(){
+  var rc = (DATA.recommandations||[]).slice(0,4);
+  var html='';
+  for(var i=0;i<rc.length;i++) html += '<tr><td>'+esc(rc[i].texte)+'</td><td>'+esc(rc[i].partenaire)+'</td><td>'+statutReco(rc[i])+'</td><td>'+dateFr(rc[i].echeance)+'</td></tr>';
+  document.getElementById('reco-body-dash').innerHTML = html || '<tr><td colspan="4" class="empty">Aucune recommandation.</td></tr>';
+}
+
+function renderRevues(){
+  var rv = (DATA.revues||[]).slice();
+  rv.sort(function(a,b){ return String(a.date_revue||'') < String(b.date_revue||'') ? -1 : 1; });
+  var today = new Date().toISOString().slice(0,10);
+  var html='';
+  for(var i=0;i<rv.length;i++){
+    var pending = String(rv[i].statut_validation||'valide') !== 'valide';
+    var late = !rv[i].executee && String(rv[i].date_revue||'').slice(0,10) < today;
+    var actions = '';
+    if(ROLE==='admin') actions = '<button class="st info" style="cursor:pointer" onclick="editRevue('+rv[i].id+')">✏️</button> <button class="st bad" style="cursor:pointer" onclick="rejeterLigne(\'revues\','+rv[i].id+')">🗑</button>';
+    var exec = '';
+    if(rv[i].executee) exec = '<button class="st ok" style="cursor:pointer" onclick="annulerRevue('+rv[i].id+')" title="Cliquer pour corriger">Exécuté ✔</button>';
+    else {
+      if(late) exec += '<span class="st bad">Date dépassée — à régulariser</span> ';
+      if(ROLE!=='lecture') exec += '<button class="st info" style="cursor:pointer" onclick="executerRevue('+rv[i].id+')">Marquer exécutée</button>';
+      else exec += '<span class="st info">À venir</span>';
+    }
+    html += '<tr style="'+(pending?'opacity:.55':'')+'"><td style="white-space:nowrap"><b>'+dateFr(rv[i].date_revue)+'</b></td><td>'+esc(rv[i].partenaire)+'</td><td>'+esc(rv[i].type_revue)+'</td><td>'+esc(rv[i].lieu)+'</td><td>'+revueBadge(rv[i].statut)+(pending?' <span class="st" style="background:#f1f5f9;color:#64748b">En attente</span>':'')+'</td><td>'+exec+'</td><td>'+actions+'</td></tr>';
+  }
+  document.getElementById('revues-body').innerHTML = html || '<tr><td colspan="7" class="empty">Aucune revue.</td></tr>';
+}
+
+function renderHistorique(){
+  var rv = (DATA.revues||[]).filter(function(r){ return r.executee; });
+  var rc = DATA.recommandations||[];
+  var html='';
+  for(var i=0;i<rv.length;i++){
+    var n=0; for(var j=0;j<rc.length;j++) if(rc[j].revue_id===rv[i].id) n++;
+    html += '<tr><td>'+esc(rv[i].partenaire)+'</td><td>'+esc(rv[i].type_revue)+'</td><td>'+esc(rv[i].lieu)+'</td><td>'+dateFr(rv[i].date_revue)+'</td><td style="white-space:nowrap"><b>'+dateFr(rv[i].date_reelle)+'</b></td><td>'+n+'</td><td><button class="st info" style="cursor:pointer" onclick="voirRecosRevue('+rv[i].id+')">Voir les recommandations →</button></td></tr>';
+  }
+  document.getElementById('historique-body').innerHTML = html || '<tr><td colspan="7" class="empty">Aucune revue exécutée.</td></tr>';
+}
+
+function voirRecosRevue(id){
+  showView('recos', null);
+  document.getElementById('flt-revue').value = String(id);
+  renderRecos();
+}
+
+function filteredRecos(){
+  var rc = DATA.recommandations||[];
+  var fp = document.getElementById('flt-part').value;
+  var fr = document.getElementById('flt-revue').value;
+  var fs = document.getElementById('flt-statut').value;
+  var fsec = document.getElementById('flt-secteur').value;
+  var du = document.getElementById('flt-du').value;
+  var au = document.getElementById('flt-au').value;
+  var out=[];
+  for(var i=0;i<rc.length;i++){
+    if(fp && (rc[i].partenaire||'')!==fp) continue;
+    if(fr && String(rc[i].revue_id||'')!==fr) continue;
+    if(fs && catReco(rc[i])!==fs) continue;
+    if(fsec && (CODE_SECTEUR[rc[i].projet||'']||'')!==fsec) continue;
+    var ech = String(rc[i].echeance||'').slice(0,10);
+    if(du && (!ech || ech < du)) continue;
+    if(au && (!ech || ech > au)) continue;
+    out.push(rc[i]);
+  }
+  return out;
+}
+
+function statutTexte(r){
+  if(r.executee) return 'Exécuté';
+  if(!r.echeance) return 'Sans délai';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var ech = new Date(String(r.echeance).slice(0,10));
+  var j = Math.round((ech-today)/86400000);
+  return (j<0) ? (-j)+' jours de retard' : j+' jours restants';
+}
+
+function pointTitre(){
+  var fr = document.getElementById('flt-revue').value;
+  var fp = document.getElementById('flt-part').value;
+  var t = '';
+  if(fr){
+    var rv = findRevue(parseInt(fr,10));
+    if(rv) t = 'POINT DES RECOMMANDATIONS DE LA ' + String(rv.type_revue||'REVUE').toUpperCase() + ' DES PROJETS DE ' + String(rv.partenaire||'').toUpperCase() + ' du ' + dateFr(rv.date_reelle||rv.date_revue);
+  } else if(fp) t = 'POINT DES RECOMMANDATIONS — ' + fp.toUpperCase();
+  else t = 'POINT DES RECOMMANDATIONS — TOUTES REVUES';
+  var el = document.getElementById('point-titre');
+  el.style.display = 'block';
+  el.textContent = t;
+  return t;
+}
+
+function exportExcelRecos(){
+  var rows = filteredRecos();
+  var titre = pointTitre();
+  var html = '<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><td colspan="9" style="font-weight:bold;text-align:center">' + titre + '</td></tr><tr><th>N°</th><th>Projets</th><th>Difficultés</th><th>Actions</th><th>Responsable direct</th><th>Associé</th><th>Délai/Echeance</th><th>Statut</th><th>Commentaires</th></tr>';
+  for(var i=0;i<rows.length;i++){
+    var r = rows[i];
+    html += '<tr><td>'+(i+1)+'</td><td>'+esc(r.projet||'')+'</td><td>'+esc(r.difficulte||'')+'</td><td>'+esc(r.texte||'')+'</td><td>'+esc(r.responsable_direct||'')+'</td><td>'+esc(r.associe||'')+'</td><td>'+dateFr(r.echeance)+'</td><td>'+statutTexte(r)+'</td><td>'+esc(r.commentaires||'')+'</td></tr>';
+  }
+  html += '</table></body></html>';
+  var blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'point_recommandations.xls';
+  a.click();
+  flashSuivi('Export Excel généré : ' + rows.length + ' recommandations.', true);
+}
+
+function renderRecos(){
+  var rc = filteredRecos();
+  pointTitre();
+  var html='';
+  for(var i=0;i<rc.length;i++){
+    var pending = String(rc[i].statut_validation||'valide') !== 'valide';
+    var rv = findRevue(rc[i].revue_id);
+    var actions = '';
+    if(ROLE!=='lecture' && !rc[i].executee) actions += '<button class="st ok" style="cursor:pointer" onclick="executerReco('+rc[i].id+')" title="Marquer exécutée">✔</button> ';
+    if(ROLE==='admin') actions += '<button class="st info" style="cursor:pointer" onclick="editReco('+rc[i].id+')">✏️</button> <button class="st bad" style="cursor:pointer" onclick="rejeterLigne(\'recommandations\','+rc[i].id+')">🗑</button>';
+    if(pending && ROLE==='admin') actions += ' <button class="st info" style="cursor:pointer" onclick="validerLigne(\'recommandations\','+rc[i].id+')">Valider</button>';
+    html += '<tr style="'+(pending?'opacity:.55':'')+'"><td>'+esc(rv?revueLabel(rv):(rc[i].revue_origine||''))+'</td><td>'+esc(rc[i].texte)+'</td><td>'+esc(rc[i].projet||'')+'</td><td>'+esc(rc[i].responsable_direct||'')+'</td><td>'+dateFr(rc[i].echeance)+'</td><td>'+statutReco(rc[i])+'</td><td>'+esc(String(rc[i].commentaires||'').slice(0,50))+'</td><td>'+actions+'</td></tr>';
+  }
+  document.getElementById('recos-body').innerHTML = html || '<tr><td colspan="8" class="empty">Aucune recommandation pour ces filtres.</td></tr>';
+}
+
+function renderActions(){
+  var rc = (DATA.recommandations||[]).slice();
+  var fp = document.getElementById('act-part').value;
+  var fs = document.getElementById('act-statut').value;
+  if(fp) rc = rc.filter(function(r){ return (r.partenaire||'')===fp; });
+  if(fs) rc = rc.filter(function(r){ return catReco(r)===fs; });
+  rc.sort(function(a,b){ return String(a.echeance||'9999') < String(b.echeance||'9999') ? -1 : 1; });
+  var par_part = {};
+  for(var i=0;i<rc.length;i++){
+    var p = rc[i].partenaire || 'Non précisé';
+    if(!par_part[p]) par_part[p] = {};
+    var proj = rc[i].projet || 'Hors projet';
+    if(!par_part[p][proj]) par_part[p][proj] = [];
+    par_part[p][proj].push(rc[i]);
+  }
+  var html='';
+  for(var p in par_part){
+    html += '<div style="margin-bottom:12px"><h4 style="background:#1e5aa8;color:#fff;padding:8px 12px;border-radius:6px;margin-bottom:8px">🤝 '+esc(p)+' ('+Object.keys(par_part[p]).reduce(function(s,k){ return s+par_part[p][k].length; },0)+' actions)</h4>';
+    for(var proj in par_part[p]){
+      html += '<div style="margin-left:12px;margin-bottom:10px"><b style="font-size:11px;color:#0a2540">📁 '+esc(proj)+'</b><table style="width:100%;margin-top:4px"><thead><tr><th>Échéance</th><th>Action</th><th>Responsable</th><th>Associé</th><th>Statut</th><th></th></tr></thead><tbody>';
+      var liste = par_part[p][proj];
+      for(var i=0;i<liste.length;i++){
+        var r = liste[i];
+        var late = catReco(r)==='retard';
+        var btn = (ROLE!=='lecture' && !r.executee) ? '<button class="st ok" style="cursor:pointer" onclick="executerReco('+r.id+')">✔</button>' : '';
+        html += '<tr style="'+(late?'background:#fef2f2':'')+'"><td style="white-space:nowrap"><b>'+dateFr(r.echeance)+'</b></td><td>'+esc(r.texte)+'</td><td>'+esc(r.responsable_direct||'')+'</td><td>'+esc(r.associe||'')+'</td><td>'+statutReco(r)+'</td><td>'+btn+'</td></tr>';
+      }
+      html += '</tbody></table></div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('actions-content').innerHTML = html || '<p class="empty">Aucune action pour ces filtres.</p>';
+}
+
+function buildPartenaires(){
+  var list = DATA.partenaires_ptf || [];
+  var opts = '<option value="">— Partenaire —</option>';
+  for(var i=0;i<list.length;i++) opts += '<option value="'+esc(list[i])+'">'+esc(list[i])+'</option>';
+  document.getElementById('fr-part').innerHTML = opts;
+  document.getElementById('fc-part').innerHTML = opts;
+  document.getElementById('act-part').innerHTML = '<option value="">Tous partenaires</option>' + opts.replace('<option value="">— Partenaire —</option>','');
+  document.getElementById('flt-part').innerHTML = '<option value="">Tous partenaires</option>' + opts.replace('<option value="">— Partenaire —</option>','');
+  var revs = (DATA.revues||[]).filter(function(r){ return r.executee; });
+  var o2 = '<option value="">— Revue d\'origine (exécutées) —</option>';
+  var o2f = '<option value="">Toutes les revues</option>';
+  for(var i=0;i<revs.length;i++){
+    o2 += '<option value="'+revs[i].id+'">'+esc(revueLabel(revs[i]))+'</option>';
+    o2f += '<option value="'+revs[i].id+'">'+esc(revueLabel(revs[i]))+'</option>';
+  }
+  document.getElementById('fc-revue-id').innerHTML = o2;
+  document.getElementById('flt-revue').innerHTML = o2f;
+  var ps = DATA.codes_projets || [];
+  var o3 = '<option value="">— Projet —</option>';
+  for(var i=0;i<ps.length;i++) o3 += '<option value="'+esc(ps[i].code)+'">'+esc(ps[i].code+' — '+ps[i].objet)+'</option>';
+  document.getElementById('fc-proj').innerHTML = o3;
+  var seenSec = {};
+  var o4 = '<option value="">Tous secteurs</option>';
+  for(var i=0;i<ps.length;i++){
+    CODE_SECTEUR[ps[i].code] = ps[i].secteur;
+    if(ps[i].secteur && !seenSec[ps[i].secteur]){ seenSec[ps[i].secteur]=1; o4 += '<option value="'+esc(ps[i].secteur)+'">'+esc(ps[i].secteur)+'</option>'; }
+  }
+  document.getElementById('flt-secteur').innerHTML = o4;
+}
+
+var CAL_OFFSET = 0;
+function calNav(n){ CAL_OFFSET += n; renderCalendrier(); }
+function renderCalendrier(){
+  var now = new Date();
+  var d = new Date(now.getFullYear(), now.getMonth() + CAL_OFFSET, 1);
+  var moisNoms = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  document.getElementById('cal-mois').textContent = moisNoms[d.getMonth()] + ' ' + d.getFullYear();
+  var rv = DATA.revues || [];
+  var rc = DATA.recommandations || [];
+  var eventsByDate = {};
+  for(var i=0; i<rv.length; i++){
+    var iso = String(rv[i].date_revue || '').slice(0,10);
+    if(iso){
+      if(!eventsByDate[iso]) eventsByDate[iso] = {revues:[], recos:[]};
+      eventsByDate[iso].revues.push(rv[i]);
+    }
+  }
+  for(var i=0; i<rc.length; i++){
+    var iso = String(rc[i].echeance || '').slice(0,10);
+    if(iso){
+      if(!eventsByDate[iso]) eventsByDate[iso] = {revues:[], recos:[]};
+      eventsByDate[iso].recos.push(rc[i]);
+    }
+  }
+  var startDay = (new Date(d.getFullYear(), d.getMonth(), 1).getDay()+6)%7;
+  var nb = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  var html = '<span style="color:#94a3b8">Lun</span><span style="color:#94a3b8">Mar</span><span style="color:#94a3b8">Mer</span><span style="color:#94a3b8">Jeu</span><span style="color:#94a3b8">Ven</span><span style="color:#94a3b8">Sam</span><span style="color:#94a3b8">Dim</span>';
+  for(var i=0;i<startDay;i++) html += '<span></span>';
+  var todayIso = now.toISOString().slice(0,10);
+  var monthListHtml = '';
+  var yearMonthPrefix = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+  for(var j=1; j<=nb; j++){
+    var dayStr = ('0' + j).slice(-2);
+    var iso = yearMonthPrefix + '-' + dayStr;
+    var style = 'padding:4px 0;border-radius:6px;position:relative;cursor:default';
+    if(iso===todayIso) style += ';background:#1e5aa8;color:#fff;font-weight:700';
+    var evs = eventsByDate[iso];
+    var dots = '';
+    var titles = [];
+    if(evs){
+      if(evs.revues && evs.revues.length > 0){
+        dots += '<span style="position:absolute;bottom:1px;left:35%;width:4px;height:4px;border-radius:50%;background:#f59e0b"></span>';
+        for(var r=0; r<evs.revues.length; r++){
+          titles.push(evs.revues[r].partenaire);
+        }
+      }
+      if(evs.recos && evs.recos.length > 0){
+        dots += '<span style="position:absolute;bottom:1px;left:65%;width:4px;height:4px;border-radius:50%;background:#dc2626"></span>';
+        for(var rc_idx=0; rc_idx<evs.recos.length; rc_idx++){
+          titles.push(evs.recos[rc_idx].texte);
+        }
+      }
+    }
+    var titleAttr = titles.length > 0 ? ' title="'+esc(titles.join(' | '))+'"' : '';
+    html += '<span style="'+style+'"'+titleAttr+'>'+j+dots+'</span>';
+    if(evs){
+      if(evs.revues){
+        for(var r=0; r<evs.revues.length; r++){
+          var rev = evs.revues[r];
+          monthListHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="dot" style="background:#f59e0b"></span><span><b>'+dateFr(iso)+'</b> — '+esc(rev.partenaire)+' ('+esc(rev.type_revue||'Revue')+')</span></div>';
+        }
+      }
+      if(evs.recos){
+        for(var rc_idx=0; rc_idx<evs.recos.length; rc_idx++){
+          var reco = evs.recos[rc_idx];
+          var txt = String(reco.texte || '');
+          if(txt.length > 40) txt = txt.slice(0, 40) + '...';
+          monthListHtml += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="dot" style="background:#dc2626"></span><span><b>'+dateFr(iso)+'</b> — '+esc(txt)+'</span></div>';
+        }
+      }
+    }
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+  document.getElementById('cal-list').innerHTML = monthListHtml || '<div class="empty">Aucune échéance ce mois-ci.</div>';
+}
+
+function renderAlertesAgreg(){
+  var c = DATA.alertes_count || {};
+  var items = [
+    ['#dc2626', (c.critique||0) + ' projets à risque élevé / en retard'],
+    ['#f59e0b', (c.eleve||0) + ' clôtures proches à surveiller'],
+    ['#eab308', (c.recommandations_en_retard||0) + ' recommandations en retard'],
+    ['#2563eb', (c.revues_7_jours||0) + ' revues à préparer cette semaine']
+  ];
+  var html='';
+  for(var i=0;i<items.length;i++){
+    html += '<div style="display:flex;gap:8px;align-items:center;font-size:11px;margin-bottom:8px"><span class="dot" style="background:'+items[i][0]+'"></span>'+items[i][1]+'</div>';
+  }
+  document.getElementById('alertes-agreg').innerHTML = html;
+}
+
+var AJ_LIGNE = 0;
+
+function buildAjout(){
+  var revs = (DATA.revues||[]).filter(function(r){ return r.executee; });
+  var o = '<option value="">— Choisir la revue exécutée —</option>';
+  for(var i=0;i<revs.length;i++) o += '<option value="'+revs[i].id+'">'+esc(revueLabel(revs[i]))+'</option>';
+  document.getElementById('aj-revue').innerHTML = o;
+}
+
+function ajoutChangeRevue(){
+  var id = parseInt(document.getElementById('aj-revue').value, 10);
+  var rv = findRevue(id);
+  var partInput = document.getElementById('aj-part');
+  var projSel = document.getElementById('aj-proj');
+  if(!rv){
+    partInput.value = '';
+    projSel.innerHTML = '<option value="">— Projets —</option>';
+    document.getElementById('ajout-zone').style.display = 'none';
+    document.getElementById('aj-autre-wrap').style.display = 'none';
+    document.getElementById('ajout-titre').textContent = '➕ Ajouter des recommandations';
+    return;
+  }
+  partInput.value = rv.partenaire || '';
+  var ps = (DATA.codes_projets||[]).filter(function(p){ return p.partenaire === rv.partenaire; });
+  var o = '<option value="">— Choisir un projet du partenaire —</option>';
+  for(var i=0;i<ps.length;i++) o += '<option value="'+esc(ps[i].code)+'">'+esc(ps[i].code+' — '+ps[i].objet)+'</option>';
+  o += '<option value="__autre__">Hors projet / transversal…</option>';
+  projSel.innerHTML = o;
+  document.getElementById('ajout-titre').textContent = 'POINT DES RECOMMANDATIONS DE LA ' + String(rv.type_revue||'REVUE').toUpperCase() + ' DES PROJETS DE ' + String(rv.partenaire||'').toUpperCase() + ' du ' + dateFr(rv.date_reelle||rv.date_revue);
+  document.getElementById('ajout-zone').style.display = 'none';
+  document.getElementById('ajout-lignes').innerHTML = '';
+}
+
+function ajoutChangeProjet(){
+  var v = document.getElementById('aj-proj').value;
+  document.getElementById('aj-autre-wrap').style.display = (v==='__autre__') ? 'block' : 'none';
+  if(!v){ document.getElementById('ajout-zone').style.display = 'none'; return; }
+  document.getElementById('ajout-zone').style.display = 'block';
+  if(document.getElementById('ajout-lignes').innerHTML === '') ajoutLigne();
+}
+
+function ajoutLigne(){
+  AJ_LIGNE++;
+  var n = AJ_LIGNE;
+  var html = '<div id="ajl-'+n+'" style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:10px;background:#f8fafc">'
+   + '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><b style="font-size:11px;color:#0a2540">Recommandation '+n+'</b><button class="st bad" style="cursor:pointer" onclick="document.getElementById(\'ajl-'+n+'\').remove()">✖</button></div>'
+   + '<div style="margin-bottom:6px"><textarea class="aj-diff" placeholder="Difficulté / constat" style="width:100%;height:40px"></textarea></div>'
+   + '<div style="margin-bottom:6px"><textarea class="aj-action" placeholder="Action recommandée" style="width:100%;height:40px"></textarea></div>'
+   + '<div class="filters">'
+   + '<input class="aj-resp" placeholder="Responsable direct" style="width:150px">'
+   + '<input class="aj-assoc" placeholder="Associé" style="width:130px">'
+   + '<input type="date" class="aj-ech">'
+   + '</div>'
+   + '<textarea class="aj-comm" placeholder="Commentaires" style="width:100%;height:36px"></textarea>'
+   + '</div>';
+  document.getElementById('ajout-lignes').insertAdjacentHTML('beforeend', html);
+}
+
+async function ajoutEnregistrer(){
+  var revId = parseInt(document.getElementById('aj-revue').value, 10);
+  if(!revId){ flashSuivi('Choisissez d\'abord une revue exécutée.', false); return; }
+  var rv = findRevue(revId);
+  var proj = document.getElementById('aj-proj').value;
+  if(proj === '__autre__') proj = document.getElementById('aj-autre').value || 'Hors projet';
+  if(!proj){ flashSuivi('Choisissez un projet.', false); return; }
+  var blocs = document.getElementById('ajout-lignes').children;
+  if(!blocs.length){ flashSuivi('Ajoutez au moins une recommandation.', false); return; }
+  var ok = 0, ko = 0;
+  for(var i=0;i<blocs.length;i++){
+    var b = blocs[i];
+    var body = {
+      texte: b.querySelector('.aj-action').value,
+      difficulte: b.querySelector('.aj-diff').value,
+      responsable_direct: b.querySelector('.aj-resp').value,
+      associe: b.querySelector('.aj-assoc').value,
+      echeance: b.querySelector('.aj-ech').value,
+      commentaires: b.querySelector('.aj-comm').value,
+      revue_id: revId,
+      partenaire: rv.partenaire || '',
+      projet: proj
+    };
+    if(!body.texte){ ko++; continue; }
+    var res = await fetch('/api/suivi/recommandations', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(res.ok) ok++; else ko++;
+  }
+  flashSuivi(ok + ' recommandation(s) enregistrée(s)' + (ko ? ', ' + ko + ' ligne(s) vide(s) ignorée(s)' : '') + '.', ko === 0);
+  if(ok){ document.getElementById('ajout-lignes').innerHTML = ''; init(); }
+}
+
 async function init(){
+  await loadRole();
+  buildPartenaires();
   var res = await fetch('/api/suivi/dashboard');
   if(!res.ok){ document.getElementById('kpis').innerHTML = '<p class="empty">Erreur de chargement.</p>'; return; }
   DATA = await res.json();
-  renderKpis(); renderDonut(); renderStatuts(); renderTrend(); renderAlertes(); renderTopProjets(); buildFiltres(); renderProjetsTable();
+  buildPartenaires();
+  renderKpis(); renderDonut(); renderAvancement(); renderTrend(); renderAlertes(); renderTopProjets(); buildFiltres(); renderProjetsTable();
+  renderRevuesDash(); renderRecoDash(); renderCalendrier(); renderAlertesAgreg();
+  renderActions();
 }
 init();
 </script>
