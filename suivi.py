@@ -186,7 +186,6 @@ def _current_role():
 
 
 @bp.route('/api/suivi/role')
-@require_auth
 def suivi_role():
     role, email = _current_role()
     return jsonify({'role': role, 'email': email})
@@ -441,6 +440,7 @@ def suivi_rejeter():
         return jsonify({'error': str(e)}), 500
 
 
+@require_auth
 @bp.route('/api/suivi/projet')
 def suivi_projet():
     code = request.args.get('code', '')
@@ -458,6 +458,7 @@ def suivi_projet():
         return jsonify({'error': str(e)}), 500
 
 
+@require_auth
 @bp.route('/api/suivi/dashboard')
 def suivi_dashboard():
     """Tableau de bord : KPIs, repartitions, alertes, projets en cours."""

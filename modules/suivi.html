@@ -1256,6 +1256,9 @@ function renderFicheRapports(){
 }
 
 async function init(){
+  var chk = await fetch('/api/suivi/role');
+  var chkd = await chk.json().catch(function(){ return {}; });
+  if(!chkd.email){ window.location.href = '/'; return; }
   await loadRole();
   buildPartenaires();
   var res = await fetch('/api/suivi/dashboard');
