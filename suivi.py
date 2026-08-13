@@ -387,6 +387,23 @@ def suivi_rejeter():
         return jsonify({'error': str(e)}), 500
 
 
+@bp.route('/api/suivi/projet')
+def suivi_projet():
+    code = request.args.get('code', '')
+    if not code:
+        return jsonify({'error': 'Code requis.'}), 400
+    try:
+        sb = get_supabase()
+        resp = sb.table('accords_consolides').select('*').eq('code_projet', code).limit(1).execute()
+        info = resp.data[0] if resp.data else None
+        resp2 = sb.table('suivi_trimestriel').select('*').eq('code_projet', code).order('annee').order('trimestre').execute()
+        suivis = resp2.data or []
+        return jsonify({'info': info, 'suivis': suivis})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/suivi/dashboard')
 def suivi_dashboard():
     """Tableau de bord : KPIs, repartitions, alertes, projets en cours."""

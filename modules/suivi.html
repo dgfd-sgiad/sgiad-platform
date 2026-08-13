@@ -251,6 +251,19 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
         </div>
       </div>
     </div>
+
+    <div id="view-fiche" style="display:none">
+      <div class="card">
+        <h3 id="fiche-titre"></h3>
+        <div id="fiche-infos" class="filters"></div>
+      </div>
+      <div class="card">
+        <h3>📊 Suivi physique & financier — Année <select id="fiche-annee" onchange="renderFicheTableau(); renderFicheChart()" style="font-size:12px"></select></h3>
+        <table><thead><tr><th>Trimestre</th><th>Cible phys (%)</th><th>Réalisé phys (%)</th><th>Écart phys</th><th>Cible fin (%)</th><th>Réalisé fin (%)</th><th>Écart fin</th><th>Montant trimestre (FCFA)</th><th>Montant cumulé (FCFA)</th></tr></thead><tbody id="fiche-body"></tbody></table>
+      </div>
+      <div class="card"><h3>📈 Courbe réalisé physique vs réalisé financier</h3><svg id="fiche-svg" viewBox="0 0 640 220" width="100%" height="220"></svg><div id="fiche-legende" style="font-size:11px;color:#64748b"></div></div>
+      <div class="card"><h3>📝 Rapports trimestriels (faits marquants & difficultés)</h3><div id="fiche-rapports"></div></div>
+    </div>
 </div>
 <script>
 var DATA = {};
@@ -262,8 +275,8 @@ function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9
 function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
 var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
 
-var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','saisie','revues','historique','recos','ajout','actions'];
-var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions' };
+var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','saisie','revues','historique','recos','ajout','actions','fiche'];
+var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet' };
 
 function showView(name, btn){
   var bs = document.querySelectorAll('.menu button');
@@ -509,7 +522,7 @@ function renderTopProjets(){
   var p = DATA.projets || [];
   var html='';
   for(var i=0;i<Math.min(10,p.length);i++){
-    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
   document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
 }
@@ -540,7 +553,7 @@ function renderProjetsTable(){
     if(sec && p[i].secteur!==sec) continue;
     if(stt && p[i].statut!==stt) continue;
     if(prt && p[i].partenaire!==prt) continue;
-    html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+esc(p[i].date_cloture)+'</td><td>'+tauxBadge(p[i].taux_phys)+'</td><td>'+tauxBadge(p[i].taux_fin)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+esc(p[i].date_cloture)+'</td><td>'+tauxBadge(p[i].taux_phys)+'</td><td>'+tauxBadge(p[i].taux_fin)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
   document.getElementById('projets-body').innerHTML = html || '<tr><td colspan="9" class="empty">Aucun résultat.</td></tr>';
 }
@@ -1108,6 +1121,138 @@ async function ajoutEnregistrer(){
   }
   flashSuivi(ok + ' recommandation(s) enregistrée(s)' + (ko ? ', ' + ko + ' ligne(s) vide(s) ignorée(s)' : '') + '.', ko === 0);
   if(ok){ document.getElementById('ajout-lignes').innerHTML = ''; init(); }
+}
+
+var FICHE_CODE = '';
+var FICHE_DATA = { info: null, suivis: [] };
+
+function fmtFcfa(v){
+  if(v===null||v===undefined||v==='') return '—';
+  return Number(v).toLocaleString('fr-FR');
+}
+
+function ecartHTML(e){
+  if(e===null) return '—';
+  var v = Math.round(e*10)/10;
+  return '<span style="color:'+((v<0)?'#dc2626':'#16a34a')+';font-weight:700">'+((v>0)?'+':'')+v+' pts</span>';
+}
+
+async function ouvrirFiche(code){
+  FICHE_CODE = code;
+  showView('fiche', null);
+  var res = await fetch('/api/suivi/projet?code=' + encodeURIComponent(code));
+  if(!res.ok){ flashSuivi('Erreur de chargement de la fiche.', false); return; }
+  FICHE_DATA = await res.json();
+  renderFicheHeader();
+  renderFicheTableau();
+  renderFicheChart();
+  renderFicheRapports();
+}
+
+function renderFicheHeader(){
+  var i = FICHE_DATA.info || {};
+  document.getElementById('fiche-titre').textContent = (i.code_projet||'') + ' — ' + (i.objet_accord||'');
+  var infos = [
+    ['Partenaire', i.partenaire||'—'],
+    ['Secteur', i.secteur_principal||'—'],
+    ['Montant', fmtMds(mds(i.montant_total_fcfa||0))],
+    ['Statut', i.statut||'—'],
+    ['Clôture', dateFr(i.nouvelle_date_cloture||i.date_cloture)]
+  ];
+  var html='';
+  for(var k=0;k<infos.length;k++) html += '<div style="font-size:11px;color:#64748b"><b style="color:#0a2540">'+infos[k][0]+' :</b> '+esc(infos[k][1])+'</div>';
+  document.getElementById('fiche-infos').innerHTML = html;
+  var sv = FICHE_DATA.suivis||[];
+  var annees = {};
+  for(var j=0;j<sv.length;j++) annees[sv[j].annee] = 1;
+  var keys = Object.keys(annees);
+  if(!keys.length) keys = [String((DATA.kpis||{}).annee_courante||2026)];
+  keys.sort();
+  var o='';
+  for(var j=0;j<keys.length;j++) o += '<option>'+keys[j]+'</option>';
+  var ya = document.getElementById('fiche-annee');
+  ya.innerHTML = o;
+  ya.value = keys[keys.length-1];
+}
+
+function renderFicheTableau(){
+  var annee = parseInt(document.getElementById('fiche-annee').value, 10);
+  var sv = (FICHE_DATA.suivis||[]).filter(function(s){ return s.annee === annee; });
+  var ordre = ['T1','T2','T3','T4'];
+  var html='';
+  var cum = '—';
+  for(var t=0;t<4;t++){
+    var row = null;
+    for(var j=0;j<sv.length;j++) if(sv[j].trimestre===ordre[t]) row = sv[j];
+    var ep = (row && row.cible_physique!=null && row.realise_physique!=null) ? (row.realise_physique - row.cible_physique) : null;
+    var ef = (row && row.cible_financiere!=null && row.realise_financier!=null) ? (row.realise_financier - row.cible_financiere) : null;
+    if(row && row.montant_cumule) cum = fmtFcfa(row.montant_cumule);
+    html += '<tr><td><b>'+ordre[t]+'</b></td>'
+      + '<td>'+((row&&row.cible_physique!=null)?row.cible_physique:'—')+'</td>'
+      + '<td>'+tauxBadge(row?row.realise_physique:null)+'</td>'
+      + '<td>'+ecartHTML(ep)+'</td>'
+      + '<td>'+((row&&row.cible_financiere!=null)?row.cible_financiere:'—')+'</td>'
+      + '<td>'+tauxBadge(row?row.realise_financier:null)+'</td>'
+      + '<td>'+ecartHTML(ef)+'</td>'
+      + '<td>'+(row?fmtFcfa(row.montant_decaisse_trimestre):'—')+'</td>'
+      + '<td>'+(row?fmtFcfa(row.montant_cumule):'—')+'</td></tr>';
+  }
+  html += '<tr style="background:#f8fafc;font-weight:700"><td>Total '+annee+'</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td>'+cum+'</td></tr>';
+  document.getElementById('fiche-body').innerHTML = html;
+}
+
+function renderFicheChart(){
+  var annee = parseInt(document.getElementById('fiche-annee').value, 10);
+  var sv = (FICHE_DATA.suivis||[]).filter(function(s){ return s.annee === annee; });
+  var ordre = ['T1','T2','T3','T4'];
+  var phys=[], fin=[];
+  for(var t=0;t<4;t++){
+    var row=null;
+    for(var j=0;j<sv.length;j++) if(sv[j].trimestre===ordre[t]) row=sv[j];
+    phys.push(row && row.realise_physique!=null ? row.realise_physique : null);
+    fin.push(row && row.realise_financier!=null ? row.realise_financier : null);
+  }
+  var W=640,H=220,P=30;
+  function x(i){ return P + i*(W-2*P)/3; }
+  function y(v){ return H-P - (v/100)*(H-2*P); }
+  var svg='';
+  svg += '<line x1="'+P+'" y1="'+y(0)+'" x2="'+(W-P)+'" y2="'+y(0)+'" stroke="#e5e7eb"></line>';
+  svg += '<line x1="'+P+'" y1="'+y(50)+'" x2="'+(W-P)+'" y2="'+y(50)+'" stroke="#e5e7eb"></line>';
+  svg += '<line x1="'+P+'" y1="'+y(100)+'" x2="'+(W-P)+'" y2="'+y(100)+'" stroke="#e5e7eb"></line>';
+  svg += '<text x="'+(P-6)+'" y="'+(y(0)+3)+'" font-size="9" fill="#94a3b8" text-anchor="end">0%</text>';
+  svg += '<text x="'+(P-6)+'" y="'+(y(50)+3)+'" font-size="9" fill="#94a3b8" text-anchor="end">50%</text>';
+  svg += '<text x="'+(P-6)+'" y="'+(y(100)+3)+'" font-size="9" fill="#94a3b8" text-anchor="end">100%</text>';
+  function line(vals, color){
+    var out='', prev=null;
+    for(var i=0;i<4;i++){
+      if(vals[i]===null) continue;
+      var X=x(i), Y=y(vals[i]);
+      if(prev) out += '<line x1="'+prev[0]+'" y1="'+prev[1]+'" x2="'+X+'" y2="'+Y+'" stroke="'+color+'" stroke-width="2"></line>';
+      out += '<circle cx="'+X+'" cy="'+Y+'" r="4" fill="'+color+'"></circle>';
+      out += '<text x="'+X+'" y="'+(Y-8)+'" font-size="9" fill="'+color+'" text-anchor="middle">'+vals[i]+'%</text>';
+      prev=[X,Y];
+    }
+    return out;
+  }
+  svg += line(phys, '#28a745');
+  svg += line(fin, '#1e5aa8');
+  for(var i=0;i<4;i++) svg += '<text x="'+x(i)+'" y="'+(H-8)+'" font-size="10" fill="#64748b" text-anchor="middle">'+ordre[i]+'</text>';
+  document.getElementById('fiche-svg').innerHTML = svg;
+  document.getElementById('fiche-legende').innerHTML = '<span style="color:#28a745;font-weight:700">● Réalisé physique</span> &nbsp;&nbsp; <span style="color:#1e5aa8;font-weight:700">● Réalisé financier</span>';
+}
+
+function renderFicheRapports(){
+  var sv = (FICHE_DATA.suivis||[]).slice().reverse();
+  var html='';
+  for(var i=0;i<sv.length;i++){
+    var s=sv[i];
+    html += '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px"><b style="font-size:11px">'+esc(s.trimestre)+' '+esc(s.annee)+'</b>'
+      + (String(s.statut_validation||'valide')!=='valide'?' <span class="st" style="background:#f1f5f9;color:#64748b">En attente</span>':'')
+      + '<div style="font-size:11px;margin-top:4px"><b>Faits marquants :</b> '+esc(s.faits_marquants||'—')+'</div>'
+      + '<div style="font-size:11px;margin-top:2px"><b>Difficultés :</b> '+esc(s.difficultes||'—')+'</div>'
+      + '<div style="font-size:10px;color:#94a3b8;margin-top:4px">Saisi par '+esc(s.saisi_par||'—')+'</div></div>';
+  }
+  document.getElementById('fiche-rapports').innerHTML = html || '<p class="empty">Aucun rapport saisi pour ce projet.</p>';
 }
 
 async function init(){
