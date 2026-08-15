@@ -11,6 +11,15 @@ from auth import get_supabase, require_auth
 
 bp = Blueprint('suivi', __name__)
 
+
+@bp.after_app_request
+def _suivi_no_cache(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -458,6 +467,16 @@ def suivi_projet():
         return jsonify({'error': str(e)}), 500
 
 
+@bp.route('/api/suivi/financier')
+def suivi_financier():
+    try:
+        sb = get_supabase()
+        prevs = sb.table('previsions_decaissements').select('*').execute().data or []
+        return jsonify({'previsions': prevs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @require_auth
 @bp.route('/api/suivi/dashboard')
 def suivi_dashboard():
@@ -700,7 +719,15 @@ def suivi_dashboard():
         revues_a_venir = [r for r in revues if _iso(r.get('date_revue')) >= auj_iso][:6]
         reco_en_retard = [r for r in recos if _iso(r.get('echeance')) and _iso(r.get('echeance')) < auj_iso]
         revues_7j = [r for r in revues if auj_iso <= _iso(r.get('date_revue')) <= (today + timedelta(days=7)).isoformat()]
-        codes_projets = [{'code': p['code'], 'objet': p['objet'], 'secteur': p['secteur'], 'partenaire': p['partenaire']} for p in sorted(en_cours, key=lambda x: x['montant_fcfa'], reverse=True)]
+        codes_projets = [{
+            'code': p['code'],
+            'objet': p['objet'],
+            'secteur': p['secteur'],
+            'partenaire': p['partenaire'],
+            'montant_fcfa': p.get('montant_fcfa') or p.get('montant_total_fcfa'),
+            'taux_decaissement': p.get('taux_decaissement'),
+            'date_cloture': p.get('date_cloture'),
+        } for p in sorted(en_cours, key=lambda x: x['montant_fcfa'], reverse=True)]
 
         return jsonify({
             'kpis': {

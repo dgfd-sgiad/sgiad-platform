@@ -77,12 +77,13 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
       <button class="sub" onclick="showView('ajout', this)">Ajouter des recommandations</button>
       <button class="sub" onclick="showView('actions', this)">Suivi des actions</button>
     </div>
+    <button onclick="showView('financier', this)">💰 Suivi financier</button>
     <div class="sec">RAPPORTS & ANALYSES</div>
-    <button onclick="bientot()">💹 Suivi financier</button>
     <button onclick="showView('par-secteur', this)">📈 Analyses sectorielles</button>
     <button onclick="showView('indicateurs', this)">🔑 Indicateurs clés</button>
     <button onclick="bientot()">📄 Rapports</button>
     <div class="sec">PARTENAIRES</div>
+    <button onclick="showView('partenaire', this)">🤝 Fiches partenaire</button>
     <button onclick="bientot()">🤝 Partenaires techniques</button>
     <button onclick="bientot()">📑 Accords & conventions</button>
     <div class="sec">DOCUMENTS</div>
@@ -264,6 +265,41 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
       <div class="card"><h3>📈 Courbe réalisé physique vs réalisé financier</h3><svg id="fiche-svg" viewBox="0 0 640 220" width="100%" height="220"></svg><div id="fiche-legende" style="font-size:11px;color:#64748b"></div></div>
       <div class="card"><h3>📝 Rapports trimestriels (faits marquants & difficultés)</h3><div id="fiche-rapports"></div></div>
     </div>
+
+    <div id="view-financier" style="display:none">
+      <div class="card">
+        <h3>💰 Suivi financier des décaissements AFD — Août à Décembre 2026</h3>
+        <div id="financier-kpis" class="filters"></div>
+      </div>
+      <div class="card">
+        <h3>📊 Opérations de décaissement <button class="st info" style="cursor:pointer;float:right" onclick="exportFinancier()">⬇️ Export Excel</button></h3>
+        <div class="filters">
+          <select id="fin-filtre-projet" onchange="renderFinancier()"><option value="">Tous projets</option></select>
+          <select id="fin-filtre-alerte" onchange="renderFinancier()"><option value="">Toutes opérations</option><option value="alerte">⚠️ Non décaissables en 2026</option></select>
+        </div>
+        <table><thead><tr><th>Projet</th><th>Opération</th><th>Montant (FCFA)</th><th>Taux cible</th><th>Date prévisionnelle</th><th>Observations</th><th>Alerte</th></tr></thead><tbody id="financier-body"></tbody></table>
+      </div>
+    </div>
+
+    <div id="view-partenaire" style="display:none">
+      <div class="card">
+        <h3>🤝 Fiche partenaire</h3>
+        <div class="filters"><select id="part-sel" onchange="renderPartenaire()" style="width:340px"></select></div>
+        <div id="part-kpis" class="filters"></div>
+      </div>
+      <div class="card">
+        <h3>📁 Projets actifs</h3>
+        <table><thead><tr><th>Code</th><th>Intitulé</th><th>Montant</th><th>Taux décaissement</th><th>Clôture</th></tr></thead><tbody id="part-projets"></tbody></table>
+      </div>
+      <div class="card">
+        <h3>📅 Revues</h3>
+        <table><thead><tr><th>Date</th><th>Type</th><th>Statut</th></tr></thead><tbody id="part-revues"></tbody></table>
+      </div>
+      <div class="card">
+        <h3>✅ Recommandations en cours</h3>
+        <table><thead><tr><th>Projet</th><th>Action</th><th>Échéance</th><th>Statut</th></tr></thead><tbody id="part-recos"></tbody></table>
+      </div>
+    </div>
 </div>
 <script>
 var DATA = {};
@@ -275,8 +311,8 @@ function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9
 function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
 var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
 
-var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','saisie','revues','historique','recos','ajout','actions','fiche'];
-var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet' };
+var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','partenaire','saisie','revues','historique','recos','ajout','actions','fiche','financier'];
+var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', partenaire:'Fiches partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet', financier:'Suivi financier des décaissements' };
 
 function showView(name, btn){
   var bs = document.querySelectorAll('.menu button');
@@ -291,12 +327,79 @@ function showView(name, btn){
   if(name==='par-statut') renderParStatut();
   if(name==='par-secteur') renderParSecteur();
   if(name==='par-partenaire') renderParPartenaire();
+  if(name==='partenaire') buildPartenaire();
   if(name==='saisie'){ buildSaisie(); renderSaisies(); }
   if(name==='revues') renderRevues();
   if(name==='historique') renderHistorique();
   if(name==='recos') renderRecos();
   if(name==='ajout') buildAjout();
   if(name==='actions') renderActions();
+  if(name==='financier') loadFinancier();
+}
+
+var FINANCIER_DATA = [];
+
+async function loadFinancier(){
+  var res = await fetch('/api/suivi/financier');
+  if(res.ok){
+    var d = await res.json();
+    FINANCIER_DATA = d.previsions || [];
+    renderFinancier();
+  }
+}
+
+function renderFinancier(){
+  var fp = document.getElementById('fin-filtre-projet').value;
+  var fa = document.getElementById('fin-filtre-alerte').value;
+  var filtered = FINANCIER_DATA.filter(function(p){
+    if(fp && p.projet !== fp) return false;
+    if(fa === 'alerte' && !p.non_decaissable_2026) return false;
+    return true;
+  });
+  var total = filtered.reduce(function(s,p){ return s + (p.montant_fcfa || 0); }, 0);
+  var nb_alertes = filtered.filter(function(p){ return p.non_decaissable_2026; }).length;
+  var html_kpi = '<div style="font-size:11px"><b>Total prévu :</b> '+fmtFcfa(total)+'</div>'
+    + '<div style="font-size:11px"><b>Nombre d\'opérations :</b> '+filtered.length+'</div>'
+    + '<div style="font-size:11px;color:#dc2626"><b>⚠️ Non décaissables en 2026 :</b> '+nb_alertes+' ('+fmtFcfa(filtered.filter(function(p){ return p.non_decaissable_2026; }).reduce(function(s,p){ return s + (p.montant_fcfa || 0); }, 0))+')</div>';
+  document.getElementById('financier-kpis').innerHTML = html_kpi;
+  var html = '';
+  for(var i=0;i<filtered.length;i++){
+    var p = filtered[i];
+    var alerte = p.non_decaissable_2026 ? '<span class="st bad">⚠️ Non décaissable</span>' : '';
+    var style = p.non_decaissable_2026 ? 'background:#fef2f2' : '';
+    html += '<tr style="'+style+'"><td><b>'+esc(p.projet)+'</b></td><td>'+esc(p.operation)+'</td><td>'+fmtFcfa(p.montant_fcfa)+'</td><td>'+esc(p.taux_cible)+'</td><td>'+(p.date_previsionnelle ? dateFr(p.date_previsionnelle) : esc(p.delai_texte))+'</td><td>'+esc((p.observations||'').slice(0,80))+'</td><td>'+alerte+'</td></tr>';
+  }
+  document.getElementById('financier-body').innerHTML = html || '<tr><td colspan="7" class="empty">Aucune opération.</td></tr>';
+  var sel = document.getElementById('fin-filtre-projet');
+  if(sel.options.length === 1){
+    var projets = {};
+    for(var i=0;i<FINANCIER_DATA.length;i++) projets[FINANCIER_DATA[i].projet] = 1;
+    var opts = '<option value="">Tous projets</option>';
+    for(var p in projets) opts += '<option value="'+esc(p)+'">'+esc(p)+'</option>';
+    sel.innerHTML = opts;
+  }
+}
+
+function exportFinancier(){
+  var fp = document.getElementById('fin-filtre-projet').value;
+  var fa = document.getElementById('fin-filtre-alerte').value;
+  var filtered = FINANCIER_DATA.filter(function(p){
+    if(fp && p.projet !== fp) return false;
+    if(fa === 'alerte' && !p.non_decaissable_2026) return false;
+    return true;
+  });
+  var html = '<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><td colspan="7" style="font-weight:bold;text-align:center">SUIVI FINANCIER DES DECAISSEMENTS AFD — Août à Décembre 2026</td></tr><tr><th>Projet</th><th>Opération</th><th>Montant (FCFA)</th><th>Taux cible</th><th>Date prévisionnelle</th><th>Observations</th><th>Alerte</th></tr>';
+  for(var i=0;i<filtered.length;i++){
+    var p = filtered[i];
+    html += '<tr><td>'+esc(p.projet)+'</td><td>'+esc(p.operation)+'</td><td>'+fmtFcfa(p.montant_fcfa)+'</td><td>'+esc(p.taux_cible)+'</td><td>'+(p.date_previsionnelle ? dateFr(p.date_previsionnelle) : esc(p.delai_texte))+'</td><td>'+esc(p.observations||'')+'</td><td>'+(p.non_decaissable_2026 ? 'Non décaissable en 2026' : '')+'</td></tr>';
+  }
+  html += '</table></body></html>';
+  var blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'suivi_financier_afd.xls';
+  a.click();
+  flashSuivi('Export Excel généré : ' + filtered.length + ' opérations.', true);
 }
 
 function toggleGroup(id){
@@ -641,7 +744,7 @@ async function addRevue(){
   var res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok){ REVUE_EDIT_ID = null; document.getElementById('form-revue2').style.display = 'none'; init(); }
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 async function addReco(){
@@ -661,22 +764,31 @@ async function addReco(){
   var res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok){ RECO_EDIT_ID = null; document.getElementById('form-reco2').style.display = 'none'; init(); }
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 async function validerLigne(table, id){
   var res = await fetch('/api/suivi/valider', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table: table, id: id }) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok) init();
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
+var CONFIRM_DELETE = null; var CONFIRM_TIMER = null;
 async function rejeterLigne(table, id){
-  if(!confirm('Rejeter et supprimer cette proposition ?')) return;
+  var key = table + ':' + id;
+  if(CONFIRM_DELETE !== key){
+    CONFIRM_DELETE = key;
+    if(CONFIRM_TIMER) clearTimeout(CONFIRM_TIMER);
+    CONFIRM_TIMER = setTimeout(function(){ CONFIRM_DELETE = null; }, 5000);
+    flashSuivi('⚠️ Cliquez une seconde fois sur le bouton de suppression pour confirmer.', false);
+    return;
+  }
+  CONFIRM_DELETE = null;
   var res = await fetch('/api/suivi/rejeter', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ table: table, id: id }) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok) init();
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 function statutReco(r){
@@ -717,7 +829,7 @@ async function executerRevue(id){
   var res = await fetch('/api/suivi/revues/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id, date_reelle: d }) });
   var r = await res.json();
   flashSuivi(r.message || r.error, res.ok);
-  if(res.ok) init();
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 async function annulerRevue(id){
@@ -725,7 +837,7 @@ async function annulerRevue(id){
   var res = await fetch('/api/suivi/revues/annuler', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok) init();
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 async function executerReco(id){
@@ -733,7 +845,7 @@ async function executerReco(id){
   var res = await fetch('/api/suivi/recommandations/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
   var d = await res.json();
   flashSuivi(d.message || d.error, res.ok);
-  if(res.ok) init();
+  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
 function catReco(r){
@@ -1255,19 +1367,64 @@ function renderFicheRapports(){
   document.getElementById('fiche-rapports').innerHTML = html || '<p class="empty">Aucun rapport saisi pour ce projet.</p>';
 }
 
+function buildPartenaire(){
+  var ps = DATA.codes_projets||[];
+  var parts = {};
+  for(var i=0;i<ps.length;i++) if(ps[i].partenaire) parts[ps[i].partenaire] = 1;
+  var o = '<option value="">— Choisir un partenaire —</option>';
+  for(var p in parts) o += '<option value="'+esc(p)+'">'+esc(p)+'</option>';
+  document.getElementById('part-sel').innerHTML = o;
+}
+
+function renderPartenaire(){
+  var part = document.getElementById('part-sel').value;
+  var ids = ['part-kpis','part-projets','part-revues','part-recos'];
+  if(!part){ for(var k=0;k<4;k++) document.getElementById(ids[k]).innerHTML = (k===0?'':''); return; }
+  var ps = (DATA.codes_projets||[]).filter(function(p){ return p.partenaire===part; });
+  var revs = (DATA.revues||[]).filter(function(r){ return r.partenaire===part; });
+  var recs = (DATA.recommandations||[]).filter(function(r){ return r.partenaire===part; });
+  var total=0, ts=0, tn=0;
+  for(var i=0;i<ps.length;i++){ total += ps[i].montant_fcfa||0; if(ps[i].taux_decaissement!=null){ ts+=Number(ps[i].taux_decaissement); tn++; } }
+  var revExec = revs.filter(function(r){ return r.executee; }).length;
+  var enc = recs.filter(function(r){ return !r.executee; });
+  var late = enc.filter(function(r){ return catReco(r)==='retard'; }).length;
+  document.getElementById('part-kpis').innerHTML =
+    '<div style="font-size:11px"><b>Projets actifs :</b> '+ps.length+'</div>'
+    + '<div style="font-size:11px"><b>Montant engagé :</b> '+fmtMds(mds(total))+'</div>'
+    + '<div style="font-size:11px"><b>Taux décaissement moyen :</b> '+(tn?Math.round(ts/tn*10)/10:'—')+' %</div>'
+    + '<div style="font-size:11px"><b>Revues :</b> '+revExec+' exécutée(s) / '+revs.length+'</div>'
+    + '<div style="font-size:11px;color:#dc2626"><b>Recommandations :</b> '+late+' en retard / '+enc.length+' en cours</div>';
+  var h1='';
+  for(var i=0;i<ps.length;i++){
+    h1 += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(ps[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(ps[i].code)+'</a></td><td>'+esc(ps[i].objet)+'</td><td>'+fmtMds(mds(ps[i].montant_fcfa||0))+'</td><td>'+tauxBadge(ps[i].taux_decaissement)+'</td><td>'+dateFr(ps[i].date_cloture)+'</td></tr>';
+  }
+  document.getElementById('part-projets').innerHTML = h1 || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+  var h2='';
+  for(var i=0;i<revs.length;i++){
+    h2 += '<tr><td>'+dateFr(revs[i].date_revue)+'</td><td>'+esc(revs[i].type_revue)+'</td><td>'+(revs[i].executee?'<span class="st ok">Exécutée</span>':'<span class="st info">À venir</span>')+'</td></tr>';
+  }
+  document.getElementById('part-revues').innerHTML = h2 || '<tr><td colspan="3" class="empty">Aucune revue.</td></tr>';
+  var h3='';
+  for(var i=0;i<enc.length;i++){
+    h3 += '<tr><td>'+esc(enc[i].projet||'')+'</td><td>'+esc(enc[i].texte)+'</td><td>'+dateFr(enc[i].echeance)+'</td><td>'+statutReco(enc[i])+'</td></tr>';
+  }
+  document.getElementById('part-recos').innerHTML = h3 || '<tr><td colspan="4" class="empty">Aucune recommandation en cours.</td></tr>';
+}
+
 async function init(){
   var chk = await fetch('/api/suivi/role');
   var chkd = await chk.json().catch(function(){ return {}; });
   if(!chkd.email){ window.location.href = '/'; return; }
   await loadRole();
   buildPartenaires();
-  var res = await fetch('/api/suivi/dashboard');
+  var res = await fetch('/api/suivi/dashboard?v=' + Date.now());
   if(!res.ok){ document.getElementById('kpis').innerHTML = '<p class="empty">Erreur de chargement.</p>'; return; }
   DATA = await res.json();
   buildPartenaires();
   renderKpis(); renderDonut(); renderAvancement(); renderTrend(); renderAlertes(); renderTopProjets(); buildFiltres(); renderProjetsTable();
   renderRevuesDash(); renderRecoDash(); renderCalendrier(); renderAlertesAgreg();
   renderActions();
+  renderHistorique(); renderRecos();
 }
 init();
 </script>
