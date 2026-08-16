@@ -5,18 +5,19 @@ import os
 import traceback
 import unicodedata
 from datetime import date, timedelta
-from flask import Blueprint, jsonify, request, send_from_directory
+from flask import Blueprint, jsonify, make_response, request, send_from_directory
 
 from auth import get_supabase, require_auth
 
 bp = Blueprint('suivi', __name__)
 
 
-@bp.after_app_request
-def _suivi_no_cache(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
+@bp.after_request
+def add_no_cache_headers(response):
+    if 'text/html' in response.content_type:
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
     return response
 
 
