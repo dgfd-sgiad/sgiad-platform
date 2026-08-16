@@ -178,7 +178,9 @@ def page_suivi_recos():
 
 @bp.route('/assets/<path:filename>')
 def assets(filename):
-    return send_from_directory('modules', filename, mimetype='application/javascript')
+    resp = send_from_directory('modules', filename, mimetype='application/javascript')
+    resp.headers['Cache-Control'] = 'no-store, max-age=0'
+    return resp
 
 
 def _current_role():
