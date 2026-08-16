@@ -12,11 +12,7 @@ from auth import get_supabase, require_auth
 bp = Blueprint('suivi', __name__)
 
 
-@bp.before_app_request
-def _redirect_ancien_suivi():
-    from flask import request, redirect
-    if request.path in ('/suivi', '/suivi.html'):
-        return redirect('/suivi-recommandations', code=302)
+
 
 
 @bp.after_request
