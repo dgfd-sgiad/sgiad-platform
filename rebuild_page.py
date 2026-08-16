@@ -17,10 +17,10 @@ layout = ('window.addEventListener("load",function(){'
  '});')
 open('modules/suivi_recos.js', 'w', encoding='utf-8').write(js + '\n' + layout + '\n')
 
-tags = '<script src="/assets/suivi_recos.js?v=8"></script>'
+tags = '<script src="/assets/suivi_recos.js?v=9"></script>'
 if os.path.exists('print_fix.js'):
     open('modules/suivi_print.js', 'w', encoding='utf-8').write(open('print_fix.js', encoding='utf-8').read())
-    tags += '<script src="/assets/suivi_print.js?v=8"></script>'
+    tags += '<script src="/assets/suivi_print.js?v=9"></script>'
     print('print_fix integre (paysage A4/A3)')
 
 css = ('<style>'
