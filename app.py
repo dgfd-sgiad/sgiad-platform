@@ -5,8 +5,10 @@
 
 from flask import Flask, jsonify, request, render_template_string
 from datetime import date, datetime
+from suivi import suivi_bp
 
 app = Flask(__name__)
+app.register_blueprint(suivi_bp)
 
 # ============================================================
 # DONNEES
