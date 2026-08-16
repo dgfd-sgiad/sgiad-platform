@@ -57,3 +57,51 @@ function lancerImpression(telecharger){
   setTimeout(function(){ w.focus(); w.print(); },600);
   if(telecharger) flash('Dans la fenêtre, choisissez « Enregistrer au format PDF »', true);
 }
+async function genererSynthese(){
+  var now=new Date();
+  var mois=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var label=mois[now.getMonth()]+' '+now.getFullYear();
+  var hist=[];
+  try{ var rh=await fetch('/api/suivi/historique_mois'); hist=(await rh.json()).historique||[]; }catch(e){}
+  var W=210,H=297,CAP=258;
+  var pages=[],cur={html:'',h:0};
+  function flush(){ if(cur.html){pages.push(cur);cur={html:'',h:0};} }
+  function add(hm,html){ if(cur.h+hm>CAP)flush(); cur.html+=html; cur.h+=hm; }
+  function tableChunked(headHtml, rows){
+    var buf=null, curm=0;
+    rows.forEach(function(rw){
+      if(buf===null){ buf=headHtml; curm=10; }
+      if(curm+rw.m>CAP-3){ add(curm, buf+'</table>'); buf=headHtml; curm=10; }
+      buf+=rw.html; curm+=rw.m;
+    });
+    if(buf!==null) add(curm, buf+'</table>');
+  }
+  add(16,'<h1>Synthèse mensuelle du suivi des recommandations<br><span style="font-size:10pt;text-transform:none">'+label+' — éditée le '+dateFr(now.toISOString())+'</span></h1>');
+  add(10,'<h2>1. Situation par partenaire</h2>');
+  var byPart={}; RECOS.forEach(function(r){ var p=r.partenaire||'Divers'; (byPart[p]=byPart[p]||[]).push(r); });
+  var rows1=[];
+  for(var p in byPart){ var L=byPart[p]; var ex=0,en=0,ret=0; L.forEach(function(r){ if(r.statut==='executee')ex++; else if(enRetard(r))ret++; else en++; });
+    rows1.push({m:8,html:'<tr><td>'+esc(p)+'</td><td>'+L.length+'</td><td>'+ex+'</td><td>'+en+'</td><td>'+ret+'</td><td>'+Math.round(ex/L.length*100)+'%</td></tr>'}); }
+  tableChunked('<table><tr><th>Partenaire</th><th>Total</th><th>Exécutées</th><th>En cours</th><th>En retard</th><th>Taux d\'exécution</th></tr>', rows1);
+  add(10,'<h2>2. Activité des 30 derniers jours</h2>');
+  if(hist.length){ var rows2=hist.map(function(hh){ var r=trouver(hh.reco_id)||{}; var txt=(hh.nouveau_statut?('Statut : '+(LIB[hh.ancien_statut]||'-')+' → '+(LIB[hh.nouveau_statut]||'-')+'. '):'')+(hh.commentaire||'');
+      return {m:Math.min(30,5+Math.ceil(txt.length/90)*4.6), html:'<tr><td>'+dateFr(hh.created_at)+'</td><td>'+esc(r.projet||'')+'</td><td>'+esc(txt)+'</td><td>'+esc(hh.auteur||'')+'</td></tr>'}; });
+    tableChunked('<table><tr><th>Date</th><th>Projet</th><th>Changement / commentaire</th><th>Auteur</th></tr>', rows2);
+  } else add(10,'<p>Aucune modification enregistrée sur la période.</p>');
+  add(10,'<h2>3. Points d\'attention (recommandations en retard)</h2>');
+  var rows3=RECOS.filter(enRetard).map(function(r){ return {m:Math.min(30,5+Math.ceil((r.texte||'').length/90)*4.6), html:'<tr><td>'+esc(r.projet||'')+'</td><td>'+esc(r.texte||'')+'</td><td>'+dateFr(r.echeance)+'</td><td>'+esc(r.responsable_direct||'')+'</td></tr>'}; });
+  if(rows3.length) tableChunked('<table><tr><th>Projet</th><th>Recommandation</th><th>Échéance</th><th>Responsable</th></tr>', rows3);
+  else add(10,'<p>Aucune recommandation en retard.</p>');
+  flush();
+  var total=pages.length;
+  var head='<div class="head"><div class="l">RÉPUBLIQUE DU BÉNIN<br>MINISTÈRE DE L\'ÉCONOMIE ET DES FINANCES<br><b>DIRECTION GÉNÉRALE DU FINANCEMENT DU DÉVELOPPEMENT (DGFD)</b></div><div class="r">Fraternité – Justice – Travail<br>Cité Ministérielle – Porto-Novo<br>Pôle de Suivi des Projets &amp; Programmes</div></div>';
+  var out='<html><head><meta charset="UTF-8"><title>Synthèse mensuelle</title><style>@page{size:A4 portrait;margin:0}body{margin:0;font-family:"Bookman Old Style","Book Antiqua",Georgia,serif;font-size:11pt;color:#111}.page{width:210mm;height:296mm;padding:8mm 12mm 12mm;position:relative;box-sizing:border-box;page-break-after:always;overflow:hidden}.page:last-child{page-break-after:auto}.head{display:flex;justify-content:space-between;border-bottom:2px solid #1e3a5f;padding-bottom:4px;margin-bottom:6px}.head .l{font-size:9pt;line-height:1.25}.head .l b{font-size:11pt}.head .r{font-size:9pt;text-align:right;font-style:italic}h1{font-size:13pt;text-align:center;text-transform:uppercase;margin:3px 0 8px}h2{font-size:11pt;background:#1e3a5f;color:#fff;padding:3px 6px;margin:8px 0 4px}p{margin:6px 0}table{border-collapse:collapse;width:100%}td,th{border:1px solid #444;padding:2px 4px;vertical-align:top;font-size:10pt}th{background:#e8eef7;text-transform:uppercase;font-size:9pt}.foot{position:absolute;bottom:5mm;left:12mm;right:12mm;border-top:1px solid #999;padding-top:2px;font-size:9pt;display:flex;justify-content:space-between;color:#444}</style></head><body>';
+  for(var i=0;i<total;i++){
+    out+='<div class="page">'+head+pages[i].html+'<div class="foot"><span>DGFD — Synthèse mensuelle ('+label+')</span><span>éditée le '+dateFr(now.toISOString())+'</span><span>Page '+(i+1)+' / '+total+'</span></div></div>';
+  }
+  out+='</body></html>';
+  var w=window.open('','_blank');
+  if(!w){flash('Autorisez les popups pour imprimer',false);return;}
+  w.document.write(out); w.document.close();
+  setTimeout(function(){ w.focus(); w.print(); },600);
+}

@@ -460,6 +460,18 @@ def historique_reco():
         return jsonify({'error': str(e)}), 500
 
 
+@bp.route('/api/suivi/historique_mois')
+def historique_mois():
+    try:
+        from datetime import datetime, timedelta
+        sb = get_supabase()
+        debut = (datetime.now() - timedelta(days=30)).isoformat()
+        h = sb.table('reco_historique').select('*').gte('created_at', debut).order('created_at', desc=True).execute().data or []
+        return jsonify({'historique': h})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/suivi/revues/update', methods=['POST'])
 @require_auth
 def suivi_update_revue():

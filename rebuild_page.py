@@ -13,14 +13,16 @@ layout = ('window.addEventListener("load",function(){'
  'if(!t||!se)return;'
  't.style.cssText="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px";'
  'var g=document.createElement("div");g.className="reco-tools";'
+ 'if(!document.getElementById("filter-instrument")){var sl=document.createElement("select");sl.id="filter-instrument";sl.onchange=renderTable;'
+ '[["","Instrument : Tous"],["IPF","IPF"],["PforR","PforR"]].forEach(function(o){var op=document.createElement("option");op.value=o[0];op.textContent=o[1];sl.appendChild(op);});g.appendChild(sl);}'
  'g.appendChild(se);if(fb)g.appendChild(fb);if(eb)g.appendChild(eb);t.appendChild(g);'
  '});')
 open('modules/suivi_recos.js', 'w', encoding='utf-8').write(js + '\n' + layout + '\n')
 
-tags = '<script src="/assets/suivi_recos.js?v=9"></script>'
+tags = '<script src="/assets/suivi_recos.js?v=10"></script>'
 if os.path.exists('print_fix.js'):
     open('modules/suivi_print.js', 'w', encoding='utf-8').write(open('print_fix.js', encoding='utf-8').read())
-    tags += '<script src="/assets/suivi_print.js?v=9"></script>'
+    tags += '<script src="/assets/suivi_print.js?v=10"></script>'
     print('print_fix integre (paysage A4/A3)')
 
 css = ('<style>'
@@ -32,7 +34,9 @@ css = ('<style>'
  '.pagination .pages span{font-size:13px!important;min-width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px}'
  '.filters{flex-wrap:wrap!important;gap:8px!important}'
  '.filters .fbox{min-width:140px;flex:1}'
+ '.table-title{white-space:nowrap!important;font-weight:800!important;letter-spacing:.3px}'
  '.reco-tools{display:flex;gap:10px;align-items:center;flex:1;justify-content:flex-end;margin-right:45px;min-width:340px}'
+ '#filter-instrument{height:40px;border:1px solid #d7deea!important;border-radius:8px;padding:0 10px;font-size:12px;font-weight:700;color:#33415a;background:#f8fafc;outline:none}'
  '#search{height:40px!important;flex:1;max-width:300px;border:1px solid #d7deea!important;border-radius:8px!important;padding:0 14px!important;font-size:13px!important;color:#33415a;background:#f8fafc;outline:none}'
  '#search:focus{border-color:#1260d9!important;background:#fff;box-shadow:0 0 0 3px rgba(18,96,217,.12)}'
  '.filter-btn{height:40px!important;padding:0 26px!important;border:none!important;border-radius:8px!important;background:#1260d9!important;color:#ffffff!important;font-size:13px!important;font-weight:800!important;letter-spacing:.4px;cursor:pointer;box-shadow:0 3px 10px rgba(18,96,217,.4)}'
