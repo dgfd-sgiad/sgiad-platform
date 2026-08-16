@@ -174,7 +174,11 @@ def suivi_page():
 
 @bp.route('/suivi-recommandations')
 def page_suivi_recos():
-    return send_from_directory('modules', 'suivi_recos.html')
+    resp = send_from_directory('modules', 'suivi_recos.html')
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    resp.headers['Pragma'] = 'no-cache'
+    resp.headers['Expires'] = '0'
+    return resp
 
 
 @bp.route('/assets/<path:filename>')
