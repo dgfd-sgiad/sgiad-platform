@@ -1,0 +1,2431 @@
+# ============================================================
+# app.py
+# TABLEAU DE BORD — SUIVI DES RECOMMANDATIONS
+# ============================================================
+
+from flask import Flask, jsonify, request, render_template_string
+from datetime import date, datetime
+
+app = Flask(__name__)
+
+# ============================================================
+# DONNEES
+# ============================================================
+
+RECOMMANDATIONS = [
+    {
+        "id": "REC-2024-001",
+        "revue": "Revue Annuelle 2024",
+        "partenaire": "Banque Mondiale",
+        "projet": "PACOFIDE",
+        "point": "Paiement BCEAO non retrouvé",
+        "recommandation": "Mettre à disposition les justificatifs des paiements BCEAO",
+        "responsable": "DGPE",
+        "initiale": "30/06/2025",
+        "nouvelle": "15/07/2025",
+        "statut": "En retard",
+        "avancement": 60,
+        "commentaire": "Relance faite au TTL le 02/07/2025. En attente retour.",
+    },
+    {
+        "id": "REC-2024-002",
+        "revue": "Revue Annuelle 2024",
+        "partenaire": "Banque Mondiale",
+        "projet": "P2AE",
+        "point": "Avenants non envoyés à la BM (ANO)",
+        "recommandation": "Soumettre les ANO des avenants pour non objection",
+        "responsable": "DGFD",
+        "initiale": "31/05/2025",
+        "nouvelle": "-",
+        "statut": "En cours",
+        "avancement": 40,
+        "commentaire": "ANO envoyés le 08/07/2025. En attente retour BM.",
+    },
+    {
+        "id": "REC-2024-003",
+        "revue": "Revue Semestrielle 2024",
+        "partenaire": "Banque Mondiale",
+        "projet": "PMUD-GN",
+        "point": "Réunion DGFD / DG SIRAT",
+        "recommandation": "Organiser la réunion de concertation",
+        "responsable": "DGFD",
+        "initiale": "15/05/2025",
+        "nouvelle": "30/06/2025",
+        "statut": "En retard",
+        "avancement": 20,
+        "commentaire": "Date proposée 18/07. En attente validation DG.",
+    },
+    {
+        "id": "REC-2024-004",
+        "revue": "Revue Annuelle 2024",
+        "partenaire": "Banque Mondiale",
+        "projet": "PCT FBPP Culture",
+        "point": "Échange avec le Ministère",
+        "recommandation": "Échanger avec le Ministre pour la suite à donner",
+        "responsable": "DGPE",
+        "initiale": "31/05/2025",
+        "nouvelle": "-",
+        "statut": "À démarrer",
+        "avancement": 0,
+        "commentaire": "Contact du cabinet pris. RDV en cours.",
+    },
+    {
+        "id": "REC-2024-005",
+        "revue": "Revue Annuelle 2024",
+        "partenaire": "Banque Mondiale",
+        "projet": "RMP IPW",
+        "point": "Rapport d'audit interne non transmis",
+        "recommandation": "Transmettre le rapport d'audit interne à la BM",
+        "responsable": "DGAEP",
+        "initiale": "15/06/2025",
+        "nouvelle": "-",
+        "statut": "Reportée",
+        "avancement": 50,
+        "commentaire": "Audit terminé le 01/07. Transmission prévue le 15/07.",
+    },
+]
+
+# ============================================================
+# PAGE HTML
+# ============================================================
+
+HTML = r"""
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Suivi des recommandations</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f4f7fb;
+    color:#172554;
+    overflow-x:hidden;
+}
+
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar{
+    width:216px;
+    background:#06275d;
+    color:white;
+    min-height:100vh;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+}
+
+.logo{
+    padding:20px 17px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+}
+
+.logo-icon{
+    font-size:25px;
+}
+
+.logo-title{
+    font-weight:700;
+    font-size:14px;
+    line-height:18px;
+}
+
+.logo-sub{
+    font-size:10px;
+    margin-top:3px;
+    color:#d9e6ff;
+}
+
+.menu{
+    padding:4px 8px;
+}
+
+.menu-section{
+    color:#a8bfe5;
+    font-size:9px;
+    font-weight:bold;
+    padding:14px 10px 7px;
+}
+
+.menu-item{
+    height:39px;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:0 12px;
+    border-radius:6px;
+    color:#eef5ff;
+    font-size:12px;
+    margin-bottom:2px;
+    cursor:pointer;
+}
+
+.menu-item:hover,
+.menu-item.active{
+    background:#2e5a96;
+}
+
+.menu-item .ico{
+    width:17px;
+    text-align:center;
+    font-size:16px;
+}
+
+.badge{
+    margin-left:auto;
+    background:#5476a9;
+    border-radius:12px;
+    min-width:23px;
+    padding:3px 6px;
+    text-align:center;
+    font-size:10px;
+}
+
+.menu-separator{
+    height:1px;
+    background:#17427c;
+    margin:7px 0;
+}
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.content{
+    margin-left:216px;
+    width:calc(100% - 216px);
+    padding:16px 22px 28px;
+}
+
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+}
+
+.title h1{
+    font-size:24px;
+    color:#10285c;
+}
+
+.title p{
+    margin-top:4px;
+    font-size:12px;
+    color:#5d6b82;
+}
+
+.user-area{
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.top-icon{
+    font-size:21px;
+    position:relative;
+}
+
+.top-badge{
+    position:absolute;
+    right:-7px;
+    top:-8px;
+    background:#e3262e;
+    color:white;
+    border-radius:50%;
+    font-size:8px;
+    padding:3px 5px;
+}
+
+.user{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.avatar{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:#102c64;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.user-name{
+    font-size:12px;
+    font-weight:bold;
+}
+
+.user-role{
+    font-size:9px;
+    color:#69758a;
+}
+
+/* =========================================================
+   KPI
+   ========================================================= */
+
+.kpis{
+    display:grid;
+    grid-template-columns:
+        repeat(7,1fr);
+    gap:9px;
+    margin-bottom:13px;
+}
+
+.kpi{
+    background:white;
+    border:1px solid #e3e8f0;
+    border-radius:6px;
+    min-height:78px;
+    padding:12px 10px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+
+.kpi-icon{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    font-size:20px;
+    flex:none;
+}
+
+.blue{background:#1160d9}
+.green{background:#069447}
+.orange{background:#e88c00}
+.red{background:#d9232e}
+.gray{background:#68717e}
+
+.kpi-label{
+    font-size:9px;
+    font-weight:bold;
+    color:#4c5870;
+}
+
+.kpi-value{
+    font-size:20px;
+    font-weight:bold;
+    color:#111c3d;
+    margin-top:4px;
+}
+
+.kpi-percent{
+    font-size:9px;
+    color:#59647a;
+    margin-top:1px;
+}
+
+/* =========================================================
+   MAIN GRID
+   ========================================================= */
+
+.dashboard-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 285px;
+    gap:10px;
+}
+
+.card{
+    background:white;
+    border:1px solid #e1e7ef;
+    border-radius:6px;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+}
+
+.process-card{
+    padding:16px;
+    min-height:255px;
+}
+
+.process-grid{
+    display:grid;
+    grid-template-columns:1.45fr 1fr;
+    gap:20px;
+}
+
+.process-title{
+    font-size:12px;
+    font-weight:bold;
+    color:#0759c9;
+    margin-bottom:17px;
+}
+
+.process-title.green-title{
+    color:#087a42;
+}
+
+.steps{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+}
+
+.step{
+    text-align:center;
+    flex:1;
+    position:relative;
+}
+
+.step-number{
+    width:20px;
+    height:20px;
+    background:#1261cf;
+    color:white;
+    border-radius:50%;
+    font-size:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:auto;
+}
+
+.step-icon{
+    width:53px;
+    height:53px;
+    background:#edf2f8;
+    border-radius:9px;
+    margin:10px auto 7px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#1657a8;
+    font-size:26px;
+}
+
+.step strong{
+    display:block;
+    font-size:9px;
+    color:#27324c;
+    line-height:13px;
+}
+
+.step small{
+    display:block;
+    font-size:8px;
+    color:#6e788b;
+    line-height:12px;
+    margin-top:4px;
+}
+
+.step-arrow{
+    position:absolute;
+    right:-5px;
+    top:70px;
+    color:#8792a4;
+    font-size:20px;
+}
+
+.process-btn{
+    display:block;
+    margin:19px auto 0;
+    border:0;
+    background:#1160d9;
+    color:white;
+    border-radius:4px;
+    padding:8px 20px;
+    font-size:11px;
+    font-weight:bold;
+}
+
+.update-box{
+    background:#f1faf5;
+    border-radius:7px;
+    padding:15px 10px;
+}
+
+.update-steps{
+    display:flex;
+    justify-content:space-between;
+}
+
+.update-step{
+    text-align:center;
+    flex:1;
+    position:relative;
+}
+
+.update-circle{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#078c4c;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:auto;
+    font-size:18px;
+}
+
+.update-step:not(:last-child):after{
+    content:"→";
+    position:absolute;
+    right:-3px;
+    top:9px;
+    color:#55977b;
+}
+
+.update-step span{
+    display:block;
+    font-size:8px;
+    font-weight:bold;
+    margin-top:7px;
+    line-height:12px;
+}
+
+.update-step small{
+    display:block;
+    font-size:7px;
+    color:#68758a;
+    margin-top:5px;
+}
+
+.green-btn{
+    display:block;
+    margin:21px auto 0;
+    border:0;
+    background:#087d45;
+    color:white;
+    padding:9px 18px;
+    border-radius:4px;
+    font-size:10px;
+    font-weight:bold;
+}
+
+/* =========================================================
+   RIGHT COLUMN
+   ========================================================= */
+
+.right-column{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.dg-card{
+    padding:13px;
+}
+
+.card-title{
+    color:#0d5ed0;
+    font-size:11px;
+    font-weight:bold;
+    margin-bottom:11px;
+}
+
+.dg-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.dg-title .card-title{
+    color:#d92730;
+}
+
+.action-required{
+    background:#ffe3e3;
+    color:#dc2730;
+    font-size:8px;
+    padding:4px 6px;
+    border-radius:4px;
+}
+
+.dg-item{
+    border-bottom:1px solid #edf0f5;
+    padding:7px 0;
+    position:relative;
+    padding-left:12px;
+}
+
+.dg-item:last-child{
+    border-bottom:0;
+}
+
+.dg-dot{
+    width:6px;
+    height:6px;
+    background:#df222b;
+    border-radius:50%;
+    position:absolute;
+    left:0;
+    top:11px;
+}
+
+.dg-dot.orange{
+    background:#ef8c00;
+}
+
+.dg-project{
+    font-size:9px;
+    font-weight:bold;
+}
+
+.dg-text{
+    font-size:8px;
+    color:#5f697b;
+    margin-top:3px;
+}
+
+.dg-label{
+    display:inline-block;
+    margin-top:4px;
+    font-size:7px;
+    padding:3px 5px;
+    border-radius:3px;
+    background:#ffe8e8;
+    color:#d9262e;
+}
+
+.dg-label.orange{
+    background:#fff0da;
+    color:#db7a00;
+}
+
+.dg-footer{
+    text-align:center;
+    color:#075ecb;
+    font-size:9px;
+    font-weight:bold;
+    padding-top:8px;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-card{
+    margin-top:10px;
+    padding:14px 12px 8px;
+}
+
+.table-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:9px;
+}
+
+.table-title{
+    font-size:12px;
+    color:#075ecb;
+    font-weight:bold;
+}
+
+.filters{
+    display:grid;
+    grid-template-columns:
+        1fr 1fr 1.2fr 1fr 1fr 1.3fr auto auto;
+    gap:7px;
+    margin-bottom:10px;
+}
+
+select,
+input{
+    height:31px;
+    border:1px solid #dce2ea;
+    border-radius:4px;
+    padding:0 8px;
+    background:white;
+    font-size:9px;
+    color:#465269;
+    outline:none;
+}
+
+.filter-btn{
+    background:#1260d9;
+    color:white;
+    border:0;
+    border-radius:4px;
+    padding:0 14px;
+    font-size:10px;
+    font-weight:bold;
+}
+
+.export-btn{
+    background:white;
+    border:1px solid #dce2ea;
+    color:#273b63;
+    border-radius:4px;
+    padding:0 12px;
+    font-size:10px;
+}
+
+.table-wrap{
+    width:100%;
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+}
+
+th{
+    background:#f7f9fc;
+    color:#47526b;
+    font-size:7px;
+    text-transform:uppercase;
+    padding:8px 5px;
+    border-top:1px solid #e3e7ee;
+    border-bottom:1px solid #e3e7ee;
+}
+
+td{
+    font-size:7.5px;
+    color:#35415a;
+    padding:8px 5px;
+    border-bottom:1px solid #edf0f4;
+    vertical-align:middle;
+    line-height:11px;
+}
+
+th:nth-child(1){width:24px}
+th:nth-child(2){width:67px}
+th:nth-child(3){width:95px}
+th:nth-child(4){width:75px}
+th:nth-child(5){width:125px}
+th:nth-child(6){width:75px}
+th:nth-child(7){width:80px}
+th:nth-child(8){width:55px}
+th:nth-child(9){width:55px}
+th:nth-child(10){width:145px}
+th:nth-child(11){width:65px}
+
+.status{
+    display:inline-block;
+    border-radius:4px;
+    padding:4px 6px;
+    font-size:7px;
+    font-weight:bold;
+    white-space:nowrap;
+}
+
+.status.retard{
+    background:#ffe1e1;
+    color:#d92730;
+}
+
+.status.encours{
+    background:#e4f0ff;
+    color:#1260d9;
+}
+
+.status.demarrer{
+    background:#eceef2;
+    color:#4e5664;
+}
+
+.status.reportee{
+    background:#fff0d9;
+    color:#df8100;
+}
+
+.progress{
+    width:43px;
+    height:5px;
+    background:#e7eaf0;
+    border-radius:4px;
+    overflow:hidden;
+    margin-top:4px;
+}
+
+.progress-bar{
+    height:100%;
+    background:#1260d9;
+}
+
+.progress-bar.orange{
+    background:#e78c00;
+}
+
+.comment{
+    color:#46526a;
+    cursor:pointer;
+}
+
+.comment:hover{
+    color:#075ecb;
+    text-decoration:underline;
+}
+
+.actions{
+    display:flex;
+    gap:7px;
+    font-size:13px;
+    color:#1463d3;
+}
+
+.action-icon{
+    cursor:pointer;
+}
+
+.pagination{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 3px 0;
+    font-size:8px;
+    color:#657086;
+}
+
+.pages{
+    display:flex;
+    gap:5px;
+    align-items:center;
+}
+
+.page{
+    width:25px;
+    height:25px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid #e0e4eb;
+    border-radius:4px;
+}
+
+.page.active{
+    background:#1260d9;
+    color:white;
+    border-color:#1260d9;
+}
+
+/* =========================================================
+   BOTTOM
+   ========================================================= */
+
+.bottom-grid{
+    margin-top:10px;
+    display:grid;
+    grid-template-columns:1fr 285px;
+    gap:10px;
+}
+
+.legend-card{
+    padding:13px;
+}
+
+.legend{
+    display:grid;
+    grid-template-columns:
+        repeat(6,1fr);
+    gap:10px;
+}
+
+.legend-item{
+    font-size:8px;
+}
+
+.legend-status{
+    font-weight:bold;
+    margin-bottom:5px;
+}
+
+.legend-desc{
+    color:#68748a;
+    line-height:12px;
+}
+
+.reminder{
+    padding:13px;
+    background:#f4f8ff;
+    border:1px solid #cbdcf8;
+    border-radius:6px;
+    font-size:8px;
+    color:#59657a;
+    line-height:13px;
+}
+
+.reminder strong{
+    color:#2a3e64;
+}
+
+/* =========================================================
+   ACTION BUTTONS
+   ========================================================= */
+
+.bottom-actions{
+    margin-top:10px;
+    display:flex;
+    gap:12px;
+    justify-content:center;
+}
+
+.bottom-btn{
+    border:0;
+    border-radius:5px;
+    height:37px;
+    padding:0 20px;
+    font-size:10px;
+    font-weight:bold;
+    color:white;
+    background:#087d45;
+    cursor:pointer;
+}
+
+.bottom-btn.blue-btn{
+    background:#1160d9;
+}
+
+.bottom-btn.dark{
+    background:#06275d;
+}
+
+/* =========================================================
+   MODAL COMMENTAIRE
+   ========================================================= */
+
+.modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(5,25,55,.55);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-box{
+    width:520px;
+    background:white;
+    border-radius:9px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    overflow:hidden;
+}
+
+.modal-header{
+    padding:17px 20px;
+    background:#06275d;
+    color:white;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.modal-header h2{
+    font-size:15px;
+}
+
+.close{
+    cursor:pointer;
+    font-size:22px;
+}
+
+.modal-body{
+    padding:20px;
+}
+
+.modal-info{
+    background:#f5f8fc;
+    border-radius:6px;
+    padding:12px;
+    margin-bottom:14px;
+    font-size:10px;
+    line-height:16px;
+}
+
+.modal-label{
+    display:block;
+    font-size:10px;
+    font-weight:bold;
+    color:#263757;
+    margin-bottom:6px;
+}
+
+textarea{
+    width:100%;
+    min-height:120px;
+    resize:vertical;
+    border:1px solid #d7deea;
+    border-radius:5px;
+    padding:10px;
+    font-family:Arial;
+    font-size:11px;
+    outline:none;
+}
+
+.modal-footer{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:15px;
+}
+
+.cancel-btn,
+.save-btn{
+    border:0;
+    border-radius:4px;
+    padding:9px 18px;
+    font-size:10px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.cancel-btn{
+    background:#edf0f5;
+    color:#4b566d;
+}
+
+.save-btn{
+    background:#087d45;
+    color:white;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:1200px){
+
+    .sidebar{
+        width:190px;
+    }
+
+    .content{
+        margin-left:190px;
+        width:calc(100% - 190px);
+    }
+
+    .kpis{
+        grid-template-columns:
+            repeat(4,1fr);
+    }
+
+    .filters{
+        grid-template-columns:
+            repeat(4,1fr);
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<!-- ======================================================
+     SIDEBAR
+     ====================================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+
+        <div class="logo-icon">▣</div>
+
+        <div>
+            <div class="logo-title">
+                SUIVI DES<br>
+                RECOMMANDATIONS
+            </div>
+
+            <div class="logo-sub">
+                REVUES DES PTF AU DG
+            </div>
+        </div>
+
+    </div>
+
+    <div class="menu">
+
+        <div class="menu-item active">
+            <span class="ico">⌂</span>
+            Tableau de bord
+        </div>
+
+        <div class="menu-section">
+            RECOMMANDATIONS
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">▣</span>
+            Toutes les recommandations
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">◊</span>
+            À démarrer
+            <span class="badge">18</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">◌</span>
+            En cours
+            <span class="badge">62</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">◷</span>
+            Reportées
+            <span class="badge">14</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">✓</span>
+            Exécutées
+            <span class="badge">45</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">×</span>
+            Non exécutées
+            <span class="badge">5</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">▱</span>
+            Annulées
+            <span class="badge">2</span>
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">◷</span>
+            En retard
+            <span class="badge">21</span>
+        </div>
+
+        <div class="menu-separator"></div>
+
+        <div class="menu-section">
+            COLLECTE & MISE À JOUR
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">⊕</span>
+            Créer une recommandation
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">↥</span>
+            Collecte groupée (Excel)
+        </div>
+
+        <div class="menu-section">
+            REVUES & PROJETS
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">▣</span>
+            Revues PTF
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">□</span>
+            Projets / Programmes
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">♧</span>
+            Partenaires (PTF)
+        </div>
+
+        <div class="menu-section">
+            RAPPORTS & ANALYSES
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">▥</span>
+            Tableaux de synthèse
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">△</span>
+            Alertes & Escalades DG
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">↻</span>
+            Historique des changements
+        </div>
+
+        <div class="menu-section">
+            PARAMÈTRES
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">♙</span>
+            Utilisateurs & rôles
+        </div>
+
+        <div class="menu-item">
+            <span class="ico">⚙</span>
+            Paramètres généraux
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- ======================================================
+     CONTENU
+     ====================================================== -->
+
+<main class="content">
+
+    <header class="topbar">
+
+        <div class="title">
+
+            <h1>Tableau de bord</h1>
+
+            <p>
+                Vue d'ensemble du suivi des recommandations
+            </p>
+
+        </div>
+
+        <div class="user-area">
+
+            <div class="top-icon">
+                ♧
+                <span class="top-badge">6</span>
+            </div>
+
+            <div class="top-icon">
+                ✉
+                <span class="top-badge">2</span>
+            </div>
+
+            <div class="user">
+
+                <div class="avatar">DG</div>
+
+                <div>
+                    <div class="user-name">DG</div>
+                    <div class="user-role">
+                        Secrétaire Général
+                    </div>
+                </div>
+
+                <span>⌄</span>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- KPI -->
+
+    <section class="kpis">
+
+        <div class="kpi">
+
+            <div class="kpi-icon blue">☷</div>
+
+            <div>
+                <div class="kpi-label">
+                    Total recommandations
+                </div>
+                <div class="kpi-value" id="total">128</div>
+                <div class="kpi-percent">
+                    Toutes
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon green">✓</div>
+
+            <div>
+                <div class="kpi-label">
+                    Exécutées
+                </div>
+                <div class="kpi-value" id="executees">45</div>
+                <div class="kpi-percent">35,2%</div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon blue">◯</div>
+
+            <div>
+                <div class="kpi-label">
+                    En cours
+                </div>
+                <div class="kpi-value" id="encours">62</div>
+                <div class="kpi-percent">48,4%</div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon orange">◷</div>
+
+            <div>
+                <div class="kpi-label">
+                    Reportées
+                </div>
+                <div class="kpi-value">14</div>
+                <div class="kpi-percent">10,9%</div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon red">×</div>
+
+            <div>
+                <div class="kpi-label">
+                    Non exécutées
+                </div>
+                <div class="kpi-value">5</div>
+                <div class="kpi-percent">3,9%</div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon gray">▱</div>
+
+            <div>
+                <div class="kpi-label">
+                    Annulées
+                </div>
+                <div class="kpi-value">2</div>
+                <div class="kpi-percent">1,6%</div>
+            </div>
+
+        </div>
+
+
+        <div class="kpi">
+
+            <div class="kpi-icon red">△</div>
+
+            <div>
+                <div class="kpi-label">
+                    En retard (échéance dépassée)
+                </div>
+                <div class="kpi-value">21</div>
+                <div class="kpi-percent" style="color:#d92730">
+                    16,4%
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <div class="dashboard-grid">
+
+        <div>
+
+            <!-- PROCESSUS -->
+
+            <section class="card process-card">
+
+                <div class="process-grid">
+
+                    <div>
+
+                        <div class="process-title">
+                            1. COLLECTER LES INFORMATIONS
+                        </div>
+
+                        <div class="steps">
+
+                            <div class="step">
+
+                                <div class="step-number">1</div>
+
+                                <div class="step-icon">▤</div>
+
+                                <strong>
+                                    Sélectionner la revue
+                                </strong>
+
+                                <small>
+                                    Choisir la revue<br>
+                                    et le PTF
+                                </small>
+
+                                <span class="step-arrow">→</span>
+
+                            </div>
+
+
+                            <div class="step">
+
+                                <div class="step-number">2</div>
+
+                                <div class="step-icon">□</div>
+
+                                <strong>
+                                    Sélectionner le projet
+                                </strong>
+
+                                <small>
+                                    Choisir le projet /<br>
+                                    programme
+                                </small>
+
+                                <span class="step-arrow">→</span>
+
+                            </div>
+
+
+                            <div class="step">
+
+                                <div class="step-number">3</div>
+
+                                <div class="step-icon">▣</div>
+
+                                <strong>
+                                    Saisir la recommandation
+                                </strong>
+
+                                <small>
+                                    Point d'attention &<br>
+                                    recommandation
+                                </small>
+
+                                <span class="step-arrow">→</span>
+
+                            </div>
+
+
+                            <div class="step">
+
+                                <div class="step-number">4</div>
+
+                                <div class="step-icon">♙</div>
+
+                                <strong>
+                                    Responsabiliser
+                                </strong>
+
+                                <small>
+                                    Responsable direct &<br>
+                                    structures associées
+                                </small>
+
+                                <span class="step-arrow">→</span>
+
+                            </div>
+
+
+                            <div class="step">
+
+                                <div class="step-number">5</div>
+
+                                <div class="step-icon">▣</div>
+
+                                <strong>
+                                    Définir l'échéance
+                                </strong>
+
+                                <small>
+                                    Date limite<br>
+                                    d'exécution
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <button class="process-btn">
+                            ＋ Nouvelle recommandation
+                        </button>
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="process-title green-title">
+                            2. METTRE À JOUR ET SUIVRE
+                        </div>
+
+                        <div class="update-box">
+
+                            <div class="update-steps">
+
+                                <div class="update-step">
+                                    <div class="update-circle">✎</div>
+                                    <span>Mettre à jour</span>
+                                    <small>
+                                        % d'exécution,<br>
+                                        statut, commentaires
+                                    </small>
+                                </div>
+
+                                <div class="update-step">
+                                    <div class="update-circle">↥</div>
+                                    <span>Ajouter les preuves</span>
+                                    <small>
+                                        Joindre les pièces<br>
+                                        justificatives
+                                    </small>
+                                </div>
+
+                                <div class="update-step">
+                                    <div class="update-circle">◌</div>
+                                    <span>Réviser l'échéance</span>
+                                    <small>
+                                        Si nécessaire<br>
+                                        (avec motif)
+                                    </small>
+                                </div>
+
+                                <div class="update-step">
+                                    <div class="update-circle">✓</div>
+                                    <span>Enregistrer</span>
+                                    <small>
+                                        La mise à jour est<br>
+                                        historisée
+                                    </small>
+                                </div>
+
+                            </div>
+
+                            <button class="green-btn">
+                                Mettre à jour une recommandation
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- TABLE -->
+
+            <section class="card table-card">
+
+                <div class="table-head">
+
+                    <div class="table-title">
+                        LISTE DES RECOMMANDATIONS
+                    </div>
+
+                </div>
+
+
+                <div class="filters">
+
+                    <select>
+                        <option>Toutes</option>
+                    </select>
+
+                    <select>
+                        <option>Tous</option>
+                    </select>
+
+                    <select>
+                        <option>Tous</option>
+                    </select>
+
+                    <select>
+                        <option>Tous</option>
+                    </select>
+
+                    <select>
+                        <option>Tous</option>
+                    </select>
+
+                    <input
+                        id="search"
+                        placeholder="⌕ Rechercher..."
+                        onkeyup="rechercher()"
+                    >
+
+                    <button
+                        class="filter-btn"
+                        onclick="rechercher()"
+                    >
+                        Filtrer
+                    </button>
+
+                    <button
+                        class="export-btn"
+                    >
+                        ⇩ Exporter
+                    </button>
+
+                </div>
+
+
+                <div class="table-wrap">
+
+                    <table>
+
+                        <thead>
+
+                        <tr>
+
+                            <th>□</th>
+                            <th>N°</th>
+                            <th>REVUE / PARTENAIRE</th>
+                            <th>PROJET / PROGRAMME</th>
+                            <th>POINT D'ATTENTION</th>
+                            <th>RECOMMANDATION (ACTION)</th>
+                            <th>RESPONSABLE DIRECT</th>
+                            <th>ÉCHÉANCE</th>
+                            <th>STATUT</th>
+                            <th>AVANCEMENT</th>
+                            <th>DERNIER COMMENTAIRE</th>
+                            <th>ACTIONS</th>
+
+                        </tr>
+
+                        </thead>
+
+                        <tbody id="tableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+
+                <div class="pagination">
+
+                    <span>
+                        Affichage 1 à 5 sur 128 recommandations
+                    </span>
+
+                    <div class="pages">
+
+                        <div class="page">‹</div>
+                        <div class="page active">1</div>
+                        <div class="page">2</div>
+                        <div class="page">3</div>
+                        <div>...</div>
+                        <div class="page">26</div>
+                        <div class="page">›</div>
+
+                    </div>
+
+                    <span>
+                        Lignes par page&nbsp;&nbsp;
+                        <select style="width:55px;height:25px">
+                            <option>10</option>
+                        </select>
+                    </span>
+
+                </div>
+
+            </section>
+
+
+            <!-- LEGEND -->
+
+            <div class="bottom-grid">
+
+                <section class="card legend-card">
+
+                    <div class="card-title">
+                        LÉGENDE DES STATUTS
+                    </div>
+
+                    <div class="legend">
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                ⚫ À démarrer
+                            </div>
+                            <div class="legend-desc">
+                                Action non encore initiée
+                            </div>
+                        </div>
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                🔵 En cours
+                            </div>
+                            <div class="legend-desc">
+                                Action en cours d'exécution
+                            </div>
+                        </div>
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                🟠 Reportée
+                            </div>
+                            <div class="legend-desc">
+                                Échéance repoussée
+                            </div>
+                        </div>
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                🟢 Exécutée
+                            </div>
+                            <div class="legend-desc">
+                                Action réalisée avec preuves
+                            </div>
+                        </div>
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                🔴 Non exécutée
+                            </div>
+                            <div class="legend-desc">
+                                Action non réalisée
+                            </div>
+                        </div>
+
+                        <div class="legend-item">
+                            <div class="legend-status">
+                                ⚫ Annulée
+                            </div>
+                            <div class="legend-desc">
+                                Action annulée
+                            </div>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <div class="reminder">
+
+                    <strong>ⓘ &nbsp; RAPPEL</strong>
+
+                    <br><br>
+
+                    Toute modification du statut
+                    <strong>« Reportée »</strong>,
+                    <strong>« Non exécutée »</strong>
+                    ou <strong>« Annulée »</strong>
+                    doit être accompagnée d'un motif obligatoire.
+
+                </div>
+
+            </div>
+
+
+            <!-- BOUTONS -->
+
+            <div class="bottom-actions">
+
+                <button class="bottom-btn">
+                    ▣ &nbsp; Imprimer le point DG (PDF)
+                </button>
+
+                <button class="bottom-btn">
+                    ▣ &nbsp; Exporter en Excel
+                </button>
+
+                <button class="bottom-btn">
+                    ▥ &nbsp; Générer la synthèse mensuelle
+                </button>
+
+                <button class="bottom-btn blue-btn">
+                    ＋ &nbsp; Nouvelle recommandation
+                </button>
+
+                <button
+                    class="bottom-btn dark"
+                    onclick="ouvrirCommentaire()"
+                >
+                    ◉ &nbsp; Commenter une recommandation
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             COLONNE DG
+             ================================================= -->
+
+        <aside class="right-column">
+
+            <section class="card dg-card">
+
+                <div class="dg-title">
+
+                    <div class="card-title">
+                        À L'ATTENTION DU DG
+                    </div>
+
+                    <span class="action-required">
+                        5 actions requises
+                    </span>
+
+                </div>
+
+
+                <div class="dg-item">
+
+                    <span class="dg-dot"></span>
+
+                    <div class="dg-project">
+                        PACOFIDE
+                    </div>
+
+                    <div class="dg-text">
+                        Paiement BCEAO non retrouvé
+                    </div>
+
+                    <span class="dg-label">
+                        Rappel à faire au DG
+                    </span>
+
+                </div>
+
+
+                <div class="dg-item">
+
+                    <span class="dg-dot"></span>
+
+                    <div class="dg-project">
+                        P2AE
+                    </div>
+
+                    <div class="dg-text">
+                        ANO Banque mondiale sur avenants
+                    </div>
+
+                    <span class="dg-label">
+                        Relance TTL
+                    </span>
+
+                </div>
+
+
+                <div class="dg-item">
+
+                    <span class="dg-dot"></span>
+
+                    <div class="dg-project">
+                        PMUD-GN
+                    </div>
+
+                    <div class="dg-text">
+                        Réunion DGFD / DG SIRAT à planifier
+                    </div>
+
+                    <span class="dg-label">
+                        Créneau à obtenir
+                    </span>
+
+                </div>
+
+
+                <div class="dg-item">
+
+                    <span class="dg-dot"></span>
+
+                    <div class="dg-project">
+                        PCT FBPP Culture
+                    </div>
+
+                    <div class="dg-text">
+                        Échange avec le Ministre
+                    </div>
+
+                    <span class="dg-label orange">
+                        Action DG
+                    </span>
+
+                </div>
+
+
+                <div class="dg-item">
+
+                    <span class="dg-dot orange"></span>
+
+                    <div class="dg-project">
+                        RMP IPW
+                    </div>
+
+                    <div class="dg-text">
+                        Transmission rapport audit
+                    </div>
+
+                    <span class="dg-label orange">
+                        Relance interne
+                    </span>
+
+                </div>
+
+
+                <div class="dg-footer">
+                    Voir toutes les actions (5) →
+                </div>
+
+            </section>
+
+
+            <section class="card dg-card">
+
+                <div class="card-title">
+                    ÉCHÉANCES À VENIR
+                </div>
+
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:9px">
+                    <span>Dans les 7 prochains jours</span>
+                    <strong>22</strong>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:9px">
+                    <span>Dans les 30 prochains jours</span>
+                    <strong>31</strong>
+                </div>
+
+                <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:9px">
+                    <span>Dans les 60 prochains jours</span>
+                    <strong>17</strong>
+                </div>
+
+            </section>
+
+
+            <section class="card dg-card">
+
+                <div class="card-title">
+                    RÉPARTITION PAR STATUT
+                </div>
+
+                <div style="display:flex;align-items:center;gap:13px">
+
+                    <div style="
+                        width:92px;
+                        height:92px;
+                        border-radius:50%;
+                        background:
+                        conic-gradient(
+                            #078c4c 0 35.2%,
+                            #1260d9 35.2% 83.6%,
+                            #e78c00 83.6% 94.5%,
+                            #d92730 94.5% 98.4%,
+                            #68717e 98.4% 100%
+                        );
+                        position:relative;
+                    ">
+
+                        <div style="
+                            position:absolute;
+                            inset:22px;
+                            background:white;
+                            border-radius:50%;
+                        "></div>
+
+                    </div>
+
+
+                    <div style="font-size:8px;line-height:20px">
+
+                        <div>🟢 Exécutées &nbsp; 45 (35,2%)</div>
+                        <div>🔵 En cours &nbsp; 62 (48,4%)</div>
+                        <div>🟠 Reportées &nbsp; 14 (10,9%)</div>
+                        <div>🔴 Non exécutées &nbsp; 5 (3,9%)</div>
+                        <div>⚫ Annulées &nbsp; 2 (1,6%)</div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+</main>
+
+</div>
+
+
+<!-- ======================================================
+     MODAL COMMENTAIRE
+     ====================================================== -->
+
+<div
+    class="modal"
+    id="commentModal"
+>
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+
+            <h2>
+                Commenter une recommandation
+            </h2>
+
+            <span
+                class="close"
+                onclick="fermerCommentaire()"
+            >
+                ×
+            </span>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <div class="modal-info">
+
+                <strong id="modalId">
+                    REC-2024-001
+                </strong>
+
+                <br>
+
+                <span id="modalProjet">
+                    PACOFIDE
+                </span>
+
+                <br>
+
+                <span id="modalRecommendation">
+                    Paiement BCEAO non retrouvé
+                </span>
+
+            </div>
+
+
+            <label class="modal-label">
+                Dernier commentaire
+            </label>
+
+            <textarea
+                id="commentaireInput"
+                placeholder="Saisir ou modifier le commentaire..."
+            ></textarea>
+
+
+            <div class="modal-footer">
+
+                <button
+                    class="cancel-btn"
+                    onclick="fermerCommentaire()"
+                >
+                    Annuler
+                </button>
+
+                <button
+                    class="save-btn"
+                    onclick="enregistrerCommentaire()"
+                >
+                    Enregistrer
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let recommandations = {{ recommandations | tojson }};
+
+let recommandationSelectionnee = null;
+
+
+/* =========================================================
+   AFFICHER TABLEAU
+   ========================================================= */
+
+function afficherTableau(data){
+
+    const tbody =
+        document.getElementById("tableBody");
+
+    tbody.innerHTML = "";
+
+    data.forEach((r,index)=>{
+
+        let statutClass = "demarrer";
+
+        if(r.statut === "En cours")
+            statutClass = "encours";
+
+        if(r.statut === "En retard")
+            statutClass = "retard";
+
+        if(r.statut === "Reportée")
+            statutClass = "reportee";
+
+        let barClass =
+            r.statut === "Reportée" ||
+            r.statut === "En retard"
+            ? "orange"
+            : "";
+
+        tbody.innerHTML += `
+
+        <tr>
+
+            <td>
+                <input type="checkbox">
+            </td>
+
+            <td>${r.id}</td>
+
+            <td>
+                <strong>${r.revue}</strong><br>
+                ${r.partenaire}
+            </td>
+
+            <td>
+                <strong>${r.projet}</strong>
+            </td>
+
+            <td>
+                ${r.point}
+            </td>
+
+            <td>
+                ${r.recommandation}
+            </td>
+
+            <td>
+                ${r.responsable}
+            </td>
+
+            <td>
+                ${r.initiale}<br>
+                <span style="color:#d92730">
+                    ${r.nouvelle}
+                </span>
+            </td>
+
+            <td>
+                <span class="status ${statutClass}">
+                    ${r.statut}
+                </span>
+            </td>
+
+            <td>
+
+                ${r.avancement}%
+
+                <div class="progress">
+
+                    <div
+                        class="progress-bar ${barClass}"
+                        style="width:${r.avancement}%"
+                    ></div>
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div
+                    class="comment"
+                    onclick="ouvrirCommentaire('${r.id}')"
+                    title="${r.commentaire}"
+                >
+                    ${r.commentaire}
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="actions">
+
+                    <span
+                        class="action-icon"
+                        onclick="ouvrirCommentaire('${r.id}')"
+                    >
+                        ◉
+                    </span>
+
+                    <span
+                        class="action-icon"
+                        onclick="ouvrirCommentaire('${r.id}')"
+                    >
+                        ✎
+                    </span>
+
+                    <span
+                        class="action-icon"
+                    >
+                        ▣
+                    </span>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+
+
+/* =========================================================
+   RECHERCHE
+   ========================================================= */
+
+function rechercher(){
+
+    const texte =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase()
+        .trim();
+
+    const resultats =
+        recommandations.filter(r=>{
+
+            return (
+
+                r.id.toLowerCase().includes(texte) ||
+
+                r.revue.toLowerCase().includes(texte) ||
+
+                r.partenaire.toLowerCase().includes(texte) ||
+
+                r.projet.toLowerCase().includes(texte) ||
+
+                r.point.toLowerCase().includes(texte) ||
+
+                r.recommandation.toLowerCase().includes(texte) ||
+
+                r.commentaire.toLowerCase().includes(texte)
+
+            );
+
+        });
+
+    afficherTableau(resultats);
+
+}
+
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+function ouvrirCommentaire(id=null){
+
+    if(!id){
+
+        id = recommandations[0].id;
+
+    }
+
+    const r =
+        recommandations.find(
+            x => x.id === id
+        );
+
+    if(!r) return;
+
+    recommandationSelectionnee = r;
+
+    document.getElementById(
+        "modalId"
+    ).innerText = r.id;
+
+    document.getElementById(
+        "modalProjet"
+    ).innerText = r.projet;
+
+    document.getElementById(
+        "modalRecommendation"
+    ).innerText = r.recommandation;
+
+    document.getElementById(
+        "commentaireInput"
+    ).value = r.commentaire;
+
+    document
+        .getElementById("commentModal")
+        .classList.add("show");
+}
+
+
+function fermerCommentaire(){
+
+    document
+        .getElementById("commentModal")
+        .classList.remove("show");
+
+}
+
+
+/* =========================================================
+   ENREGISTRER COMMENTAIRE
+   ========================================================= */
+
+function enregistrerCommentaire(){
+
+    if(!recommandationSelectionnee)
+        return;
+
+    const commentaire =
+        document
+        .getElementById("commentaireInput")
+        .value
+        .trim();
+
+    recommandationSelectionnee.commentaire =
+        commentaire;
+
+    afficherTableau(
+        recommandations
+    );
+
+    fermerCommentaire();
+
+}
+
+
+/* =========================================================
+   INITIALISATION
+   ========================================================= */
+
+afficherTableau(
+    recommandations
+);
+
+</script>
+
+</body>
+</html>
+"""
+
+
+# ============================================================
+# ROUTE PRINCIPALE
+# ============================================================
+
+@app.route("/")
+def index():
+
+    return render_template_string(
+        HTML,
+        recommandations=RECOMMANDATIONS
+    )
+
+
+# ============================================================
+# API — COMMENTAIRE
+# ============================================================
+
+@app.route(
+    "/api/recommandations/<id>/commentaire",
+    methods=["PUT"]
+)
+def commentaire(id):
+
+    data = request.get_json()
+
+    for r in RECOMMANDATIONS:
+
+        if r["id"] == id:
+
+            r["commentaire"] = data.get(
+                "commentaire",
+                ""
+            )
+
+            return jsonify({
+                "success": True,
+                "data": r
+            })
+
+    return jsonify({
+        "success": False,
+        "message": "Recommandation introuvable"
+    }), 404
+
+
+# ============================================================
+# API — DONNEES
+# ============================================================
+
+@app.route(
+    "/api/recommandations",
+    methods=["GET"]
+)
+def recommandations():
+
+    return jsonify({
+        "success": True,
+        "total": len(RECOMMANDATIONS),
+        "data": RECOMMANDATIONS
+    })
+
+
+# ============================================================
+# LANCEMENT
+# ============================================================
+
+if __name__ == "__main__":
+
+    app.run(
+        host="127.0.0.1",
+        port=5000,
+        debug=True
+    )

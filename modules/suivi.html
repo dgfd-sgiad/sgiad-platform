@@ -74,6 +74,7 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
     <button class="grp" onclick="toggleGroup('g-reco')">✅ Recommandations <span class="caret">▾</span></button>
     <div id="g-reco" class="group open">
       <button class="sub" onclick="showView('recos', this)">Toutes les recommandations</button>
+      <button class="sub" onclick="showView('suivirecos', this)">📋 Suivi des recommandations</button>
       <button class="sub" onclick="showView('ajout', this)">Ajouter des recommandations</button>
       <button class="sub" onclick="showView('actions', this)">Suivi des actions</button>
     </div>
@@ -172,6 +173,26 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
     <div id="view-revues" style="display:none">
       <div class="card">
         <h3>📅 Revues à venir & rattrapage <button id="btn-add-revue2" class="st info" style="display:none;cursor:pointer;float:right" onclick="ouvrirFormRevue()">➕ Programmer une revue</button></h3>
+        <div id="modal-confirm" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;padding:24px;border-radius:8px;min-width:340px;max-width:460px">
+    <h3 style="margin:0 0 12px">⚠️ Confirmation</h3>
+    <p id="confirm-msg" style="margin:0 0 16px;line-height:1.4"></p>
+    <div style="display:flex;gap:8px">
+      <button id="confirm-ok" style="flex:1;background:#dc2626;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✓ Confirmer</button>
+      <button onclick="document.getElementById('modal-confirm').style.display='none'" style="flex:1;background:#64748b;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✗ Annuler</button>
+    </div>
+  </div>
+</div>
+        <div id="modal-exec-revue" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;padding:24px;border-radius:8px;min-width:340px">
+    <h3 style="margin:0 0 12px">Date de tenue de la revue</h3>
+    <input type="date" id="exec-revue-date" style="width:100%;padding:8px;margin:8px 0;border:1px solid #cbd5e1;border-radius:4px">
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="validerExecRevue()" style="flex:1;background:#059669;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✓ Valider</button>
+      <button onclick="document.getElementById('modal-exec-revue').style.display='none'" style="flex:1;background:#64748b;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✗ Annuler</button>
+    </div>
+  </div>
+</div>
         <div id="form-revue2" class="filters" style="display:none">
           <input type="date" id="fr-date">
           <input type="date" id="fr-tenue" title="Date de tenue (si exécutée)">
@@ -300,6 +321,34 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
         <table><thead><tr><th>Projet</th><th>Action</th><th>Échéance</th><th>Statut</th></tr></thead><tbody id="part-recos"></tbody></table>
       </div>
     </div>
+
+    <div id="view-suivirecos" style="display:none">
+      <div class="card"><h3>📋 Tableau de bord — Suivi des recommandations</h3><div id="srecos-kpis" class="filters"></div></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="card" style="flex:3;min-width:460px">
+          <h3>📑 Liste des recommandations</h3>
+          <div class="filters">
+            <select id="sr-partenaire" onchange="renderSuiviRecos()"></select>
+            <select id="sr-projet" onchange="renderSuiviRecos()"></select>
+            <select id="sr-statut" onchange="renderSuiviRecos()"><option value="">Tous statuts</option><option value="a_demarrer">À démarrer</option><option value="en_cours">En cours</option><option value="reportee">Reportée</option><option value="executee">Exécutée</option><option value="non_executee">Non exécutée</option><option value="annulee">Annulée</option><option value="retard">En retard</option></select>
+            <select id="sr-responsable" onchange="renderSuiviRecos()"></select>
+            <input id="sr-search" placeholder="Rechercher..." oninput="renderSuiviRecos()" style="width:150px">
+          </div>
+          <table><thead><tr><th>N°</th><th>Revue / Partenaire</th><th>Projet</th><th>Point d'attention</th><th>Recommandation (action)</th><th>Responsable</th><th>Éch. initiale</th><th>Nouvelle</th><th>Statut</th><th>Avanc.</th><th>Dernier commentaire</th><th>Actions</th></tr></thead><tbody id="srecos-body"></tbody></table>
+          <div style="margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px;font-size:11px">ℹ️ <b>RAPPEL :</b> toute modification du statut « Reportée », « Non exécutée » ou « Annulée » doit être accompagnée d'un <b>motif obligatoire</b>. Le commentaire (observation) reste modifiable à tout instant et alimente le Point DG.</div>
+        </div>
+        <div class="card" style="flex:1;min-width:260px">
+          <h3>🔴 À l'attention du DG</h3><div id="srecos-dg"></div>
+          <h3 style="margin-top:14px">⏳ Échéances à venir</h3><div id="srecos-ech"></div>
+          <h3 style="margin-top:14px">📊 Répartition par statut</h3><div id="srecos-donut"></div>
+        </div>
+      </div>
+      <div class="card"><div class="filters">
+        <button class="st ok" style="cursor:pointer" onclick="printPointDG()">🖨️ Imprimer le point DG (PDF)</button>
+        <button class="st ok" style="cursor:pointer" onclick="exportSuiviRecos()">⬇️ Exporter en Excel</button>
+        <button class="st info" style="cursor:pointer" onclick="bientot()">📈 Générer la synthèse mensuelle</button>
+      </div></div>
+    </div>
 </div>
 <script>
 var DATA = {};
@@ -311,8 +360,8 @@ function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9
 function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
 var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
 
-var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','partenaire','saisie','revues','historique','recos','ajout','actions','fiche','financier'];
-var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', partenaire:'Fiches partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet', financier:'Suivi financier des décaissements' };
+var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','partenaire','saisie','revues','historique','recos','suivirecos','ajout','actions','fiche','financier'];
+var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', partenaire:'Fiches partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', suivirecos:'Suivi des recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet', financier:'Suivi financier des décaissements' };
 
 function showView(name, btn){
   var bs = document.querySelectorAll('.menu button');
@@ -332,6 +381,7 @@ function showView(name, btn){
   if(name==='revues') renderRevues();
   if(name==='historique') renderHistorique();
   if(name==='recos') renderRecos();
+  if(name==='suivirecos') loadSuiviRecos();
   if(name==='ajout') buildAjout();
   if(name==='actions') renderActions();
   if(name==='financier') loadFinancier();
@@ -823,29 +873,51 @@ function autoPartenaire(){
   for(var i=0;i<revs.length;i++){ if(revs[i].id === id){ document.getElementById('fc-part').value = revs[i].partenaire || ''; break; } }
 }
 
+var EXEC_REVUE_ID = null;
 async function executerRevue(id){
-  var d = prompt('Date de tenue de la revue / mission (AAAA-MM-JJ) :', new Date().toISOString().slice(0,10));
-  if(d === null) return;
-  var res = await fetch('/api/suivi/revues/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id, date_reelle: d }) });
+  EXEC_REVUE_ID = id;
+  document.getElementById('exec-revue-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('modal-exec-revue').style.display = 'flex';
+}
+
+async function validerExecRevue(){
+  var d = document.getElementById('exec-revue-date').value;
+  if(!d){ flashSuivi('Choisissez une date.', false); return; }
+  document.getElementById('modal-exec-revue').style.display = 'none';
+  var res = await fetch('/api/suivi/revues/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: EXEC_REVUE_ID, date_reelle: d }) });
   var r = await res.json();
   flashSuivi(r.message || r.error, res.ok);
   if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
 }
 
+function confirmSuivi(msg, onConfirm){
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('modal-confirm').style.display = 'flex';
+  var btn = document.getElementById('confirm-ok');
+  var newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.onclick = function(){
+    document.getElementById('modal-confirm').style.display = 'none';
+    onConfirm();
+  };
+}
+
 async function annulerRevue(id){
-  if(!confirm('Annuler l\'exécution de cette revue ? (correction d\'erreur)')) return;
-  var res = await fetch('/api/suivi/revues/annuler', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
-  var d = await res.json();
-  flashSuivi(d.message || d.error, res.ok);
-  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
+  confirmSuivi('Annuler l\'exécution de cette revue ? (correction d\'erreur)', async function(){
+    var res = await fetch('/api/suivi/revues/annuler', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
+    var d = await res.json();
+    flashSuivi(d.message || d.error, res.ok);
+    if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
+  });
 }
 
 async function executerReco(id){
-  if(!confirm('Marquer cette recommandation comme exécutée ?')) return;
-  var res = await fetch('/api/suivi/recommandations/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
-  var d = await res.json();
-  flashSuivi(d.message || d.error, res.ok);
-  if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
+  confirmSuivi('Marquer cette recommandation comme exécutée ?', async function(){
+    var res = await fetch('/api/suivi/recommandations/executer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id }) });
+    var d = await res.json();
+    flashSuivi(d.message || d.error, res.ok);
+    if(res.ok){ flashSuivi('Actualisation...', true); setTimeout(function(){ location.reload(); }, 300); }
+  });
 }
 
 function catReco(r){
@@ -1427,6 +1499,187 @@ async function init(){
   renderHistorique(); renderRecos();
 }
 init();
+
+var STATUTS_LABEL = { a_demarrer:'À démarrer', en_cours:'En cours', reportee:'Reportée', executee:'Exécutée', non_executee:'Non exécutée', annulee:'Annulée' };
+var STATUTS_COLOR = { a_demarrer:'#64748b', en_cours:'#2563eb', reportee:'#d97706', executee:'#059669', non_executee:'#dc2626', annulee:'#1e293b' };
+
+function recoEnRetard(r){ if(r.executee || r.statut==='annulee' || !r.echeance) return false; var t=new Date(); t.setHours(0,0,0,0); return new Date(String(r.echeance).slice(0,10)) < t; }
+
+function loadSuiviRecos(){ buildSuiviRecosFilters(); renderSuiviRecos(); }
+
+function buildSuiviRecosFilters(){
+  var recos = DATA.recommandations||[];
+  var P={},J={},R={};
+  for(var i=0;i<recos.length;i++){ if(recos[i].partenaire)P[recos[i].partenaire]=1; if(recos[i].projet)J[recos[i].projet]=1; if(recos[i].responsable_direct)R[recos[i].responsable_direct]=1; }
+  var o='<option value="">Tous partenaires</option>'; for(var k in P)o+='<option value="'+esc(k)+'">'+esc(k)+'</option>'; document.getElementById('sr-partenaire').innerHTML=o;
+  o='<option value="">Tous projets</option>'; for(var k in J)o+='<option value="'+esc(k)+'">'+esc(k)+'</option>'; document.getElementById('sr-projet').innerHTML=o;
+  o='<option value="">Tous responsables</option>'; for(var k in R)o+='<option value="'+esc(k)+'">'+esc(k)+'</option>'; document.getElementById('sr-responsable').innerHTML=o;
+}
+
+function filteredRecosSR(){
+  var fp=document.getElementById('sr-partenaire').value, fj=document.getElementById('sr-projet').value, fs=document.getElementById('sr-statut').value, fr=document.getElementById('sr-responsable').value, q=(document.getElementById('sr-search').value||'').toLowerCase();
+  return (DATA.recommandations||[]).filter(function(r){
+    if(fp && r.partenaire!==fp) return false;
+    if(fj && r.projet!==fj) return false;
+    if(fr && r.responsable_direct!==fr) return false;
+    if(fs==='retard'){ if(!recoEnRetard(r)) return false; }
+    else if(fs && (r.statut||'a_demarrer')!==fs) return false;
+    if(q && ((r.texte||'')+(r.difficulte||'')+(r.projet||'')+(r.commentaires||'')).toLowerCase().indexOf(q)<0) return false;
+    return true;
+  });
+}
+
+function renderSuiviRecos(){
+  var recos = filteredRecosSR();
+  var all = DATA.recommandations||[];
+  var c={a_demarrer:0,en_cours:0,reportee:0,executee:0,non_executee:0,annulee:0}; var retard=0;
+  for(var i=0;i<all.length;i++){ var s=all[i].statut||'a_demarrer'; if(c[s]!==undefined)c[s]++; if(recoEnRetard(all[i]))retard++; }
+  var tot=all.length; function pc(n){ return tot?Math.round(n/tot*1000)/10:0; }
+  document.getElementById('srecos-kpis').innerHTML =
+    '<div style="font-size:11px"><b>Total :</b> '+tot+'</div>'
+    +'<div style="font-size:11px;color:#059669"><b>✅ Exécutées :</b> '+c.executee+' ('+pc(c.executee)+'%)</div>'
+    +'<div style="font-size:11px;color:#2563eb"><b>🔵 En cours :</b> '+c.en_cours+' ('+pc(c.en_cours)+'%)</div>'
+    +'<div style="font-size:11px;color:#d97706"><b>🟠 Reportées :</b> '+c.reportee+' ('+pc(c.reportee)+'%)</div>'
+    +'<div style="font-size:11px;color:#dc2626"><b>🔴 Non exécutées :</b> '+c.non_executee+' ('+pc(c.non_executee)+'%)</div>'
+    +'<div style="font-size:11px;color:#1e293b"><b>⚫ Annulées :</b> '+c.annulee+' ('+pc(c.annulee)+'%)</div>'
+    +'<div style="font-size:11px;color:#dc2626"><b>⚠️ En retard :</b> '+retard+' ('+pc(retard)+'%)</div>';
+  var revuesById={}; var rv=DATA.revues||[]; for(var i=0;i<rv.length;i++)revuesById[rv[i].id]=rv[i];
+  var html='';
+  for(var i=0;i<recos.length;i++){
+    var r=recos[i]; var rvv=revuesById[r.revue_id];
+    var st=r.statut||'a_demarrer'; var late=recoEnRetard(r);
+    var badge = late ? '<span class="st bad">⚠️ En retard</span>' : '<span class="st" style="background:'+STATUTS_COLOR[st]+'22;color:'+STATUTS_COLOR[st]+'">'+STATUTS_LABEL[st]+'</span>';
+    var av = (r.avancement!=null?r.avancement:0);
+    html += '<tr'+(late?' style="background:#fef2f2"':'')+'><td>'+r.id+'</td>'
+      +'<td style="font-size:10px">'+esc(r.partenaire||'')+'<br>'+(rvv?dateFr(rvv.date_revue):'')+'</td>'
+      +'<td style="font-size:11px"><b>'+esc(r.projet||'')+'</b></td>'
+      +'<td style="font-size:11px">'+esc(r.difficulte||'')+'</td>'
+      +'<td style="font-size:11px">'+esc(r.texte||'')+'</td>'
+      +'<td style="font-size:11px">'+esc(r.responsable_direct||'')+'</td>'
+      +'<td style="font-size:11px">'+dateFr(r.echeance)+'</td>'
+      +'<td style="font-size:11px">'+(r.nouvelle_echeance?dateFr(r.nouvelle_echeance):'-')+'</td>'
+      +'<td>'+badge+'</td>'
+      +'<td style="font-size:10px">'+av+'%<div style="background:#e2e8f0;height:5px;border-radius:3px"><div style="background:'+STATUTS_COLOR[st]+';height:5px;width:'+av+'%;border-radius:3px"></div></div></td>'
+      +'<td style="font-size:10px;max-width:180px">'+esc((r.commentaires||'').slice(0,90))+'</td>'
+      +'<td style="white-space:nowrap"><button class="st info" style="cursor:pointer" title="Changer le statut" onclick="openStatutReco('+r.id+')">🔄</button> <button class="st" style="cursor:pointer" title="Commenter" onclick="openCommentReco('+r.id+')">✏️</button> <button class="st" style="cursor:pointer" title="Historique" onclick="openHistReco('+r.id+')">🕐</button></td></tr>';
+  }
+  document.getElementById('srecos-body').innerHTML = html || '<tr><td colspan="12" class="empty">Aucune recommandation.</td></tr>';
+  var lateList = all.filter(recoEnRetard).sort(function(a,b){ return String(a.echeance)<String(b.echeance)?-1:1; }).slice(0,5);
+  var dg=''; for(var i=0;i<lateList.length;i++){ dg+='<div style="margin:6px 0;font-size:11px"><b>'+esc(lateList[i].projet||'')+'</b><br>'+esc((lateList[i].difficulte||'').slice(0,60))+'<br><span class="st bad">En retard</span></div>'; }
+  document.getElementById('srecos-dg').innerHTML = dg || '<p class="empty">Aucune action en retard.</p>';
+  var t=new Date(); function dans(j){ var n=0; for(var i=0;i<all.length;i++){ var r=all[i]; if(r.executee||!r.echeance)continue; var d=Math.round((new Date(String(r.echeance).slice(0,10))-t)/86400000); if(d>=0&&d<=j)n++; } return n; }
+  document.getElementById('srecos-ech').innerHTML = '<div style="font-size:11px">7 jours : <b>'+dans(7)+'</b></div><div style="font-size:11px">30 jours : <b>'+dans(30)+'</b></div><div style="font-size:11px">60 jours : <b>'+dans(60)+'</b></div>';
+  var seg='', acc=0; var ordre=['executee','en_cours','reportee','non_executee','annulee'];
+  for(var i=0;i<ordre.length;i++){ var p=pc(c[ordre[i]]); if(p>0){ seg+=STATUTS_COLOR[ordre[i]]+' '+acc+'% '+(acc+p)+'%, '; acc+=p; } }
+  document.getElementById('srecos-donut').innerHTML = '<div style="width:110px;height:110px;border-radius:50%;background:conic-gradient('+(seg||'#e2e8f0 0 100%, ')+');margin:0 auto"></div>'
+    + ordre.map(function(k){ return '<div style="font-size:10px"><span style="display:inline-block;width:9px;height:9px;background:'+STATUTS_COLOR[k]+';border-radius:2px"></span> '+STATUTS_LABEL[k]+' : '+c[k]+'</div>'; }).join('');
+}
+
+var MSR_ID=null;
+function openStatutReco(id){ var r=null; var all=DATA.recommandations||[]; for(var i=0;i<all.length;i++)if(all[i].id===id)r=all[i]; if(!r)return; MSR_ID=id;
+  document.getElementById('msr-titre').textContent = (r.projet||'')+' — '+(r.texte||'').slice(0,80);
+  document.getElementById('msr-statut').value = r.statut||'a_demarrer';
+  document.getElementById('msr-av').value = (r.avancement!=null?r.avancement:0);
+  document.getElementById('msr-av-txt').textContent = (r.avancement!=null?r.avancement:0);
+  document.getElementById('msr-ech').value = r.nouvelle_echeance||r.echeance||'';
+  document.getElementById('msr-motif').value = r.motif_statut||'';
+  document.getElementById('msr-comm').value = r.commentaires||'';
+  msrStatutChange();
+  document.getElementById('modal-statut-reco').style.display='flex';
+}
+function msrStatutChange(){ var s=document.getElementById('msr-statut').value;
+  document.getElementById('msr-ech-block').style.display = (s==='reportee')?'block':'none';
+  document.getElementById('msr-motif-block').style.display = (['reportee','non_executee','annulee'].indexOf(s)>=0)?'block':'none';
+}
+async function saveStatutReco(){ var s=document.getElementById('msr-statut').value;
+  var motif=document.getElementById('msr-motif').value.trim();
+  if(['reportee','non_executee','annulee'].indexOf(s)>=0 && !motif){ flashSuivi('Motif obligatoire pour ce statut.', false); return; }
+  var body={ id:MSR_ID, statut:s, motif:motif||null, commentaire:document.getElementById('msr-comm').value.trim()||null, nouvelle_echeance:document.getElementById('msr-ech').value||null, avancement:document.getElementById('msr-av').value };
+  var res=await fetch('/api/suivi/recommandations/statut',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  var d=await res.json(); flashSuivi(d.message||d.error,res.ok);
+  if(res.ok){ document.getElementById('modal-statut-reco').style.display='none'; setTimeout(function(){ location.reload(); },300); }
+}
+
+var MCR_ID=null;
+function openCommentReco(id){ var r=null; var all=DATA.recommandations||[]; for(var i=0;i<all.length;i++)if(all[i].id===id)r=all[i]; if(!r)return; MCR_ID=id;
+  document.getElementById('mcr-titre').textContent=(r.projet||'')+' — '+(r.texte||'').slice(0,80);
+  document.getElementById('mcr-comm').value=r.commentaires||'';
+  document.getElementById('modal-comm-reco').style.display='flex';
+}
+async function saveCommentReco(){ var c=document.getElementById('mcr-comm').value.trim(); if(!c){ flashSuivi('Commentaire vide.',false); return; }
+  var res=await fetch('/api/suivi/recommandations/commenter',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:MCR_ID,commentaire:c})});
+  var d=await res.json(); flashSuivi(d.message||d.error,res.ok);
+  if(res.ok){ document.getElementById('modal-comm-reco').style.display='none'; setTimeout(function(){ location.reload(); },300); }
+}
+
+async function openHistReco(id){ document.getElementById('modal-hist-reco').style.display='flex'; document.getElementById('mhr-liste').innerHTML='<p>Chargement...</p>';
+  var res=await fetch('/api/suivi/recommandations/historique?id='+id); var d=await res.json(); var h=d.historique||[];
+  var html=''; for(var i=0;i<h.length;i++){ html+='<div style="border-left:3px solid #1e5aa8;padding:6px;margin:6px 0;font-size:11px"><b>'+dateFr(h[i].created_at)+'</b> — '+esc(h[i].auteur||'')+'<br>'+(h[i].nouveau_statut?('Statut : '+(STATUTS_LABEL[h[i].ancien_statut]||h[i].ancien_statut)+' → '+(STATUTS_LABEL[h[i].nouveau_statut]||h[i].nouveau_statut)+'<br>'):'')+esc(h[i].commentaire||'')+'</div>'; }
+  document.getElementById('mhr-liste').innerHTML = html || '<p class="empty">Aucun changement enregistré.</p>';
+}
+
+function exportSuiviRecos(){ var recos=filteredRecosSR();
+  var html='<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><td colspan="10" style="font-weight:bold;text-align:center">SUIVI DES RECOMMANDATIONS — édité le '+dateFr(new Date().toISOString())+'</td></tr><tr><th>N°</th><th>Partenaire</th><th>Projet</th><th>Point d attention</th><th>Recommandation</th><th>Responsable</th><th>Echeance</th><th>Statut</th><th>Avancement</th><th>Commentaire</th></tr>';
+  for(var i=0;i<recos.length;i++){ var r=recos[i]; var st=r.statut||'a_demarrer'; html+='<tr><td>'+r.id+'</td><td>'+esc(r.partenaire||'')+'</td><td>'+esc(r.projet||'')+'</td><td>'+esc(r.difficulte||'')+'</td><td>'+esc(r.texte||'')+'</td><td>'+esc(r.responsable_direct||'')+'</td><td>'+dateFr(r.echeance)+'</td><td>'+(recoEnRetard(r)?'En retard':STATUTS_LABEL[st])+'</td><td>'+(r.avancement!=null?r.avancement:0)+'%</td><td>'+esc(r.commentaires||'')+'</td></tr>'; }
+  html+='</table></body></html>';
+  var blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='suivi_recommandations.xls'; a.click();
+}
+
+function printPointDG(){ var recos=filteredRecosSR();
+  var byPart={}; for(var i=0;i<recos.length;i++){ var p=recos[i].partenaire||'Divers'; (byPart[p]=byPart[p]||[]).push(recos[i]); }
+  var w=window.open('','_blank'); if(!w){ flashSuivi('Autorisez les fenêtres pop-up pour imprimer.',false); return; }
+  var html='<html><head><meta charset="UTF-8"><title>Point des recommandations</title><style>body{font-family:Calibri,Arial,sans-serif;font-size:11px}h1{font-size:14px;text-align:center;text-transform:uppercase}h2{font-size:12px;background:#1e3a5f;color:white;padding:4px 6px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;padding:4px;vertical-align:top;font-size:10px}.fiche{background:#f1f5f9;font-weight:bold}</style></head><body>';
+  html+='<p style="text-align:center">RÉPUBLIQUE DU BÉNIN — MINISTÈRE DE L\'ÉCONOMIE ET DES FINANCES<br>DIRECTION GÉNÉRALE DU FINANCEMENT DU DÉVELOPPEMENT (DGFD)</p>';
+  for(var part in byPart){
+    var list=byPart[part];
+    var ex=0,en=0,ne=0; for(var i=0;i<list.length;i++){ var s=list[i].statut||'a_demarrer'; if(s==='executee')ex++; else if(s==='non_executee'||s==='annulee')ne++; else en++; }
+    html+='<h1>Point des recommandations — '+esc(part)+'<br><span style="font-size:10px">édité le '+dateFr(new Date().toISOString())+'</span></h1>';
+    html+='<table><tr><th>Recommandations</th><th>Nombre</th><th>Taux (%)</th></tr><tr><td>Exécutées</td><td>'+ex+'</td><td>'+Math.round(ex/list.length*10000)/100+'</td></tr><tr><td>En cours</td><td>'+en+'</td><td>'+Math.round(en/list.length*10000)/100+'</td></tr><tr><td>Non exécutées</td><td>'+ne+'</td><td>'+Math.round(ne/list.length*10000)/100+'</td></tr><tr><td>Total</td><td>'+list.length+'</td><td>100</td></tr></table>';
+    var byProj={}; for(var i=0;i<list.length;i++){ var pj=list[i].projet||'Divers'; (byProj[pj]=byProj[pj]||[]).push(list[i]); }
+    for(var proj in byProj){
+      html+='<h2>'+esc(proj)+'</h2>';
+      html+='<table><tr><th>N°</th><th>Points d\'attention</th><th>Recommandations</th><th>Échéance</th><th>Responsables</th><th>Associés</th><th>Statut</th><th>Observations</th></tr>';
+      var lp=byProj[proj];
+      for(var i=0;i<lp.length;i++){ var r=lp[i]; var s=r.statut||'a_demarrer'; var off = s==='executee'?'Exécutée':(s==='non_executee'||s==='annulee'?'Non exécutée':'En cours'); if(recoEnRetard(r)) off+=' (en retard)';
+        html+='<tr><td>'+(i+1)+'</td><td>'+esc(r.difficulte||'')+'</td><td>'+esc(r.texte||'')+'</td><td>'+dateFr(r.echeance)+'</td><td>'+esc(r.responsable_direct||'')+'</td><td>'+esc(r.associe||'')+'</td><td>'+off+'</td><td>'+esc(r.commentaires||'')+'</td></tr>'; }
+      html+='</table>';
+    }
+  }
+  html+='</body></html>';
+  w.document.write(html); w.document.close(); setTimeout(function(){ w.print(); },400);
+}
 </script>
+
+<div id="modal-statut-reco" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;padding:24px;border-radius:8px;min-width:420px;max-width:560px">
+    <h3 style="margin:0 0 10px">🔄 Mettre à jour le statut</h3>
+    <p id="msr-titre" style="font-size:12px;margin:0 0 10px"></p>
+    <select id="msr-statut" onchange="msrStatutChange()" style="width:100%;padding:8px;margin-bottom:8px"><option value="a_demarrer">À démarrer</option><option value="en_cours">En cours</option><option value="reportee">Reportée</option><option value="executee">Exécutée</option><option value="non_executee">Non exécutée</option><option value="annulee">Annulée</option></select>
+    <label style="font-size:11px">Avancement : <span id="msr-av-txt">0</span>%</label>
+    <input type="range" id="msr-av" min="0" max="100" step="5" value="0" oninput="document.getElementById('msr-av-txt').textContent=this.value" style="width:100%">
+    <div id="msr-ech-block" style="display:none;margin:8px 0"><label style="font-size:11px">Nouvelle échéance :</label><input type="date" id="msr-ech" style="width:100%;padding:6px"></div>
+    <div id="msr-motif-block" style="display:none;margin:8px 0"><label style="font-size:11px">Motif (obligatoire) :</label><textarea id="msr-motif" rows="2" style="width:100%"></textarea></div>
+    <label style="font-size:11px">Commentaire / observation (réponse au DG) :</label>
+    <textarea id="msr-comm" rows="3" style="width:100%"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px"><button onclick="saveStatutReco()" style="flex:1;background:#059669;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✓ Enregistrer</button><button onclick="document.getElementById('modal-statut-reco').style.display='none'" style="flex:1;background:#64748b;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✗ Annuler</button></div>
+  </div>
+</div>
+
+<div id="modal-comm-reco" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;padding:24px;border-radius:8px;min-width:420px;max-width:560px">
+    <h3 style="margin:0 0 10px">✏️ Commentaire / observation</h3>
+    <p id="mcr-titre" style="font-size:12px;margin:0 0 10px"></p>
+    <textarea id="mcr-comm" rows="5" style="width:100%"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px"><button onclick="saveCommentReco()" style="flex:1;background:#059669;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✓ Enregistrer</button><button onclick="document.getElementById('modal-comm-reco').style.display='none'" style="flex:1;background:#64748b;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer">✗ Annuler</button></div>
+  </div>
+</div>
+
+<div id="modal-hist-reco" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:white;padding:24px;border-radius:8px;min-width:420px;max-width:600px;max-height:80vh;overflow:auto">
+    <h3 style="margin:0 0 10px">🕐 Historique des changements</h3>
+    <div id="mhr-liste"></div>
+    <button onclick="document.getElementById('modal-hist-reco').style.display='none'" style="width:100%;background:#64748b;color:white;padding:8px;border:none;border-radius:4px;cursor:pointer;margin-top:10px">Fermer</button>
+  </div>
+</div>
 </body>
 </html>

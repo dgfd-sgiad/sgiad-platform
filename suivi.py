@@ -171,6 +171,16 @@ def suivi_page():
     return send_from_directory(os.path.join(BASE_DIR, 'modules'), 'suivi.html')
 
 
+@bp.route('/suivi-recommandations')
+def page_suivi_recos():
+    return send_from_directory('modules', 'suivi_recos.html')
+
+
+@bp.route('/assets/<path:filename>')
+def assets(filename):
+    return send_from_directory('modules', filename, mimetype='application/javascript')
+
+
 def _current_role():
     try:
         auth_header = request.headers.get('Authorization', '') or ''
@@ -271,6 +281,26 @@ def suivi_add_revue():
         return jsonify({'error': str(e)}), 500
 
 
+@bp.route('/api/suivi/recommandations', methods=['GET'])
+def get_recommandations():
+    try:
+        sb = get_supabase()
+        recos = sb.table('recommandations').select('*').execute().data or []
+        return jsonify({'recommandations': recos})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/api/suivi/dashboard')
+def get_dashboard():
+    try:
+        sb = get_supabase()
+        revues = sb.table('revues').select('*').execute().data or []
+        recommandations = sb.table('recommandations').select('*').execute().data or []
+        return jsonify({'revues': revues, 'recommandations': recommandations})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/suivi/recommandations', methods=['POST'])
 @require_auth
 def suivi_add_reco():
@@ -355,6 +385,77 @@ def suivi_executer_reco():
         sb = get_supabase()
         sb.table('recommandations').update({'executee': True}).eq('id', rid).execute()
         return jsonify({'ok': True, 'message': 'Recommandation marquee executee.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/suivi/recommandations/statut', methods=['POST'])
+def changer_statut_reco():
+    try:
+        d = request.get_json(force=True)
+        reco_id = d.get('id')
+        statut = d.get('statut')
+        motif = (d.get('motif') or '').strip() or None
+        commentaire = (d.get('commentaire') or '').strip() or None
+        nouvelle_echeance = d.get('nouvelle_echeance') or None
+        avancement = d.get('avancement')
+        VALIDES = ['a_demarrer', 'en_cours', 'reportee', 'executee', 'non_executee', 'annulee']
+        if statut not in VALIDES:
+            return jsonify({'error': 'Statut invalide.'}), 400
+        if statut in ('reportee', 'non_executee', 'annulee') and not motif:
+            return jsonify({'error': 'Motif obligatoire pour ce statut.'}), 400
+        sb = get_supabase()
+        cur = sb.table('recommandations').select('*').eq('id', reco_id).execute()
+        if not cur.data:
+            return jsonify({'error': 'Recommandation introuvable.'}), 404
+        old = cur.data[0]
+        upd = {'statut': statut, 'motif_statut': motif, 'executee': (statut == 'executee')}
+        if avancement is not None:
+            upd['avancement'] = int(avancement)
+        if statut == 'executee':
+            upd['avancement'] = 100
+        if statut == 'reportee' and nouvelle_echeance:
+            upd['nouvelle_echeance'] = nouvelle_echeance
+            upd['echeance'] = nouvelle_echeance
+        if commentaire:
+            upd['commentaires'] = commentaire
+        sb.table('recommandations').update(upd).eq('id', reco_id).execute()
+        sb.table('reco_historique').insert({
+            'reco_id': reco_id, 'ancien_statut': old.get('statut'),
+            'nouveau_statut': statut, 'commentaire': commentaire or motif,
+            'auteur': d.get('auteur') or 'DGFD',
+        }).execute()
+        return jsonify({'message': 'Statut mis à jour avec succès.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/suivi/recommandations/commenter', methods=['POST'])
+def commenter_reco():
+    try:
+        d = request.get_json(force=True)
+        reco_id = d.get('id')
+        commentaire = (d.get('commentaire') or '').strip()
+        if not commentaire:
+            return jsonify({'error': 'Commentaire vide.'}), 400
+        sb = get_supabase()
+        sb.table('recommandations').update({'commentaires': commentaire}).eq('id', reco_id).execute()
+        sb.table('reco_historique').insert({
+            'reco_id': reco_id, 'ancien_statut': None, 'nouveau_statut': None,
+            'commentaire': commentaire, 'auteur': d.get('auteur') or 'DGFD',
+        }).execute()
+        return jsonify({'message': 'Commentaire enregistré.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/suivi/recommandations/historique')
+def historique_reco():
+    try:
+        reco_id = request.args.get('id')
+        sb = get_supabase()
+        rows = sb.table('reco_historique').select('*').eq('reco_id', reco_id).order('created_at', desc=True).execute().data or []
+        return jsonify({'historique': rows})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
