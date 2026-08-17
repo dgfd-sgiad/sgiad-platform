@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Le script cherche l'image dans assets/modules/[id].webp
             card.innerHTML = `
                 <div class="module-image">
-                    <img src="assets/modules/${mod.id}.webp" alt="${mod.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <img src="assets/modules/${mod.img || (mod.id + '.webp')}" alt="${mod.title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
                     <div class="placeholder-icon" style="display:none">${mod.icon}</div>
                     ${actif ? '' : '<span class="badge-non-actif">Non actif</span>'}
                 </div>

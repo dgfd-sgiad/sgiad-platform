@@ -81,6 +81,7 @@ const modules = [
         id: 'veille_accords',
         title: 'Veille des Accords Signés',
         icon: '📡',
+        img: 'veille_accords.png',
         file: 'modules/veille.html',
         actif: true
     }
