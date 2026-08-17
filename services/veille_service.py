@@ -29,7 +29,24 @@ _RLS_ERROR_LOGGED = False
 REQUETES = [
     '"accord de financement" Bénin',
     '"convention de financement" Bénin',
+    '"accord de prêt" Bénin',
+    '"convention de prêt" Bénin',
     'Bénin accord signé financement développement',
+    'Bénin mémorandum entente signé financement',
+    'Bénin protocole accord financement signé',
+    'Bénin appui budgétaire approuvé',
+    'Bénin mobilisation ressources financement',
+    'Bénin Banque Mondiale approuve financement',
+    'Bénin BAD approuve prêt don',
+    'Bénin AFD signe accord financement',
+    'Bénin BOAD signe prêt financement',
+    'Bénin UEMOA accord financement',
+    'Benin "financing agreement" signed',
+    'Benin "loan agreement" signed',
+    'Benin "grant agreement" signed',
+    'Benin World Bank approves financing',
+    'Benin African Development Bank approves',
+    'Benin IMF staff level agreement',
 ]
 
 
@@ -48,7 +65,7 @@ def _pertinent(titre):
     t = (titre or '').lower()
     if not ('bénin' in t or 'benin' in t):
         return False
-    return any(k in t for k in ('accord', 'convention', 'financement', 'signé', 'signe', 'don', 'prêt'))
+    return any(k in t for k in ('accord', 'convention', 'financement', 'financing', 'signé', 'signe', 'signed', 'signes', 'don', 'prêt', 'loan', 'grant', 'approuve', 'approves', 'appui', 'mobilisation', 'mémorandum', 'protocole', 'intention', 'investissement', 'crédit', 'credit', 'uemoa', 'partenariat', 'budget'))
 
 
 def _scan_gdelt(query):
@@ -57,7 +74,7 @@ def _scan_gdelt(query):
     articles = []
     params = urllib.parse.urlencode({
         'query': query, 'mode': 'ArtList', 'format': 'JSON',
-        'timespan': '3d', 'maxrecords': '25', 'sort': 'DateDesc',
+        'timespan': '7d', 'maxrecords': '50', 'sort': 'DateDesc',
     })
     try:
         data = _http_json('https://api.gdeltproject.org/api/v2/doc/doc?' + params)
@@ -143,6 +160,37 @@ def _extraire_champs(resume):
     return partenaire, montant
 
 
+
+PARTENAIRES_CONNUS = [
+    ('AFD', ['afd', 'agence francaise de developpement', 'agence française de développement']),
+    ('BAD', ['banque africaine de developpement', 'banque africaine de développement', 'afdb']),
+    ('Banque Mondiale', ['banque mondiale', 'world bank']),
+    ('BOAD', ['boad']),
+    ('UEMOA', ['uemoa']),
+    ('FMI', ['fmi', 'imf']),
+    ('Union Européenne', ['union europeenne', 'union européenne']),
+    ('KfW', ['kfw']),
+    ('JICA', ['jica']),
+    ('BID', ['banque islamique de developpement']),
+    ('FIDA', ['fida']),
+    ('Chine', ['chine', 'eximbank', 'exim bank']),
+    ('France', ['republique francaise', 'république française']),
+    ('Luxembourg', ['luxembourg']),
+]
+
+def _deviner_partenaire(titre):
+    t = (titre or '').lower()
+    trouv = [nom for nom, cles in PARTENAIRES_CONNUS if any(c in t for c in cles)]
+    return ', '.join(trouv[:3])
+
+_MONTANT_RE = re.compile(r'([\d\.,\s]+)\s*(milliards|milliard|millions|million|billion|mds)\s*(F CFA|FCFA|USD|US\$|\$|euros?|€)', re.I)
+
+def _deviner_montant(titre):
+    m = _MONTANT_RE.search(titre or '')
+    if m:
+        return (m.group(1).strip() + ' ' + m.group(2) + ' ' + m.group(3)).replace('  ', ' ')
+    return ''
+
 def _notifier_telegram(texte):
     """Envoi optionnel via bot Telegram (gratuit). Renvoie False si non configuré."""
     token = (os.environ.get('TELEGRAM_BOT_TOKEN') or '').strip()
@@ -194,6 +242,10 @@ def scan_and_notify(max_nouveautes=10):
     for art in nouvelles[:max_nouveautes]:
         resume = _gemini_resume(art['titre'], art['source'])
         partenaire, montant = _extraire_champs(resume)
+        if not partenaire:
+            partenaire = _deviner_partenaire(art['titre'])
+        if not montant:
+            montant = _deviner_montant(art['titre'])
         try:
             sb.table('veille_alertes').insert({
                 'url': art['url'],

@@ -16,17 +16,32 @@
         .stat-card { background: white; padding: 12px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 4px solid var(--primary-blue); }
         .stat-card .lbl { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
         .stat-card .val { font-size: 20px; font-weight: 800; color: var(--primary-blue); }
-        .alertes-wrap { padding: 0 20px 30px; display: flex; flex-direction: column; gap: 10px; }
-        .alerte-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); padding: 14px 16px; border-left: 4px solid var(--secondary-green); }
-        .alerte-card .titre { font-weight: 700; font-size: 13px; color: #111827; margin-bottom: 6px; }
-        .alerte-card .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+        .filters-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; background: white; margin: 0 20px 14px; padding: 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .filters-bar select, .filters-bar input { padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-family: inherit; }
+        .filters-bar select { min-width: 170px; }
+        .filters-bar input[type="text"] { min-width: 220px; flex: 1; }
+        .table-wrap { background: white; margin: 0 20px 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; }
+        .table-veille { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .table-veille th { background: var(--primary-blue); color: white; padding: 10px 12px; text-align: left; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; cursor: pointer; user-select: none; white-space: nowrap; }
+        .table-veille th:hover { background: #0a3a61; }
+        .table-veille td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+        .table-veille tr:hover { background: #f8fafc; }
+        .col-date { width: 100px; font-weight: 700; color: var(--primary-blue); white-space: nowrap; }
+        .col-titre { min-width: 300px; font-weight: 600; color: #111827; }
+        .col-partenaire { width: 150px; }
+        .col-montant { width: 140px; font-weight: 700; color: #166534; white-space: nowrap; }
+        .col-source { width: 120px; color: #6b7280; font-size: 11px; }
+        .col-actions { width: 70px; text-align: center; }
+        a.lire { font-size: 11px; font-weight: 700; color: var(--secondary-green); text-decoration: none; padding: 4px 8px; border: 1px solid var(--secondary-green); border-radius: 4px; white-space: nowrap; }
+        a.lire:hover { background: var(--secondary-green); color: white; }
+        .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; display: inline-block; margin: 2px; }
         .bg-blue { background: #dbeafe; color: #1e40af; } .bg-green { background: #dcfce7; color: #166534; }
         .bg-gold { background: #fef3c7; color: #92400e; } .bg-gray { background: #f3f4f6; color: #374151; }
-        .alerte-card .resume { font-size: 12px; color: #374151; white-space: pre-line; margin-bottom: 8px; }
-        .alerte-card .infos { font-size: 11px; color: #6b7280; margin-bottom: 8px; }
-        .alerte-card a.lire { font-size: 11px; font-weight: 700; color: var(--secondary-green); text-decoration: none; }
-        .vide { text-align: center; color: #6b7280; padding: 40px; background: white; border-radius: 8px; font-size: 13px; }
+        .vide { text-align: center; color: #6b7280; padding: 40px; font-size: 13px; }
+        .detail-modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.6); z-index: 9999; align-items: center; justify-content: center; }
+        .detail-box { background: white; border-radius: 12px; padding: 24px; width: min(680px, 92%); max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+        .detail-box h3 { margin: 0 0 12px; color: var(--primary-blue); font-size: 16px; }
+        .detail-box .resume { background: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; white-space: pre-line; margin: 12px 0; border-left: 3px solid var(--primary-blue); }
     </style>
 </head>
 <body>
@@ -38,75 +53,243 @@
 
         <main class="content-area">
             <header class="top-header-tools">
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <h1 style="font-size:18px; margin:0; color:var(--primary-blue); font-weight:800;">📡 Veille des Accords Signés</h1>
-                    <a href="../index.html" style="padding:6px 12px; background:#f8f9fa; color:#666; text-decoration:none; border-radius:4px; font-size:11px; border:1px solid #ddd;">← Retour</a>
+                <div style="display:flex;align-items:center;gap:15px;">
+                    <h1 style="font-size:18px;margin:0;color:var(--primary-blue);font-weight:800;">📡 Veille des Accords Signés</h1>
+                    <a href="../index.html" style="padding:6px 12px;background:#f8f9fa;color:#666;text-decoration:none;border-radius:4px;font-size:11px;border:1px solid #ddd;">← Accueil</a>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <span style="font-size:10px; color:#6b7280;">Scan automatique toutes les 6 h (GDELT + Google News)</span>
-                    <button class="btn-tool" style="background:var(--secondary-green);" onclick="scanner()">🔄 Scanner maintenant</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn-tool" style="background:var(--primary-blue)" onclick="scanner()">🔍 Scanner maintenant</button>
+                    <button class="btn-tool" style="background:var(--secondary-green)" onclick="exporterExcel()">📥 Export Excel</button>
+                    <button class="btn-tool" style="background:#dc2626" onclick="imprimerPoint()">🖨️ Point de veille</button>
                 </div>
             </header>
 
-            <div class="stats-dashboard">
-                <div class="stat-card"><div class="lbl">Alertes détectées</div><div class="val" id="st-total">—</div></div>
-                <div class="stat-card" style="border-left-color:var(--secondary-green)"><div class="lbl">Sources</div><div class="val" style="font-size:13px; padding-top:4px;">GDELT · Google News</div></div>
-                <div class="stat-card" style="border-left-color:#f28c00"><div class="lbl">IA / Notification</div><div class="val" style="font-size:12px; padding-top:4px;" id="st-ia">—</div></div>
+            <div class="stats-dashboard" id="stats-dashboard"></div>
+
+            <div class="filters-bar">
+                <select id="f-partenaire"><option value="">Tous les partenaires</option></select>
+                <select id="f-periode">
+                    <option value="0">Toutes les dates</option>
+                    <option value="7">7 derniers jours</option>
+                    <option value="30">30 derniers jours</option>
+                    <option value="90">3 derniers mois</option>
+                    <option value="365">12 derniers mois</option>
+                </select>
+                <input type="text" id="f-search" placeholder="Recherche dans titre / résumé / partenaire...">
             </div>
 
-            <div class="alertes-wrap" id="alertes-list">
-                <div class="vide">Chargement des alertes…</div>
+            <div class="table-wrap">
+                <table class="table-veille" id="veille-table">
+                    <thead>
+                        <tr>
+                            <th class="col-date" data-col="date">Date ▼</th>
+                            <th class="col-titre" data-col="titre">Accord / Titre ▼</th>
+                            <th class="col-partenaire" data-col="partenaire">Partenaires ▼</th>
+                            <th class="col-montant" data-col="montant">Montant ▼</th>
+                            <th class="col-source" data-col="source">Source ▼</th>
+                            <th class="col-actions">Lien</th>
+                        </tr>
+                    </thead>
+                    <tbody id="veille-body"></tbody>
+                </table>
+            </div>
+
+            <div id="detail-modal" class="detail-modal" onclick="if(event.target===this)fermerDetail()">
+                <div class="detail-box" id="detail-box"></div>
             </div>
         </main>
     </div>
 
 <script>
-function esc(v) { return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+var ALERTES = [], LAST_DATA = [];
+var FILTRES = { partenaire:'', periode:0, search:'', col:'date', dir:'desc' };
 
-async function chargerAlertes() {
-    const box = document.getElementById('alertes-list');
-    try {
-        const res = await fetch('/api/veille/alertes');
-        const json = await res.json();
-        const list = json.data || [];
-        document.getElementById('st-total').textContent = list.length;
-        document.getElementById('st-ia').textContent =
-            'Gemini : ' + ((window._cfg && window._cfg.gemini) ? 'active' : 'selon clé serveur') +
-            ' · Telegram : selon clé serveur';
-        if (!list.length) {
-            box.innerHTML = '<div class="vide">Aucune alerte pour le moment.<br>Cliquez sur « 🔄 Scanner maintenant » pour lancer une première détection des accords signés partagés en ligne.</div>';
-            return;
+function parseDate(s){
+    if(!s) return 0;
+    var t = String(s).trim();
+    var m = t.match(/^(\d{4})(\d{2})(\d{2})/);
+    if(m) t = m[1]+'-'+m[2]+'-'+m[3];
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+function formatDate(s){
+    var t = parseDate(s);
+    return t ? new Date(t).toLocaleDateString('fr-FR') : (s ? String(s).substring(0,10) : '—');
+}
+function parseMontant(s){
+    if(!s) return 0;
+    var m = String(s).match(/([\d\.,]+)/);
+    if(!m) return 0;
+    var n = parseFloat(m[1].replace(/\./g,'').replace(',','.'));
+    if(isNaN(n)) return 0;
+    var low = String(s).toLowerCase();
+    if(low.indexOf('milliard')>=0 || low.indexOf('billion')>=0) return n*1000;
+    return n;
+}
+
+async function chargerAlertes(){
+    var body = document.getElementById('veille-body');
+    try{
+        var res = await fetch('/api/veille/alertes');
+        var json = await res.json();
+        if(!res.ok) throw new Error(json.error || ('HTTP '+res.status));
+        ALERTES = json.alertes || json.data || (Array.isArray(json)?json:[]);
+        remplirFiltrePartenaires();
+        afficherTableau();
+    }catch(e){
+        body.innerHTML = '<tr><td colspan="6" class="vide">Impossible de charger les alertes : '+esc(e.message)+'</td></tr>';
+    }
+}
+
+function remplirFiltrePartenaires(){
+    var sel = document.getElementById('f-partenaire');
+    var parts = {};
+    ALERTES.forEach(function(a){ (a.partenaire||'').split(/[,;]+/).forEach(function(p){ p=p.trim(); if(p) parts[p]=1; }); });
+    sel.innerHTML = '<option value="">Tous les partenaires ('+ALERTES.length+')</option>';
+    Object.keys(parts).sort().forEach(function(p){ sel.innerHTML += '<option value="'+esc(p)+'">'+esc(p)+'</option>'; });
+}
+
+function filtrer(){
+    var now = Date.now();
+    return ALERTES.filter(function(a){
+        if(FILTRES.partenaire && (a.partenaire||'').toLowerCase().indexOf(FILTRES.partenaire.toLowerCase())<0) return false;
+        if(FILTRES.search){
+            var q = FILTRES.search.toLowerCase();
+            var hay = ((a.titre||'')+' '+(a.resume||'')+' '+(a.partenaire||'')+' '+(a.montant||'')).toLowerCase();
+            if(hay.indexOf(q)<0) return false;
         }
-        box.innerHTML = list.map(a => `
-            <div class="alerte-card">
-                <div class="titre">${esc(a.titre)}</div>
-                <div class="meta">
-                    <span class="badge bg-blue">${esc(a.source || 'source')}</span>
-                    <span class="badge bg-gray">${esc(a.date_article || '')}</span>
-                    <span class="badge bg-green">${esc(a.statut || 'nouveau')}</span>
-                </div>
-                ${a.resume ? `<div class="resume">🤖 ${esc(a.resume)}</div>` : ''}
-                <div class="infos">${a.partenaire ? '<b>Partenaire :</b> ' + esc(a.partenaire) + ' · ' : ''}${a.montant ? '<b>Montant :</b> ' + esc(a.montant) + ' · ' : ''}<b>Détecté le :</b> ${esc(String(a.detecte_le || '').substring(0, 16).replace('T', ' '))}</div>
-                <a class="lire" href="${esc(a.url)}" target="_blank" rel="noopener">Lire l'article source →</a>
-            </div>`).join('');
-    } catch (e) {
-        box.innerHTML = '<div class="vide">⚠️ Impossible de charger les alertes (serveur en démarrage ?). Réessayez dans quelques secondes.</div>';
+        if(FILTRES.periode>0){
+            var t = parseDate(a.date_article);
+            if(!t || (now-t) > FILTRES.periode*86400000) return false;
+        }
+        return true;
+    });
+}
+function trier(data){
+    data.sort(function(a,b){
+        var va, vb;
+        if(FILTRES.col==='date'){ va=parseDate(a.date_article); vb=parseDate(b.date_article); }
+        else if(FILTRES.col==='montant'){ va=parseMontant(a.montant); vb=parseMontant(b.montant); }
+        else if(FILTRES.col==='partenaire'){ va=(a.partenaire||'').toLowerCase(); vb=(b.partenaire||'').toLowerCase(); }
+        else if(FILTRES.col==='source'){ va=(a.source||'').toLowerCase(); vb=(b.source||'').toLowerCase(); }
+        else { va=(a.titre||'').toLowerCase(); vb=(b.titre||'').toLowerCase(); }
+        if(va<vb) return FILTRES.dir==='asc'?-1:1;
+        if(va>vb) return FILTRES.dir==='asc'?1:-1;
+        return 0;
+    });
+    return data;
+}
+
+function afficherTableau(){
+    var body = document.getElementById('veille-body');
+    var data = trier(filtrer());
+    LAST_DATA = data;
+    document.querySelectorAll('#veille-table th[data-col]').forEach(function(th){
+        var active = th.getAttribute('data-col')===FILTRES.col;
+        var base = th.textContent.replace(/[▲▼]/g,'').trim();
+        th.textContent = base + ' ' + (active ? (FILTRES.dir==='asc'?'▲':'▼') : '▼');
+    });
+    if(!data.length){ body.innerHTML = '<tr><td colspan="6" class="vide">Aucun accord détecté pour ces filtres. Lancez un scan 🔍.</td></tr>'; majKPIs(data); return; }
+    var html = '';
+    data.forEach(function(a,i){
+        html += '<tr style="cursor:pointer" onclick="ouvrirDetail('+i+')">';
+        html += '<td class="col-date">'+formatDate(a.date_article)+'</td>';
+        html += '<td class="col-titre">'+esc(a.titre)+'</td>';
+        html += '<td class="col-partenaire">'+(a.partenaire ? '<span class="badge bg-blue">'+esc(a.partenaire)+'</span>' : '—')+'</td>';
+        html += '<td class="col-montant">'+esc(a.montant||'—')+'</td>';
+        html += '<td class="col-source">'+esc(a.source||'')+'</td>';
+        html += '<td class="col-actions"><a class="lire" target="_blank" href="'+esc(a.url)+'" onclick="event.stopPropagation()">Lire ↗</a></td>';
+        html += '</tr>';
+    });
+    body.innerHTML = html;
+    majKPIs(data);
+}
+
+function majKPIs(data){
+    var k = document.getElementById('stats-dashboard');
+    var total = 0;
+    data.forEach(function(a){ total += parseMontant(a.montant); });
+    var parts = {};
+    data.forEach(function(a){ (a.partenaire||'').split(/[,;]+/).forEach(function(p){ p=p.trim(); if(p) parts[p]=(parts[p]||0)+1; }); });
+    var top = Object.keys(parts).sort(function(a,b){ return parts[b]-parts[a]; })[0];
+    k.innerHTML =
+        '<div class="stat-card"><div class="lbl">Accords détectés</div><div class="val">'+data.length+'</div></div>'+
+        '<div class="stat-card" style="border-color:var(--secondary-green)"><div class="lbl">Montants mentionnés (M)</div><div class="val">'+(total?total.toLocaleString('fr-FR',{maximumFractionDigits:1}):'—')+'</div></div>'+
+        '<div class="stat-card" style="border-color:#d97706"><div class="lbl">Partenaire le plus cité</div><div class="val" style="font-size:15px">'+(top?top+' ('+parts[top]+')':'—')+'</div></div>';
+}
+
+function ouvrirDetail(i){
+    var a = LAST_DATA[i];
+    if(!a) return;
+    var box = document.getElementById('detail-box');
+    box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:start"><h3>'+esc(a.titre)+'</h3><span onclick="fermerDetail()" style="cursor:pointer;font-size:22px;color:#94a3b8">×</span></div>'+
+        '<div style="margin:8px 0"><span class="badge bg-gold">'+formatDate(a.date_article)+'</span>'+(a.partenaire?'<span class="badge bg-blue">'+esc(a.partenaire)+'</span>':'')+(a.montant?'<span class="badge bg-green">'+esc(a.montant)+'</span>':'')+'<span class="badge bg-gray">'+esc(a.source||'')+'</span></div>'+
+        (a.resume ? '<div class="resume">'+esc(a.resume)+'</div>' : '<p style="color:#9ca3af;font-size:12px">Pas de résumé IA pour cet article.</p>')+
+        '<a class="lire" target="_blank" href="'+esc(a.url)+'">Lire l\'article complet ↗</a>';
+    document.getElementById('detail-modal').style.display = 'flex';
+}
+function fermerDetail(){ document.getElementById('detail-modal').style.display = 'none'; }
+
+function exporterExcel(){
+    var html = '<html><head><meta charset="UTF-8"></head><body><table border="1"><tr><th>Date</th><th>Accord / Titre</th><th>Partenaires</th><th>Montant</th><th>Source</th><th>URL</th></tr>';
+    LAST_DATA.forEach(function(a){
+        html += '<tr><td>'+formatDate(a.date_article)+'</td><td>'+esc(a.titre)+'</td><td>'+esc(a.partenaire||'')+'</td><td>'+esc(a.montant||'')+'</td><td>'+esc(a.source||'')+'</td><td>'+esc(a.url)+'</td></tr>';
+    });
+    html += '</table></body></html>';
+    var blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'veille_accords_'+new Date().toISOString().substring(0,10)+'.xls';
+    a.click();
+}
+
+function imprimerPoint(){
+    var w = window.open('', '_blank');
+    var h = '<html><head><title>Point de veille</title><style>@page{size:A4 landscape;margin:12mm}body{font-family:"Bookman Old Style",serif;font-size:10pt}h1{font-size:13pt;text-align:center;color:#0f4c81;text-transform:uppercase}h2{font-size:11pt;background:#0f4c81;color:white;padding:3px 8px;margin-top:12px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #333;padding:3px 4px;vertical-align:top;font-size:9pt}th{background:#0f4c81;color:white}</style></head><body>';
+    h += '<h1>Point de veille — Accords de financement du Bénin détectés en ligne<br><span style="font-size:8pt">Édité le '+new Date().toLocaleDateString('fr-FR')+' — DGFD / Pôle Suivi</span></h1>';
+    var byDate = {};
+    LAST_DATA.forEach(function(a){ var k = formatDate(a.date_article); (byDate[k]=byDate[k]||[]).push(a); });
+    Object.keys(byDate).sort(function(a,b){ return b.localeCompare(a); }).forEach(function(d){
+        h += '<h2>'+d+' — '+byDate[d].length+' accord(s)</h2><table><tr><th>Accord / Titre</th><th>Partenaires</th><th>Montant</th><th>Source</th><th>Lien</th></tr>';
+        byDate[d].forEach(function(a){ h += '<tr><td>'+esc(a.titre)+'</td><td>'+esc(a.partenaire||'—')+'</td><td>'+esc(a.montant||'—')+'</td><td>'+esc(a.source||'')+'</td><td>'+esc(a.url)+'</td></tr>'; });
+        h += '</table>';
+    });
+    h += '</body></html>';
+    w.document.write(h);
+    w.document.close();
+    setTimeout(function(){ w.focus(); w.print(); }, 400);
+}
+
+async function scanner(){
+    var body = document.getElementById('veille-body');
+    body.innerHTML = '<tr><td colspan="6" class="vide">🔍 Scan en cours (presse en ligne, ~1 min)…</td></tr>';
+    try{
+        var res = await fetch('/api/veille/scan', { method:'POST' });
+        var json = await res.json();
+        if(!res.ok) throw new Error(json.error || ('HTTP '+res.status));
+        setTimeout(chargerAlertes, 1000);
+    }catch(e){
+        body.innerHTML = '<tr><td colspan="6" class="vide">⚠️ Échec du scan : '+esc(e.message)+'</td></tr>';
     }
 }
 
-async function scanner() {
-    const box = document.getElementById('alertes-list');
-    box.innerHTML = '<div class="vide">⏳ Scan en cours (presse en ligne)… cela prend quelques secondes.</div>';
-    try {
-        const res = await fetch('/api/veille/scan', { method: 'POST' });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || ('HTTP ' + res.status));
-        box.innerHTML = '<div class="vide">✅ ' + esc(json.message) + ' — chargement de la liste…</div>';
-        setTimeout(chargerAlertes, 800);
-    } catch (e) {
-        box.innerHTML = '<div class="vide">⚠️ Échec du scan : ' + esc(e.message) + '</div>';
-    }
-}
+['f-partenaire','f-periode','f-search'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', function(){
+        FILTRES.partenaire = document.getElementById('f-partenaire').value;
+        FILTRES.periode = parseInt(document.getElementById('f-periode').value)||0;
+        FILTRES.search = document.getElementById('f-search').value;
+        afficherTableau();
+    });
+});
+document.querySelectorAll('#veille-table th[data-col]').forEach(function(th){
+    th.addEventListener('click', function(){
+        var c = th.getAttribute('data-col');
+        if(FILTRES.col===c) FILTRES.dir = FILTRES.dir==='asc'?'desc':'asc';
+        else { FILTRES.col = c; FILTRES.dir = 'desc'; }
+        afficherTableau();
+    });
+});
 
 chargerAlertes();
 </script>
