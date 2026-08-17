@@ -89,6 +89,11 @@ def _pertinent(titre):
     """Évaluation élargie basée sur les mots-clés de mobilisation, d'action et le Bénin (score >= 4)."""
     t = (titre or '').lower()
     
+    # Rejeter si le titre concerne un autre pays et ne mentionne pas le Bénin
+    autres_pays = ('togo', 'guinée', 'côte d\'ivoire', 'cote d\'ivoire', 'sénégal', 'senegal', 'burkina', 'mali', 'niger', 'ghana', 'nigéria', 'nigeria')
+    if any(p in t[:20] for p in autres_pays) and not ('bénin' in t or 'benin' in t):
+        return False
+
     # Doit mentionner le Bénin (Groupe D)
     has_benin = any(k in t for k in ('bénin', 'benin', 'republique du bénin', 'republic of benin', 'government of benin'))
     if not has_benin:
