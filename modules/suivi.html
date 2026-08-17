@@ -74,7 +74,7 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
     <button class="grp" onclick="toggleGroup('g-reco')">✅ Recommandations <span class="caret">▾</span></button>
     <div id="g-reco" class="group open">
       <button class="sub" onclick="showView('recos', this)">Toutes les recommandations</button>
-      <button class="sub" onclick="showView('suivirecos', this)">📋 Suivi des recommandations</button>
+      <button class="sub" onclick="window.location.href='/suivi-recommandations'">📋 Suivi des recommandations</button>
       <button class="sub" onclick="showView('ajout', this)">Ajouter des recommandations</button>
       <button class="sub" onclick="showView('actions', this)">Suivi des actions</button>
     </div>
@@ -322,33 +322,7 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
       </div>
     </div>
 
-    <div id="view-suivirecos" style="display:none">
-      <div class="card"><h3>📋 Tableau de bord — Suivi des recommandations <a href="/suivi-recommandations" target="_blank" style="float:right;font-size:10px;color:#1e5aa8;text-decoration:none;font-weight:700">Ouvrir le tableau de bord complet ↗</a></h3><div id="srecos-kpis" class="filters"></div></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div class="card" style="flex:3;min-width:460px">
-          <h3>📑 Liste des recommandations</h3>
-          <div class="filters">
-            <select id="sr-partenaire" onchange="renderSuiviRecos()"></select>
-            <select id="sr-projet" onchange="renderSuiviRecos()"></select>
-            <select id="sr-statut" onchange="renderSuiviRecos()"><option value="">Tous statuts</option><option value="a_demarrer">À démarrer</option><option value="en_cours">En cours</option><option value="reportee">Reportée</option><option value="executee">Exécutée</option><option value="non_executee">Non exécutée</option><option value="annulee">Annulée</option><option value="retard">En retard</option></select>
-            <select id="sr-responsable" onchange="renderSuiviRecos()"></select>
-            <input id="sr-search" placeholder="Rechercher..." oninput="renderSuiviRecos()" style="width:150px">
-          </div>
-          <table><thead><tr><th>N°</th><th>Revue / Partenaire</th><th>Projet</th><th>Point d'attention</th><th>Recommandation (action)</th><th>Responsable</th><th>Éch. initiale</th><th>Nouvelle</th><th>Statut</th><th>Avanc.</th><th>Dernier commentaire</th><th>Actions</th></tr></thead><tbody id="srecos-body"></tbody></table>
-          <div style="margin-top:10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:8px;font-size:11px">ℹ️ <b>RAPPEL :</b> toute modification du statut « Reportée », « Non exécutée » ou « Annulée » doit être accompagnée d'un <b>motif obligatoire</b>. Le commentaire (observation) reste modifiable à tout instant et alimente le Point DG.</div>
-        </div>
-        <div class="card" style="flex:1;min-width:260px">
-          <h3>🔴 À l'attention du DG</h3><div id="srecos-dg"></div>
-          <h3 style="margin-top:14px">⏳ Échéances à venir</h3><div id="srecos-ech"></div>
-          <h3 style="margin-top:14px">📊 Répartition par statut</h3><div id="srecos-donut"></div>
-        </div>
-      </div>
-      <div class="card"><div class="filters">
-        <button class="st ok" style="cursor:pointer" onclick="printPointDG()">🖨️ Imprimer le point DG (PDF)</button>
-        <button class="st ok" style="cursor:pointer" onclick="exportSuiviRecos()">⬇️ Exporter en Excel</button>
-        <button class="st info" style="cursor:pointer" onclick="bientot()">📈 Générer la synthèse mensuelle</button>
-      </div></div>
-    </div>
+
 </div>
 <script>
 var DATA = {};
@@ -360,8 +334,8 @@ function tauxBadge(t){ if(!t) return '<span class="st" style="background:#f1f5f9
 function statutBadge(s){ var x=String(s||'').toLowerCase(); if(x.indexOf('cours')>=0) return '<span class="st ok">'+esc(s)+'</span>'; if(x.indexOf('approuv')>=0) return '<span class="st info">'+esc(s)+'</span>'; return '<span class="st warn">'+esc(s)+'</span>'; }
 var NIVEAUX = { critique:['#dc2626','Critique'], eleve:['#f59e0b','Élevé'], moyen:['#eab308','Moyen'], information:['#2563eb','Info'] };
 
-var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','partenaire','saisie','revues','historique','recos','suivirecos','ajout','actions','fiche','financier'];
-var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', partenaire:'Fiches partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', suivirecos:'Suivi des recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet', financier:'Suivi financier des décaissements' };
+var VUES = ['dash','projets','alertes','indicateurs','par-statut','par-secteur','par-partenaire','partenaire','saisie','revues','historique','recos','ajout','actions','fiche','financier'];
+var TITRES = { dash:'Tableau de bord', projets:'Tous les projets', alertes:'Centre des alertes', indicateurs:'Indicateurs clés', 'par-statut':'Projets par statut', 'par-secteur':'Projets par secteur', 'par-partenaire':'Projets par partenaire', partenaire:'Fiches partenaire', saisie:'Saisie trimestrielle', revues:'Calendrier des revues', historique:'Historique des revues', recos:'Toutes les recommandations', ajout:'Ajouter des recommandations', actions:'Suivi des actions', fiche:'Fiche projet', financier:'Suivi financier des décaissements' };
 
 function showView(name, btn){
   var bs = document.querySelectorAll('.menu button');
@@ -381,7 +355,6 @@ function showView(name, btn){
   if(name==='revues') renderRevues();
   if(name==='historique') renderHistorique();
   if(name==='recos') renderRecos();
-  if(name==='suivirecos') loadSuiviRecos();
   if(name==='ajout') buildAjout();
   if(name==='actions') renderActions();
   if(name==='financier') loadFinancier();
