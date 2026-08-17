@@ -25,39 +25,53 @@ import xml.etree.ElementTree as ET
 _GDELT_429_LOGGED = False
 _RLS_ERROR_LOGGED = False
 
-# Requêtes de veille enrichies (sources officielles béninoises P1, instruments financiers et bailleurs)
+# Requêtes de veille enrichies (mots-clés larges, sources officielles P1, instruments financiers et bailleurs)
 REQUETES = [
+    'Bénin financement',
+    'Benin financing',
+    'Bénin ressources financières',
+    'Bénin financement développement',
+    'Bénin mobilisation ressources',
+    'Benin resource mobilization',
+    'Bénin financement extérieur',
+    'Bénin ressources extérieures',
+    'Bénin nouveau financement',
+    'Bénin financement approuvé',
+    'Bénin financement accordé',
+    'Bénin financement mobilisé',
+    'Bénin prêt approuvé',
+    'Bénin don approuvé',
+    'Bénin financement additionnel',
+    'Bénin décaissement',
+    'Bénin tirage',
+    'Bénin signe accord financement',
+    'Bénin signe accord prêt',
+    'Bénin convention financement',
+    'Bénin accord prêt',
+    'Bénin contrat financement',
+    'Bénin convention crédit',
+    'Bénin Banque mondiale financement',
+    'Bénin BAD financement',
+    'Bénin BOAD financement',
+    'Bénin AFD financement',
+    'Bénin BEI financement',
+    'Bénin BID financement',
+    'Bénin Union européenne financement',
+    'Bénin FMI financement',
+    'Bénin FIDA financement',
+    'Bénin AIIB financement',
+    'Bénin BADEA financement',
     '"accord de financement" Bénin',
     '"convention de financement" Bénin',
     '"accord de prêt" Bénin',
     '"convention de prêt" Bénin',
-    '"convention de crédit" Bénin',
-    '"accord de crédit" Bénin',
-    '"accord de don" Bénin',
-    '"convention de don" Bénin',
-    '"protocole d\'accord" financement Bénin',
-    '"contrat de financement" Bénin',
-    '"financement additionnel" Bénin',
-    '"ressources mobilisées" Bénin',
-    '"mobilisation de ressources" Bénin',
-    '"cofinancement" Bénin',
     'Benin "Financing Agreement"',
     'Benin "Loan Agreement"',
-    'Benin "Credit Agreement"',
-    'Benin "Grant Agreement"',
-    'Benin "Project Agreement"',
-    'Benin "Guarantee Agreement"',
-    'Bénin "garantie partielle de crédit"',
     'site:finances.bj "accord" OR "convention" OR "prêt" OR "financement"',
     'site:assemblee-nationale.bj "ratification" OR "accord" OR "prêt"',
     'site:sgg.gouv.bj "décret" OR "ratification" OR "accord"',
     '"Direction Générale du Budget" Bénin financement',
     '"Secrétariat Général du Gouvernement" Bénin accord',
-    '"DGFD" Bénin accord financement',
-    'site:worldbank.org Benin "Financing Agreement"',
-    'site:afdb.org Benin "Loan Agreement"',
-    'site:afd.fr Bénin "convention de financement"',
-    'site:finances.bj Bénin "accord de prêt"',
 ]
 
 
@@ -72,7 +86,7 @@ def _http_json(url, timeout=20):
 
 
 def _pertinent(titre):
-    """Évaluation basée sur la pondération des groupes A, B, C, D (score >= 5)."""
+    """Évaluation élargie basée sur les mots-clés de mobilisation, d'action et le Bénin (score >= 4)."""
     t = (titre or '').lower()
     
     # Doit mentionner le Bénin (Groupe D)
@@ -82,27 +96,27 @@ def _pertinent(titre):
         
     score = 0
     
-    # Groupe A (Accord juridique) (+5)
-    groupe_a = ('accord de financement', 'financing agreement', 'accord de prêt', 'loan agreement', 'accord de crédit', 'credit agreement', 'convention de financement', 'convention de prêt', 'convention de crédit', 'accord de don', 'grant agreement', 'protocole d\'accord', 'letter of agreement', 'finance contract', 'project agreement', 'guarantee agreement')
+    # Groupe A (Accord juridique / Financement) (+4)
+    groupe_a = ('accord de financement', 'financing agreement', 'accord de prêt', 'loan agreement', 'accord de crédit', 'credit agreement', 'convention de financement', 'convention de prêt', 'convention de crédit', 'accord de don', 'grant agreement', 'protocole d\'accord', 'contrat de financement', 'project agreement', 'guarantee agreement')
     if any(k in t for k in groupe_a):
-        score += 5
-        
-    # Groupe B (Mobilisation) (+4)
-    groupe_b = ('mobilisation des ressources', 'mobilisation de ressources', 'resources mobilization', 'resource mobilization', 'financement mobilisé', 'ressources mobilisées', 'financing mobilized', 'funding mobilized')
-    if any(k in t for k in groupe_b):
         score += 4
         
-    # Groupe C (Instruments) (+3)
-    groupe_c = ('prêt', 'loan', 'crédit', 'credit', 'don', 'grant', 'subvention', 'guarantee', 'garantie', 'cofinancement', 'co-financing', 'financement conjoint', 'financement additionnel', 'additional financing', 'refinancement')
-    if any(k in t for k in groupe_c):
+    # Groupe B (Verbes d'action / Mobilisation) (+3)
+    groupe_b = ('mobilise', 'mobilisation', 'obtient', 'accorde', 'approuve', 'décaisse', 'débloque', 'signe', 'octroie', 'lève', 'emprunte', 'garantie', 'appui budgétaire', 'soutien budgétaire')
+    if any(k in t for k in groupe_b):
         score += 3
         
-    # Termes généraux d'approbation / signature (+2)
-    generaux = ('signé', 'signe', 'signed', 'approuve', 'approves', 'mobilisation', 'appui', 'budget', 'fmi', 'banque mondiale', 'bad', 'afd', 'boad', 'uemoa')
-    if any(k in t for k in generaux):
+    # Groupe C (Instruments / Ressources) (+2)
+    groupe_c = ('prêt', 'loan', 'crédit', 'credit', 'don', 'grant', 'subvention', 'garantie', 'cofinancement', 'co-financing', 'financement conjoint', 'financement additionnel', 'additional financing', 'refinancement', 'tirage', 'ressources', 'financement', 'investissement', 'ressources concessionnelles')
+    if any(k in t for k in groupe_c):
         score += 2
         
-    return score >= 5
+    # Bailleurs / Institutions (+2)
+    bailleurs = ('banque mondiale', 'world bank', 'bad', 'afdb', 'boad', 'afd', 'bei', 'bid', 'fmi', 'imf', 'fida', 'aiib', 'badea', 'union européenne', 'ue')
+    if any(k in t for k in bailleurs):
+        score += 2
+        
+    return score >= 4
 
 
 def _recent(date_str, max_days=90, titre=""):
