@@ -186,7 +186,11 @@ def page_suivi_recos():
 
 @bp.route('/assets/<path:filename>')
 def assets(filename):
-    resp = send_from_directory('modules', filename, mimetype='application/javascript')
+    import os
+    if os.path.exists(os.path.join('modules', filename)):
+        resp = send_from_directory('modules', filename, mimetype='application/javascript')
+    else:
+        resp = send_from_directory('assets', filename)
     resp.headers['Cache-Control'] = 'no-store, max-age=0'
     return resp
 

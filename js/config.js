@@ -19,7 +19,7 @@ const modules = [
         title: 'Coopération Décentralisée',
         icon: '🤝',
         file: 'modules/coop_dec.html',
-        actif: true
+        actif: false
     },
     {
         id: 'suivi_des_projets',
