@@ -25,28 +25,33 @@ import xml.etree.ElementTree as ET
 _GDELT_429_LOGGED = False
 _RLS_ERROR_LOGGED = False
 
-# Requêtes de veille (mots-clés)
+# Requêtes de veille enrichies (mots-clés principaux, instruments financiers et sites cibles)
 REQUETES = [
     '"accord de financement" Bénin',
     '"convention de financement" Bénin',
     '"accord de prêt" Bénin',
     '"convention de prêt" Bénin',
-    'Bénin accord signé financement développement',
-    'Bénin mémorandum entente signé financement',
-    'Bénin protocole accord financement signé',
-    'Bénin appui budgétaire approuvé',
-    'Bénin mobilisation ressources financement',
-    'Bénin Banque Mondiale approuve financement',
-    'Bénin BAD approuve prêt don',
-    'Bénin AFD signe accord financement',
-    'Bénin BOAD signe prêt financement',
-    'Bénin UEMOA accord financement',
-    'Benin "financing agreement" signed',
-    'Benin "loan agreement" signed',
-    'Benin "grant agreement" signed',
-    'Benin World Bank approves financing',
-    'Benin African Development Bank approves',
-    'Benin IMF staff level agreement',
+    '"convention de crédit" Bénin',
+    '"accord de crédit" Bénin',
+    '"accord de don" Bénin',
+    '"convention de don" Bénin',
+    '"protocole d\'accord" financement Bénin',
+    '"contrat de financement" Bénin',
+    '"financement additionnel" Bénin',
+    '"ressources mobilisées" Bénin',
+    '"mobilisation de ressources" Bénin',
+    '"cofinancement" Bénin',
+    'Benin "Financing Agreement"',
+    'Benin "Loan Agreement"',
+    'Benin "Credit Agreement"',
+    'Benin "Grant Agreement"',
+    'Benin "Project Agreement"',
+    'Benin "Guarantee Agreement"',
+    'Bénin "garantie partielle de crédit"',
+    'site:worldbank.org Benin "Financing Agreement"',
+    'site:afdb.org Benin "Loan Agreement"',
+    'site:afd.fr Bénin "convention de financement"',
+    'site:finances.bj Bénin "accord de prêt"',
 ]
 
 
@@ -61,11 +66,62 @@ def _http_json(url, timeout=20):
 
 
 def _pertinent(titre):
-    """Filtre léger : l'article doit parler du Bénin et d'un accord/financement."""
+    """Évaluation basée sur la pondération des groupes A, B, C, D (score >= 5)."""
     t = (titre or '').lower()
-    if not ('bénin' in t or 'benin' in t):
+    
+    # Doit mentionner le Bénin (Groupe D)
+    has_benin = any(k in t for k in ('bénin', 'benin', 'republique du bénin', 'republic of benin', 'government of benin'))
+    if not has_benin:
         return False
-    return any(k in t for k in ('accord', 'convention', 'financement', 'financing', 'signé', 'signe', 'signed', 'signes', 'don', 'prêt', 'loan', 'grant', 'approuve', 'approves', 'appui', 'mobilisation', 'mémorandum', 'protocole', 'intention', 'investissement', 'crédit', 'credit', 'uemoa', 'partenariat', 'budget'))
+        
+    score = 0
+    
+    # Groupe A (Accord juridique) (+5)
+    groupe_a = ('accord de financement', 'financing agreement', 'accord de prêt', 'loan agreement', 'accord de crédit', 'credit agreement', 'convention de financement', 'convention de prêt', 'convention de crédit', 'accord de don', 'grant agreement', 'protocole d\'accord', 'letter of agreement', 'finance contract', 'project agreement', 'guarantee agreement')
+    if any(k in t for k in groupe_a):
+        score += 5
+        
+    # Groupe B (Mobilisation) (+4)
+    groupe_b = ('mobilisation des ressources', 'mobilisation de ressources', 'resources mobilization', 'resource mobilization', 'financement mobilisé', 'ressources mobilisées', 'financing mobilized', 'funding mobilized')
+    if any(k in t for k in groupe_b):
+        score += 4
+        
+    # Groupe C (Instruments) (+3)
+    groupe_c = ('prêt', 'loan', 'crédit', 'credit', 'don', 'grant', 'subvention', 'guarantee', 'garantie', 'cofinancement', 'co-financing', 'financement conjoint', 'financement additionnel', 'additional financing', 'refinancement')
+    if any(k in t for k in groupe_c):
+        score += 3
+        
+    # Termes généraux d'approbation / signature (+2)
+    generaux = ('signé', 'signe', 'signed', 'approuve', 'approves', 'mobilisation', 'appui', 'budget', 'fmi', 'banque mondiale', 'bad', 'afd', 'boad', 'uemoa')
+    if any(k in t for k in generaux):
+        score += 2
+        
+    return score >= 5
+
+
+def _recent(date_str, max_days=90):
+    """Vérifie si l'article date de moins de max_days jours."""
+    if not date_str:
+        return True
+    try:
+        from email.utils import parsedate_to_datetime
+        from datetime import datetime, timezone
+        d_str = str(date_str).strip()
+        dt = None
+        if 'GMT' in d_str or ',' in d_str:
+            dt = parsedate_to_datetime(d_str)
+        else:
+            if len(d_str) >= 10:
+                dt = datetime.fromisoformat(d_str[:10].replace('Z', '+00:00')).replace(tzinfo=timezone.utc)
+        if dt:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - dt).days
+            if age > max_days or age < -2:
+                return False
+    except Exception:
+        pass
+    return True
 
 
 def _scan_gdelt(query):
@@ -163,19 +219,21 @@ def _extraire_champs(resume):
 
 PARTENAIRES_CONNUS = [
     ('AFD', ['afd', 'agence francaise de developpement', 'agence française de développement']),
-    ('BAD', ['banque africaine de developpement', 'banque africaine de développement', 'afdb']),
-    ('Banque Mondiale', ['banque mondiale', 'world bank']),
+    ('BAD', ['bad', 'banque africaine de developpement', 'banque africaine de développement', 'afdb']),
+    ('Banque Mondiale', ['banque mondiale', 'world bank', 'bm']),
     ('BOAD', ['boad']),
     ('UEMOA', ['uemoa']),
-    ('FMI', ['fmi', 'imf']),
-    ('Union Européenne', ['union europeenne', 'union européenne']),
+    ('FMI', ['fmi', 'imf', 'fonds monetaire international']),
+    ('Union Européenne', ['union europeenne', 'union européenne', 'ue']),
     ('KfW', ['kfw']),
     ('JICA', ['jica']),
-    ('BID', ['banque islamique de developpement']),
+    ('BID', ['banque islamique de developpement', 'bid']),
     ('FIDA', ['fida']),
-    ('Chine', ['chine', 'eximbank', 'exim bank']),
-    ('France', ['republique francaise', 'république française']),
+    ('Chine', ['chine', 'eximbank', 'exim bank', 'rpc']),
+    ('France', ['france', 'republique francaise', 'république française', 'paris']),
     ('Luxembourg', ['luxembourg']),
+    ('Allemagne', ['allemagne', 'kfw', 'berlin']),
+    ('Japon', ['japon', 'jica', 'tokyo']),
 ]
 
 def _deviner_partenaire(titre):
@@ -239,7 +297,7 @@ def scan_and_notify(max_nouveautes=10):
             if not url or url in existants:
                 doublons += 1
                 continue
-            if not _pertinent(art.get('titre')):
+            if not _pertinent(art.get('titre')) or not _recent(art.get('date_article'), max_days=90):
                 non_pertinents += 1
                 continue
             existants.add(url)

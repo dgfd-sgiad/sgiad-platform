@@ -678,7 +678,7 @@ def veille_scan():
 
 
 def _veille_loop():
-    """Scan périodique (toutes les 6 h)."""
+    """Scan périodique (toutes les 2 h)."""
     time.sleep(30)  # laisse le serveur démarrer
     while True:
         try:
@@ -692,7 +692,7 @@ def _veille_loop():
                 print("[veille] Permission RLS manquante pour veille_alertes")
             else:
                 traceback.print_exc()
-        time.sleep(6 * 3600)
+        time.sleep(2 * 3600)
 
 
 def _demarrer_veille():
@@ -706,7 +706,7 @@ def _demarrer_veille():
     except FileExistsError:
         return  # un autre worker possède déjà la veille
     threading.Thread(target=_veille_loop, daemon=True).start()
-    print('[veille] planificateur démarré (scan toutes les 6 h)')
+    print('[veille] planificateur démarré (scan toutes les 2 h)')
 
 
 _demarrer_veille()

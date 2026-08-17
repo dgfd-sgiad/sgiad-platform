@@ -69,11 +69,11 @@
             <div class="filters-bar">
                 <select id="f-partenaire"><option value="">Tous les partenaires</option></select>
                 <select id="f-periode">
-                    <option value="0">Toutes les dates</option>
-                    <option value="7">7 derniers jours</option>
+                    <option value="90" selected>3 derniers mois</option>
                     <option value="30">30 derniers jours</option>
-                    <option value="90">3 derniers mois</option>
+                    <option value="7">7 derniers jours</option>
                     <option value="365">12 derniers mois</option>
+                    <option value="0">Toutes les dates</option>
                 </select>
                 <input type="text" id="f-search" placeholder="Recherche dans titre / résumé / partenaire...">
             </div>
@@ -103,7 +103,7 @@
 <script>
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 var ALERTES = [], LAST_DATA = [];
-var FILTRES = { partenaire:'', periode:0, search:'', col:'date', dir:'desc' };
+var FILTRES = { partenaire:'', periode:90, search:'', col:'date', dir:'desc' };
 
 function parseDate(s){
     if(!s) return 0;

@@ -7,6 +7,14 @@ const modules = [
         actif: false
     },
     {
+        id: 'veille_accords',
+        title: 'Veille des Accords Signés',
+        icon: '📡',
+        img: 'veille_accords.webp',
+        file: 'modules/veille.html',
+        actif: true
+    },
+    {
         id: 'suivi_financier_projets',
         title: 'Gestion des Accords Financiers',
         icon: '🏗️',
@@ -15,18 +23,18 @@ const modules = [
         actif: true
     },
     {
-        id: 'coop_decentralisee',
-        title: 'Coopération Décentralisée',
-        icon: '🤝',
-        file: 'modules/coop_dec.html',
-        actif: false
-    },
-    {
         id: 'suivi_des_projets',
         title: 'Suivi des Projets & Revues',
         icon: '📊',
         file: '/suivi',
         actif: true
+    },
+    {
+        id: 'coop_decentralisee',
+        title: 'Coopération Décentralisée',
+        icon: '🤝',
+        file: 'modules/coop_dec.html',
+        actif: false
     },
     {
         id: 'investissements_etrangers',
@@ -76,14 +84,6 @@ const modules = [
         icon: '📊',
         file: 'modules/rapports.html',
         actif: false
-    },
-    {
-        id: 'veille_accords',
-        title: 'Veille des Accords Signés',
-        icon: '📡',
-        img: 'veille_accords.webp',
-        file: 'modules/veille.html',
-        actif: true
     }
 ];
 const SECTEURS_SOUS_SECTEURS = {
