@@ -25,7 +25,7 @@ import xml.etree.ElementTree as ET
 _GDELT_429_LOGGED = False
 _RLS_ERROR_LOGGED = False
 
-# Requêtes de veille enrichies (mots-clés principaux, instruments financiers et sites cibles)
+# Requêtes de veille enrichies (sources officielles béninoises P1, instruments financiers et bailleurs)
 REQUETES = [
     '"accord de financement" Bénin',
     '"convention de financement" Bénin',
@@ -48,6 +48,12 @@ REQUETES = [
     'Benin "Project Agreement"',
     'Benin "Guarantee Agreement"',
     'Bénin "garantie partielle de crédit"',
+    'site:finances.bj "accord" OR "convention" OR "prêt" OR "financement"',
+    'site:assemblee-nationale.bj "ratification" OR "accord" OR "prêt"',
+    'site:sgg.gouv.bj "décret" OR "ratification" OR "accord"',
+    '"Direction Générale du Budget" Bénin financement',
+    '"Secrétariat Général du Gouvernement" Bénin accord',
+    '"DGFD" Bénin accord financement',
     'site:worldbank.org Benin "Financing Agreement"',
     'site:afdb.org Benin "Loan Agreement"',
     'site:afd.fr Bénin "convention de financement"',
@@ -99,8 +105,14 @@ def _pertinent(titre):
     return score >= 5
 
 
-def _recent(date_str, max_days=90):
-    """Vérifie si l'article date de moins de max_days jours."""
+def _recent(date_str, max_days=90, titre=""):
+    """Vérifie si l'article date de moins de max_days jours et ne mentionne pas une année ancienne dans le titre."""
+    t = (titre or '').lower()
+    # Rejeter si le titre mentionne explicitement une année ancienne (2010-2024)
+    for y in range(2010, 2025):
+        if str(y) in t:
+            return False
+
     if not date_str:
         return True
     try:
@@ -297,7 +309,7 @@ def scan_and_notify(max_nouveautes=10):
             if not url or url in existants:
                 doublons += 1
                 continue
-            if not _pertinent(art.get('titre')) or not _recent(art.get('date_article'), max_days=90):
+            if not _pertinent(art.get('titre')) or not _recent(art.get('date_article'), max_days=90, titre=art.get('titre')):
                 non_pertinents += 1
                 continue
             existants.add(url)
