@@ -320,9 +320,22 @@ def scan_and_notify(max_nouveautes=10):
     nouvelles = []
     doublons = 0
     non_pertinents = 0
-    for query in REQUETES:
-        bruts = _scan_gdelt(query) + _scan_google_news(query)
-        print(f'[veille] "{query}" : {len(bruts)} article(s) brut(s)')
+    requetes_rapides = [
+        '"accord de financement" Bénin',
+        'Bénin Banque Mondiale approuve',
+        'Bénin BAD approuve',
+        'Bénin AFD signe',
+        'Bénin FMI approuve',
+        'Bénin BOAD financement',
+        'Bénin financement',
+        'Benin financing',
+    ]
+    for query in requetes_rapides:
+        bruts = _scan_google_news(query)
+        try:
+            bruts += _scan_gdelt(query)
+        except Exception:
+            pass
         for art in bruts:
             url = art.get('url') or ''
             if not url or url in existants:
@@ -333,7 +346,7 @@ def scan_and_notify(max_nouveautes=10):
                 continue
             existants.add(url)
             nouvelles.append(art)
-        time.sleep(2)  # politesse envers les APIs gratuites
+        time.sleep(0.5)  # politesse rapide
     print(f'[veille] TOTAL : {len(nouvelles)} nouveau(x), {doublons} doublon(s), {non_pertinents} non pertinent(s)')
 
     enregistrees = 0
