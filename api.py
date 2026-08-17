@@ -1905,6 +1905,12 @@ def diag_parametres():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+
+@app.route('/login')
+def login_redirect():
+    from flask import redirect
+    return redirect('/')
+
 if __name__ == '__main__':
     import socket
     local_ip = socket.gethostbyname(socket.gethostname())

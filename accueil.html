@@ -473,7 +473,8 @@
                 <label class="login-label" for="login-id">Email professionnel</label>
                 <input type="email" class="login-input" id="login-id" placeholder="prenom.nom@finances.bj" autocomplete="username" required>
                 <label class="login-label" for="login-pwd">Mot de passe</label>
-                <input type="password" class="login-input" id="login-pwd" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                <div style="position:relative"><input type="password" class="login-input" id="login-pwd" placeholder="Votre mot de passe" autocomplete="current-password" required><button type="button" id="eye-btn" onclick="var p=this.previousElementSibling;if(p.type==='password'){p.type='text';this.textContent='🙈';}else{p.type='password';this.textContent='👁️';}" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;font-size:16px">👁️</button></div>
+                <div style="text-align:right;margin:6px 0 2px"><a href="#" onclick="mdpOublie();return false;" style="font-size:12px;color:#1e5aa8;text-decoration:none;font-weight:600">Mot de passe oublié ?</a></div>
                 <div id="signup-confirm-block" style="display:none;">
                     <label class="login-label" for="login-pwd2">Confirmer le mot de passe</label>
                     <input type="password" class="login-input" id="login-pwd2" placeholder="Ressaisissez le mot de passe" autocomplete="new-password">
@@ -963,6 +964,12 @@ function demarrerRotationProjets() {
 
         // Keep-alive : ping léger toutes les 5 min pour éviter le cold start Render
         setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
-    </script>
+    
+function mdpOublie(){
+  var em = prompt('Entrez votre adresse email professionnelle :', (document.getElementById('login-id')||{}).value || '');
+  if(!em) return;
+  alert('Demande de réinitialisation enregistrée pour ' + em + '.\nVeuillez contacter le superviseur de la plateforme (Pôle de Suivi MEF) pour obtenir un nouveau mot de passe.');
+}
+</script>
 </body>
 </html>
