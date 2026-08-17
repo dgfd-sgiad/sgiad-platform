@@ -966,10 +966,36 @@ function demarrerRotationProjets() {
         setInterval(() => { fetch('/api/ping', { cache: 'no-store' }).catch(() => {}); }, 300000);
     
 function mdpOublie(){
-  var em = prompt('Entrez votre adresse email professionnelle :', (document.getElementById('login-id')||{}).value || '');
-  if(!em) return;
-  alert('Demande de réinitialisation enregistrée pour ' + em + '.\nVeuillez contacter le superviseur de la plateforme (Pôle de Suivi MEF) pour obtenir un nouveau mot de passe.');
+  var m=document.getElementById('mdp-modal');
+  var em=(document.getElementById('login-id')||{}).value||'';
+  document.getElementById('mdp-email').value=em;
+  document.getElementById('mdp-msg').style.display='none';
+  m.style.display='flex';
+  setTimeout(function(){document.getElementById('mdp-email').focus();},50);
+}
+function mdpEnvoyer(){
+  var em=document.getElementById('mdp-email').value.trim();
+  var msg=document.getElementById('mdp-msg');
+  if(!em||em.indexOf('@')<0){
+    msg.style.display='block';msg.style.color='#991b1b';msg.style.background='#fef2f2';msg.style.borderColor='#fecaca';
+    msg.innerHTML='⚠️ Veuillez saisir une adresse email valide.';
+    return;
+  }
+  msg.style.display='block';msg.style.color='#166534';msg.style.background='#f0fdf4';msg.style.borderColor='#bbf7d0';
+  msg.innerHTML='✅ Demande enregistrée pour <b>'+em+'</b>.<br>Le superviseur de la plateforme (Pôle de Suivi MEF) vous communiquera un nouveau mot de passe.';
 }
 </script>
+<div id="mdp-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:26px 28px;width:min(420px,92%);box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h3 style="margin:0;font-size:16px;color:#0a2540">🔑 Mot de passe oublié</h3>
+      <span onclick="document.getElementById('mdp-modal').style.display='none'" style="cursor:pointer;font-size:20px;color:#94a3b8">×</span>
+    </div>
+    <p style="font-size:12px;color:#64748b;margin:0 0 14px">Saisissez votre adresse email professionnelle. Le superviseur de la plateforme (Pôle de Suivi MEF) vous communiquera un nouveau mot de passe.</p>
+    <input id="mdp-email" type="email" placeholder="prenom.nom@finances.bj" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;margin-bottom:12px;box-sizing:border-box">
+    <button type="button" onclick="mdpEnvoyer()" style="width:100%;background:#0f2d4a;color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">Envoyer la demande</button>
+    <div id="mdp-msg" style="display:none;margin-top:12px;font-size:12px;border:1px solid;border-radius:8px;padding:10px"></div>
+  </div>
+</div>
 </body>
 </html>
