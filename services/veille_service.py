@@ -229,14 +229,23 @@ def scan_and_notify(max_nouveautes=10):
         return 0
 
     nouvelles = []
+    doublons = 0
+    non_pertinents = 0
     for query in REQUETES:
-        for art in _scan_gdelt(query) + _scan_google_news(query):
+        bruts = _scan_gdelt(query) + _scan_google_news(query)
+        print(f'[veille] "{query}" : {len(bruts)} article(s) brut(s)')
+        for art in bruts:
             url = art.get('url') or ''
-            if not url or url in existants or not _pertinent(art.get('titre')):
+            if not url or url in existants:
+                doublons += 1
+                continue
+            if not _pertinent(art.get('titre')):
+                non_pertinents += 1
                 continue
             existants.add(url)
             nouvelles.append(art)
-        time.sleep(1)  # politesse envers les APIs gratuites
+        time.sleep(2)  # politesse envers les APIs gratuites
+    print(f'[veille] TOTAL : {len(nouvelles)} nouveau(x), {doublons} doublon(s), {non_pertinents} non pertinent(s)')
 
     enregistrees = 0
     for art in nouvelles[:max_nouveautes]:
