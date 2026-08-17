@@ -236,7 +236,8 @@ function exporterExcel(){
     LAST_DATA.forEach(function(a){
         html += '<tr><td>'+formatDate(a.date_article)+'</td><td>'+esc(a.titre)+'</td><td>'+esc(a.partenaire||'')+'</td><td>'+esc(a.montant||'')+'</td><td>'+esc(a.source||'')+'</td><td>'+esc(a.url)+'</td></tr>';
     });
-    html += '</table></body></html>';
+    html += '</table></body><button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">↩️ Retour immédiat</button>
+</html>';
     var blob = new Blob(['\ufeff'+html], {type:'application/vnd.ms-excel'});
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -255,7 +256,8 @@ function imprimerPoint(){
         byDate[d].forEach(function(a){ h += '<tr><td>'+esc(a.titre)+'</td><td>'+esc(a.partenaire||'—')+'</td><td>'+esc(a.montant||'—')+'</td><td>'+esc(a.source||'')+'</td><td>'+esc(a.url)+'</td></tr>'; });
         h += '</table>';
     });
-    h += '</body></html>';
+    h += '</body><button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">↩️ Retour immédiat</button>
+</html>';
     w.document.write(h);
     w.document.close();
     setTimeout(function(){ w.focus(); w.print(); }, 400);
@@ -294,4 +296,5 @@ document.querySelectorAll('#veille-table th[data-col]').forEach(function(th){
 chargerAlertes();
 </script>
 </body>
+<button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">↩️ Retour immédiat</button>
 </html>
