@@ -654,27 +654,46 @@ def api_ping():
 # VEILLE DES ACCORDS SIGNÉS — détection en ligne gratuite (GDELT/Google News)
 # ══════════════════════════════════════════════════════════════════════
 
+_veille_cache = {'ts': 0, 'data': None}
+_VEILLE_CACHE_TTL = 300
+
 @app.route('/api/veille/alertes', methods=['GET'])
 @require_auth
 def veille_alertes():
-    """Liste des alertes de veille (accords signés détectés en ligne)."""
-    from db import get_supabase
-    sb = get_supabase()
-    resp = sb.table('veille_alertes').select('*').order('detecte_le', desc=True).limit(100).execute()
-    return jsonify({'data': resp.data or []})
+    """Liste des alertes de veille (accords signés détectés en ligne) avec cache TTL."""
+    global _veille_cache
+    now = time.time()
+    if _veille_cache['data'] is None or (now - _veille_cache['ts']) > _VEILLE_CACHE_TTL:
+        try:
+            from db import get_supabase
+            sb = get_supabase()
+            resp = sb.table('veille_alertes').select('*').order('detecte_le', desc=True).limit(100).execute()
+            _veille_cache['data'] = resp.data or []
+            _veille_cache['ts'] = now
+        except Exception as e:
+            if _veille_cache['data'] is not None:
+                pass # return stale cache on error if available
+            else:
+                raise e
+    return jsonify({'data': _veille_cache['data']})
 
 
 @app.route('/api/veille/scan', methods=['POST'])
 @require_auth
 def veille_scan():
-    """Déclenche un scan manuel de la veille."""
-    from services import veille_service
-    try:
-        n = veille_service.scan_and_notify()
-        return jsonify({'message': f'{n} nouvelle(s) alerte(s) enregistrée(s)', 'nouvelles': n})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({'error': _safe_error(e)}), 500
+    """Déclenche un scan manuel de la veille en arrière-plan (non bloquant)."""
+    def _run_scan():
+        try:
+            from services import veille_service
+            n = veille_service.scan_and_notify()
+            global _veille_cache
+            _veille_cache['data'] = None  # Invalider le cache
+            print(f'[veille] scan manuel terminé : {n} nouvelle(s) alerte(s)')
+        except Exception as e:
+            traceback.print_exc()
+
+    threading.Thread(target=_run_scan, daemon=True).start()
+    return jsonify({'message': 'Scan de veille lancé en arrière-plan', 'status': 'started'}), 202
 
 
 def _veille_loop():

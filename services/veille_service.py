@@ -358,7 +358,7 @@ def scan_and_notify(max_nouveautes=10):
         if not montant:
             montant = _deviner_montant(art['titre'])
         try:
-            sb.table('veille_alertes').insert({
+            sb.table('veille_alertes').upsert({
                 'url': art['url'],
                 'titre': art['titre'][:500],
                 'source': (art.get('source') or '')[:200],
@@ -366,7 +366,7 @@ def scan_and_notify(max_nouveautes=10):
                 'resume': resume or '',
                 'partenaire': partenaire[:200],
                 'montant': montant[:200],
-            }).execute()
+            }, on_conflict='url').execute()
             enregistrees += 1
             _notifier_telegram(
                 "📡 Accord signé détecté en ligne\n"
