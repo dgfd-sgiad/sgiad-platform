@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Gestion du Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#0f4c81; --green:#27ae60; --purple:#7c3aed; --bg:#f8f9fa; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; min-height:100vh; display:flex; flex-direction:column; }
+  .hero { background:linear-gradient(135deg,#7c3aed,#9333ea); color:#fff; padding:34px 20px; text-align:center; }
+  .hero h1 { margin:0; font-size:24px; font-weight:800; }
+  .hero p { margin:8px 0 0; font-size:13px; opacity:.85; }
+  .stats { display:flex; gap:12px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+  .stat { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:10px; padding:10px 18px; min-width:130px; }
+  .stat b { display:block; font-size:20px; }
+  .stat span { font-size:11px; opacity:.85; }
+
+  main { max-width:1250px; margin:0 auto; padding:26px 20px 60px; width:100%; box-sizing:border-box; }
+  .back { display:inline-block; margin-bottom:16px; color:var(--blue); text-decoration:none; font-weight:600; font-size:13px; }
+
+  .toolbar { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; background:#fff; padding:14px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  .toolbar input, .toolbar select { padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-family:inherit; }
+  .toolbar input { flex:1; min-width:220px; }
+  .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; }
+  .btn-blue { background:var(--blue); color:#fff; }
+  .btn-green { background:var(--green); color:#fff; }
+  .btn-grey { background:#64748b; color:#fff; }
+  .btn-red { background:#dc2626; color:#fff; }
+
+  .tablewrap { background:#fff; border-radius:12px; overflow:auto; box-shadow:0 2px 10px rgba(0,0,0,.06); }
+  table { width:100%; border-collapse:collapse; font-size:13px; min-width:950px; }
+  thead th { background:var(--blue); color:#fff; text-align:left; padding:12px 10px; position:sticky; top:0; font-weight:600; }
+  tbody td { padding:10px; border-bottom:1px solid #e2e8f0; }
+  tbody tr:hover { background:#f1f5f9; }
+  .tag { padding:3px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+  .tag-M { background:#dbeafe; color:#1d4ed8; }
+  .tag-F { background:#fce7f3; color:#be185d; }
+  .rowbtn { border:none; background:none; cursor:pointer; font-size:15px; padding:4px 8px; }
+
+  .modal { position:fixed; inset:0; background:rgba(15,23,42,.55); display:none; align-items:flex-start; justify-content:center; padding:30px 12px; z-index:50; overflow-y:auto; }
+  .modal.open { display:flex; }
+  .box { background:#fff; border-radius:12px; width:100%; max-width:950px; padding:24px; }
+  .box h2 { margin:0 0 18px; color:var(--blue); font-size:18px; }
+  .close { float:right; border:none; background:none; font-size:20px; cursor:pointer; color:#64748b; }
+
+  .formgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .formgrid label { font-size:12px; font-weight:600; color:#475569; display:block; margin-bottom:4px; }
+  .formgrid input, .formgrid select { width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; font-family:inherit; box-sizing:border-box; }
+  .full { grid-column:1 / -1; }
+  .actions { margin-top:18px; display:flex; gap:10px; justify-content:flex-end; }
+
+  .detailgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; font-size:13px; }
+  .detailgrid div { border-bottom:1px dashed #e2e8f0; padding:6px 0; }
+  .detailgrid b { color:var(--blue); display:block; font-size:12px; margin-bottom:2px; }
+
+  footer { text-align:center; padding:16px; font-size:11px; color:#9ca3af; margin-top:auto; }
+
+  @media (max-width:700px) { .formgrid, .detailgrid { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>👤 Gestion du Personnel</h1>
+  <p>Portail dédié — Direction Générale du Financement du Développement</p>
+  <div class="stats">
+    <div class="stat"><b id="st-total">—</b><span>Total agents</span></div>
+    <div class="stat"><b id="st-hommes">—</b><span>Hommes</span></div>
+    <div class="stat"><b id="st-femmes">—</b><span>Femmes</span></div>
+    <div class="stat"><b id="st-retraite">—</b><span>Retraites ≤ 5 ans</span></div>
+  </div>
+</div>
+
+<main>
+  <a class="back" href="conges_accueil.html">← Retour à l'accueil</a>
+
+  <div class="toolbar">
+    <input id="search" placeholder="Rechercher (nom, matricule, poste, corps…)">
+    <select id="fDirection"><option value="">Toutes directions</option></select>
+    <select id="fCategorie"><option value="">Toutes catégories</option></select>
+    <select id="fStatut"><option value="">Tous statuts</option></select>
+    <button class="btn btn-green" onclick="ouvrirForm(null)">+ Nouvel agent</button>
+    <button class="btn btn-grey" onclick="exportCSV()"> Export CSV</button>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Matricule</th><th>Nom</th><th>Sexe</th><th>Direction</th><th>Poste</th>
+          <th>Grade</th><th>Cat.</th><th>Contact</th><th>Retraite</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- MODAL DETAIL -->
+<div class="modal" id="modalDetail">
+  <div class="box">
+    <button class="close" onclick="fermer('modalDetail')">✖</button>
+    <h2 id="detailTitre">Fiche agent</h2>
+    <div class="detailgrid" id="detailBody"></div>
+    <div class="actions">
+      <button class="btn btn-blue" id="btnEditFromDetail">✏ Modifier</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORMULAIRE -->
+<div class="modal" id="modalForm">
+  <div class="box">
+    <button class="close" onclick="fermer('modalForm')">✖</button>
+    <h2 id="formTitre">Nouvel agent</h2>
+    <form id="form" class="formgrid"></form>
+    <div class="actions">
+      <button class="btn btn-grey" onclick="fermer('modalForm')">Annuler</button>
+      <button class="btn btn-blue" onclick="sauver()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SUPPRESSION -->
+<div class="modal" id="modalDelete">
+  <div class="box" style="max-width:480px;">
+    <h2>Confirmer la suppression</h2>
+    <p id="deleteTexte" style="margin:10px 0 20px;"></p>
+    <div class="actions">
+      <button class="btn btn-grey" onclick="fermer('modalDelete')">Annuler</button>
+      <button class="btn btn-red" onclick="confirmerSuppression()">🗑 Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<footer>SGIAD — Module Personnel · Accès réservé au service RH</footer>
+
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+/* ============================================================
+   CONFIGURATION — remplace par tes valeurs Supabase
+   ============================================================ */
+const SUPABASE_URL = "https://pajfnpxgtqdegsbdhcgd.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhamZucHhndHFkZWdzYmRoY2dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDkyMTksImV4cCI6MjEwMTU4NTIxOX0.J24gJjM9QFwBLkD_n48A8gcRZwamLKtzXDVy9eoPCmU";
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const TABLE = "conges_agents";
+
+let agents = [];
+let editId = null;
+let deleteId = null;
+
+/* Champs du formulaire */
+const CHAMPS = [
+  { k: "matricule", l: "Matricule *", req: true },
+  { k: "nom", l: "Nom complet *", req: true },
+  { k: "sexe", l: "Sexe", type: "select", opts: ["M", "F"] },
+  { k: "direction", l: "Direction" },
+  { k: "poste", l: "Poste", full: true },
+  { k: "statut_admin", l: "Statut administratif" },
+  { k: "cat_admin", l: "Catégorie admin" },
+  { k: "corps", l: "Corps", full: true },
+  { k: "grade", l: "Grade" },
+  { k: "grade_paye", l: "Grade payé" },
+  { k: "contact", l: "Contact" },
+  { k: "anciennete_fp", l: "Ancienneté FP" },
+  { k: "date_naissance", l: "Date naissance", type: "date" },
+  { k: "date_prise_service", l: "Prise de service", type: "date" },
+  { k: "prise_service_structure", l: "Prise service structure", type: "date" },
+  { k: "date_retraite", l: "Date retraite", type: "date" },
+  { k: "annee_retraite", l: "Année retraite" },
+  { k: "service_interrompu", l: "Service interrompu" },
+  { k: "diplome", l: "Diplôme", full: true },
+  { k: "diplome_reconnu", l: "Diplôme reconnu", full: true },
+  { k: "date_formation", l: "Date formation", type: "date" },
+  { k: "statut", l: "Statut", type: "select", opts: ["actif", "inactif", "retraite"] },
+  { k: "categorie", l: "Catégorie emploi" },
+];
+
+/* ---------- utilitaires ---------- */
+function esc(v) {
+  return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                        .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function fmtDate(v) {
+  if (!v) return "";
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : v;
+}
+window.fermer = id => document.getElementById(id).classList.remove("open");
+
+/* ---------- chargement ---------- */
+async function charger() {
+  const { data, error } = await sb.from(TABLE).select("*").order("nom");
+  if (error) { alert("Erreur de chargement :\n" + error.message); return; }
+  agents = data || [];
+  majStats();
+  remplirFiltres();
+  rendre();
+}
+
+function majStats() {
+  const annee = new Date().getFullYear();
+  document.getElementById("st-total").textContent = agents.length;
+  document.getElementById("st-hommes").textContent = agents.filter(a => a.sexe === "M").length;
+  document.getElementById("st-femmes").textContent = agents.filter(a => a.sexe === "F").length;
+  document.getElementById("st-retraite").textContent =
+    agents.filter(a => a.annee_retraite && +a.annee_retraite <= annee + 5 && +a.annee_retraite >= annee).length;
+}
+
+function remplirFiltres() {
+  const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
+  const dirs = uniq(agents.map(a => a.direction));
+  const cats = uniq(agents.map(a => a.cat_admin));
+  const stats = uniq(agents.map(a => a.statut_admin));
+  const fill = (id, list) => {
+    const sel = document.getElementById(id);
+    const first = sel.options[0].outerHTML;
+    sel.innerHTML = first + list.map(v => `<option>${esc(v)}</option>`).join("");
+  };
+  fill("fDirection", dirs);
+  fill("fCategorie", cats);
+  fill("fStatut", stats);
+}
+
+/* ---------- tableau ---------- */
+function filtrer() {
+  const q = document.getElementById("search").value.toLowerCase();
+  const d = document.getElementById("fDirection").value;
+  const c = document.getElementById("fCategorie").value;
+  const s = document.getElementById("fStatut").value;
+
+  return agents.filter(a => {
+    const texte = [a.nom, a.matricule, a.poste, a.corps, a.direction]
+      .join(" ").toLowerCase();
+    return (!q || texte.includes(q)) &&
+           (!d || a.direction === d) &&
+           (!c || a.cat_admin === c) &&
+           (!s || a.statut_admin === s);
+  });
+}
+
+function rendre() {
+  const liste = filtrer();
+  document.getElementById("tbody").innerHTML = liste.map(a => `
+    <tr>
+      <td>${esc(a.matricule)}</td>
+      <td><b>${esc(a.nom)}</b></td>
+      <td><span class="tag tag-${esc(a.sexe)}">${esc(a.sexe)}</span></td>
+      <td>${esc(a.direction)}</td>
+      <td>${esc(a.poste)}</td>
+      <td>${esc(a.grade)}</td>
+      <td>${esc(a.cat_admin)}</td>
+      <td>${esc(a.contact)}</td>
+      <td>${fmtDate(a.date_retraite)}</td>
+      <td>
+        <button class="rowbtn" title="Voir" onclick="voir('${a.id}')">👁</button>
+        <button class="rowbtn" title="Modifier" onclick="ouvrirForm('${a.id}')">✏</button>
+        <button class="rowbtn" title="Supprimer" onclick="demanderSuppression('${a.id}')">🗑</button>
+      </td>
+    </tr>`).join("") || `<tr><td colspan="10" style="text-align:center;padding:20px;">Aucun agent trouvé</td></tr>`;
+}
+
+/* ---------- fiche détail ---------- */
+window.voir = id => {
+  const a = agents.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById("detailTitre").textContent = a.nom || "Fiche agent";
+  document.getElementById("detailBody").innerHTML = CHAMPS.map(c => `
+    <div><b>${esc(c.l.replace(" *",""))}</b>${
+      c.type === "date" ? esc(fmtDate(a[c.k])) : esc(a[c.k])
+    }</div>`).join("");
+  document.getElementById("btnEditFromDetail").onclick = () => {
+    fermer("modalDetail"); ouvrirForm(id);
+  };
+  document.getElementById("modalDetail").classList.add("open");
+};
+
+/* ---------- formulaire ---------- */
+window.ouvrirForm = id => {
+  editId = id || null;
+  const a = id ? agents.find(x => x.id === id) : {};
+  document.getElementById("formTitre").textContent = id ? "Modifier l'agent" : "Nouvel agent";
+
+  document.getElementById("form").innerHTML = CHAMPS.map(c => {
+    const val = esc(a ? a[c.k] : "");
+    const cls = c.full ? ' class="full"' : "";
+    let input;
+    if (c.type === "select") {
+      input = `<select name="${c.k}">
+        <option value="">—</option>
+        ${(c.opts || []).map(o => `<option ${o === (a?.[c.k]) ? "selected" : ""}>${o}</option>`).join("")}
+      </select>`;
+    } else {
+      const iso = (c.type === "date" && /^\d{4}-\d{2}-\d{2}/.test(a?.[c.k] || "")) ? a[c.k].slice(0,10) : "";
+      input = `<input type="${c.type || "text"}" name="${c.k}" value="${c.type === "date" ? iso : val}">`;
+    }
+    return `<div${cls}><label>${esc(c.l)}</label>${input}</div>`;
+  }).join("");
+
+  document.getElementById("modalForm").classList.add("open");
+};
+
+window.sauver = async () => {
+  const form = document.getElementById("form");
+  const payload = {};
+  for (const c of CHAMPS) {
+    const el = form.elements[c.k];
+    let v = el ? el.value.trim() : "";
+    payload[c.k] = v === "" ? null : v;
+  }
+
+  if (!payload.matricule || !payload.nom) {
+    alert("Le matricule et le nom sont obligatoires.");
+    return;
+  }
+
+  if (editId) {
+    const { error } = await sb.from(TABLE).update(payload).eq("id", editId);
+    if (error) { alert("Erreur modification :\n" + error.message); return; }
+  } else {
+    payload.statut = payload.statut || "actif";
+    payload.categorie = payload.categorie || "fonctionnaire";
+    const { error } = await sb.from(TABLE).insert(payload);
+    if (error) { alert("Erreur insertion :\n" + error.message); return; }
+  }
+
+  fermer("modalForm");
+  await charger();
+};
+
+/* ---------- suppression ---------- */
+window.demanderSuppression = id => {
+  const a = agents.find(x => x.id === id);
+  if (!a) return;
+  deleteId = id;
+  document.getElementById("deleteTexte").textContent =
+    `Voulez-vous vraiment supprimer ${a.nom} (matricule ${a.matricule}) ?`;
+  document.getElementById("modalDelete").classList.add("open");
+};
+
+window.confirmerSuppression = async () => {
+  if (!deleteId) return;
+  const { error } = await sb.from(TABLE).delete().eq("id", deleteId);
+  if (error) { alert("Erreur suppression :\n" + error.message); return; }
+  fermer("modalDelete");
+  deleteId = null;
+  await charger();
+};
+
+/* ---------- export CSV ---------- */
+window.exportCSV = () => {
+  const cols = CHAMPS.map(c => c.k);
+  const lignes = [cols.join(";")];
+  for (const a of filtrer()) {
+    lignes.push(cols.map(k => `"${String(a[k] ?? "").replace(/"/g, '""')}"`).join(";"));
+  }
+  const blob = new Blob(["\uFEFF" + lignes.join("\n")], { type: "text/csv;charset=utf-8" });
+  const lien = document.createElement("a");
+  lien.href = URL.createObjectURL(blob);
+  lien.download = "personnel_dgfd.csv";
+  lien.click();
+};
+
+/* ---------- événements ---------- */
+["search", "fDirection", "fCategorie", "fStatut"].forEach(id => {
+  document.getElementById(id).addEventListener("input", rendre);
+});
+
+charger();
+</script>
+</body>
+</html>
