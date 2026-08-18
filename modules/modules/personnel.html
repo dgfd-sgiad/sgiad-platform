@@ -55,6 +55,7 @@
   .detailgrid b { color:var(--blue); display:block; font-size:12px; margin-bottom:2px; }
 
   footer { text-align:center; padding:16px; font-size:11px; color:#9ca3af; margin-top:auto; }
+  #errorBox { background:#fee2e2; color:#991b1b; padding:10px; border-radius:8px; margin-bottom:15px; display:none; }
 
   @media (max-width:700px) { .formgrid, .detailgrid { grid-template-columns:1fr; } }
 </style>
@@ -74,6 +75,8 @@
 
 <main>
   <a class="back" href="conges_accueil.html">← Retour à l'accueil</a>
+  
+  <div id="errorBox"></div>
 
   <div class="toolbar">
     <input id="search" placeholder="Rechercher (nom, matricule, poste, corps…)">
@@ -92,7 +95,7 @@
           <th>Grade</th><th>Cat.</th><th>Contact</th><th>Retraite</th><th>Actions</th>
         </tr>
       </thead>
-      <tbody id="tbody"></tbody>
+      <tbody id="tbody"><tr><td colspan="10" style="text-align:center;padding:20px;">Chargement...</td></tr></tbody>
     </table>
   </div>
 </main>
@@ -136,240 +139,71 @@
 
 <footer>SGIAD — Module Personnel · Accès réservé au service RH</footer>
 
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+<!-- CHARGEMENT ROBUSTE DE SUPABASE (Sans module ES) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const { createClient } = window.supabase;
+  
+  const SUPABASE_URL = "https://pajfnpxgtqdegsbdhcgd.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhamZucHhndHFkZWdzYmRoY2dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDkyMTksImV4cCI6MjEwMTU4NTIxOX0.J24gJjM9QFwBLkD_n48A8gcRZwamLKtzXDVy9eoPCmU";
+  
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const TABLE = "conges_agents";
 
-/* ============================================================
-   CONFIGURATION — remplace par tes valeurs Supabase
-   ============================================================ */
-const SUPABASE_URL = "https://pajfnpxgtqdegsbdhcgd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhamZucHhndHFkZWdzYmRoY2dkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDkyMTksImV4cCI6MjEwMTU4NTIxOX0.J24gJjM9QFwBLkD_n48A8gcRZwamLKtzXDVy9eoPCmU";
+  let agents = [];
+  let editId = null;
+  let deleteId = null;
 
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const TABLE = "conges_agents";
+  const CHAMPS = [
+    { k: "matricule", l: "Matricule *", req: true },
+    { k: "nom", l: "Nom complet *", req: true },
+    { k: "sexe", l: "Sexe", type: "select", opts: ["M", "F"] },
+    { k: "direction", l: "Direction" },
+    { k: "poste", l: "Poste", full: true },
+    { k: "statut_admin", l: "Statut administratif" },
+    { k: "cat_admin", l: "Catégorie admin" },
+    { k: "corps", l: "Corps", full: true },
+    { k: "grade", l: "Grade" },
+    { k: "grade_paye", l: "Grade payé" },
+    { k: "contact", l: "Contact" },
+    { k: "anciennete_fp", l: "Ancienneté FP" },
+    { k: "date_naissance", l: "Date naissance", type: "date" },
+    { k: "date_prise_service", l: "Prise de service", type: "date" },
+    { k: "prise_service_structure", l: "Prise service structure", type: "date" },
+    { k: "date_retraite", l: "Date retraite", type: "date" },
+    { k: "annee_retraite", l: "Année retraite" },
+    { k: "service_interrompu", l: "Service interrompu" },
+    { k: "diplome", l: "Diplôme", full: true },
+    { k: "diplome_reconnu", l: "Diplôme reconnu", full: true },
+    { k: "date_formation", l: "Date formation", type: "date" },
+    { k: "statut", l: "Statut", type: "select", opts: ["actif", "inactif", "retraite"] },
+    { k: "categorie", l: "Catégorie emploi" },
+  ];
 
-let agents = [];
-let editId = null;
-let deleteId = null;
+  function esc(v) {
+    return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;")
+                          .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function fmtDate(v) {
+    if (!v) return "";
+    const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : v;
+  }
+  function fermer(id) { document.getElementById(id).classList.remove("open"); }
+  function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.style.display = "block";
+    box.textContent = "❌ Erreur : " + msg;
+  }
 
-/* Champs du formulaire */
-const CHAMPS = [
-  { k: "matricule", l: "Matricule *", req: true },
-  { k: "nom", l: "Nom complet *", req: true },
-  { k: "sexe", l: "Sexe", type: "select", opts: ["M", "F"] },
-  { k: "direction", l: "Direction" },
-  { k: "poste", l: "Poste", full: true },
-  { k: "statut_admin", l: "Statut administratif" },
-  { k: "cat_admin", l: "Catégorie admin" },
-  { k: "corps", l: "Corps", full: true },
-  { k: "grade", l: "Grade" },
-  { k: "grade_paye", l: "Grade payé" },
-  { k: "contact", l: "Contact" },
-  { k: "anciennete_fp", l: "Ancienneté FP" },
-  { k: "date_naissance", l: "Date naissance", type: "date" },
-  { k: "date_prise_service", l: "Prise de service", type: "date" },
-  { k: "prise_service_structure", l: "Prise service structure", type: "date" },
-  { k: "date_retraite", l: "Date retraite", type: "date" },
-  { k: "annee_retraite", l: "Année retraite" },
-  { k: "service_interrompu", l: "Service interrompu" },
-  { k: "diplome", l: "Diplôme", full: true },
-  { k: "diplome_reconnu", l: "Diplôme reconnu", full: true },
-  { k: "date_formation", l: "Date formation", type: "date" },
-  { k: "statut", l: "Statut", type: "select", opts: ["actif", "inactif", "retraite"] },
-  { k: "categorie", l: "Catégorie emploi" },
-];
-
-/* ---------- utilitaires ---------- */
-function esc(v) {
-  return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;")
-                        .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function fmtDate(v) {
-  if (!v) return "";
-  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : v;
-}
-window.fermer = id => document.getElementById(id).classList.remove("open");
-
-/* ---------- chargement ---------- */
-async function charger() {
-  const { data, error } = await sb.from(TABLE).select("*").order("nom");
-  if (error) { alert("Erreur de chargement :\n" + error.message); return; }
-  agents = data || [];
-  majStats();
-  remplirFiltres();
-  rendre();
-}
-
-function majStats() {
-  const annee = new Date().getFullYear();
-  document.getElementById("st-total").textContent = agents.length;
-  document.getElementById("st-hommes").textContent = agents.filter(a => a.sexe === "M").length;
-  document.getElementById("st-femmes").textContent = agents.filter(a => a.sexe === "F").length;
-  document.getElementById("st-retraite").textContent =
-    agents.filter(a => a.annee_retraite && +a.annee_retraite <= annee + 5 && +a.annee_retraite >= annee).length;
-}
-
-function remplirFiltres() {
-  const uniq = (arr) => [...new Set(arr.filter(Boolean))].sort();
-  const dirs = uniq(agents.map(a => a.direction));
-  const cats = uniq(agents.map(a => a.cat_admin));
-  const stats = uniq(agents.map(a => a.statut_admin));
-  const fill = (id, list) => {
-    const sel = document.getElementById(id);
-    const first = sel.options[0].outerHTML;
-    sel.innerHTML = first + list.map(v => `<option>${esc(v)}</option>`).join("");
-  };
-  fill("fDirection", dirs);
-  fill("fCategorie", cats);
-  fill("fStatut", stats);
-}
-
-/* ---------- tableau ---------- */
-function filtrer() {
-  const q = document.getElementById("search").value.toLowerCase();
-  const d = document.getElementById("fDirection").value;
-  const c = document.getElementById("fCategorie").value;
-  const s = document.getElementById("fStatut").value;
-
-  return agents.filter(a => {
-    const texte = [a.nom, a.matricule, a.poste, a.corps, a.direction]
-      .join(" ").toLowerCase();
-    return (!q || texte.includes(q)) &&
-           (!d || a.direction === d) &&
-           (!c || a.cat_admin === c) &&
-           (!s || a.statut_admin === s);
-  });
-}
-
-function rendre() {
-  const liste = filtrer();
-  document.getElementById("tbody").innerHTML = liste.map(a => `
-    <tr>
-      <td>${esc(a.matricule)}</td>
-      <td><b>${esc(a.nom)}</b></td>
-      <td><span class="tag tag-${esc(a.sexe)}">${esc(a.sexe)}</span></td>
-      <td>${esc(a.direction)}</td>
-      <td>${esc(a.poste)}</td>
-      <td>${esc(a.grade)}</td>
-      <td>${esc(a.cat_admin)}</td>
-      <td>${esc(a.contact)}</td>
-      <td>${fmtDate(a.date_retraite)}</td>
-      <td>
-        <button class="rowbtn" title="Voir" onclick="voir('${a.id}')">👁</button>
-        <button class="rowbtn" title="Modifier" onclick="ouvrirForm('${a.id}')">✏</button>
-        <button class="rowbtn" title="Supprimer" onclick="demanderSuppression('${a.id}')">🗑</button>
-      </td>
-    </tr>`).join("") || `<tr><td colspan="10" style="text-align:center;padding:20px;">Aucun agent trouvé</td></tr>`;
-}
-
-/* ---------- fiche détail ---------- */
-window.voir = id => {
-  const a = agents.find(x => x.id === id);
-  if (!a) return;
-  document.getElementById("detailTitre").textContent = a.nom || "Fiche agent";
-  document.getElementById("detailBody").innerHTML = CHAMPS.map(c => `
-    <div><b>${esc(c.l.replace(" *",""))}</b>${
-      c.type === "date" ? esc(fmtDate(a[c.k])) : esc(a[c.k])
-    }</div>`).join("");
-  document.getElementById("btnEditFromDetail").onclick = () => {
-    fermer("modalDetail"); ouvrirForm(id);
-  };
-  document.getElementById("modalDetail").classList.add("open");
-};
-
-/* ---------- formulaire ---------- */
-window.ouvrirForm = id => {
-  editId = id || null;
-  const a = id ? agents.find(x => x.id === id) : {};
-  document.getElementById("formTitre").textContent = id ? "Modifier l'agent" : "Nouvel agent";
-
-  document.getElementById("form").innerHTML = CHAMPS.map(c => {
-    const val = esc(a ? a[c.k] : "");
-    const cls = c.full ? ' class="full"' : "";
-    let input;
-    if (c.type === "select") {
-      input = `<select name="${c.k}">
-        <option value="">—</option>
-        ${(c.opts || []).map(o => `<option ${o === (a?.[c.k]) ? "selected" : ""}>${o}</option>`).join("")}
-      </select>`;
-    } else {
-      const iso = (c.type === "date" && /^\d{4}-\d{2}-\d{2}/.test(a?.[c.k] || "")) ? a[c.k].slice(0,10) : "";
-      input = `<input type="${c.type || "text"}" name="${c.k}" value="${c.type === "date" ? iso : val}">`;
+  async function fetchAgents() {
+    try {
+      const { data, error } = await sb.from(TABLE).select("*").order("nom");
+      if (error) throw error;
+      agents = data;
+      renderTable();
+      updateStats();
+    } catch (err) {
+      showError(err.message);
     }
-    return `<div${cls}><label>${esc(c.l)}</label>${input}</div>`;
-  }).join("");
-
-  document.getElementById("modalForm").classList.add("open");
-};
-
-window.sauver = async () => {
-  const form = document.getElementById("form");
-  const payload = {};
-  for (const c of CHAMPS) {
-    const el = form.elements[c.k];
-    let v = el ? el.value.trim() : "";
-    payload[c.k] = v === "" ? null : v;
   }
-
-  if (!payload.matricule || !payload.nom) {
-    alert("Le matricule et le nom sont obligatoires.");
-    return;
-  }
-
-  if (editId) {
-    const { error } = await sb.from(TABLE).update(payload).eq("id", editId);
-    if (error) { alert("Erreur modification :\n" + error.message); return; }
-  } else {
-    payload.statut = payload.statut || "actif";
-    payload.categorie = payload.categorie || "fonctionnaire";
-    const { error } = await sb.from(TABLE).insert(payload);
-    if (error) { alert("Erreur insertion :\n" + error.message); return; }
-  }
-
-  fermer("modalForm");
-  await charger();
-};
-
-/* ---------- suppression ---------- */
-window.demanderSuppression = id => {
-  const a = agents.find(x => x.id === id);
-  if (!a) return;
-  deleteId = id;
-  document.getElementById("deleteTexte").textContent =
-    `Voulez-vous vraiment supprimer ${a.nom} (matricule ${a.matricule}) ?`;
-  document.getElementById("modalDelete").classList.add("open");
-};
-
-window.confirmerSuppression = async () => {
-  if (!deleteId) return;
-  const { error } = await sb.from(TABLE).delete().eq("id", deleteId);
-  if (error) { alert("Erreur suppression :\n" + error.message); return; }
-  fermer("modalDelete");
-  deleteId = null;
-  await charger();
-};
-
-/* ---------- export CSV ---------- */
-window.exportCSV = () => {
-  const cols = CHAMPS.map(c => c.k);
-  const lignes = [cols.join(";")];
-  for (const a of filtrer()) {
-    lignes.push(cols.map(k => `"${String(a[k] ?? "").replace(/"/g, '""')}"`).join(";"));
-  }
-  const blob = new Blob(["\uFEFF" + lignes.join("\n")], { type: "text/csv;charset=utf-8" });
-  const lien = document.createElement("a");
-  lien.href = URL.createObjectURL(blob);
-  lien.download = "personnel_dgfd.csv";
-  lien.click();
-};
-
-/* ---------- événements ---------- */
-["search", "fDirection", "fCategorie", "fStatut"].forEach(id => {
-  document.getElementById(id).addEventListener("input", rendre);
-});
-
-charger();
-</script>
-</body>
-</html>
