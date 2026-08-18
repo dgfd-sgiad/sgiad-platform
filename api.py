@@ -1863,11 +1863,25 @@ def setup_create_tables():
                 UNIQUE(secteur, sous_secteur)
             );
             CREATE INDEX IF NOT EXISTS idx_secteur_sous ON secteur_sous_secteur(secteur);
+
+            CREATE TABLE IF NOT EXISTS veille_alertes (
+                id              BIGSERIAL PRIMARY KEY,
+                url             TEXT UNIQUE NOT NULL,
+                titre           TEXT,
+                source          TEXT,
+                date_article    TEXT,
+                resume          TEXT,
+                partenaire      TEXT,
+                montant         TEXT,
+                statut          TEXT DEFAULT 'nouveau',
+                detecte_le      TIMESTAMPTZ DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_veille_detecte ON veille_alertes(detecte_le DESC);
         """)
         conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"message": "Tables créées avec succès"}), 200
+        return jsonify({"message": "Tables et index (secteur_sous_secteur, veille_alertes) créés avec succès"}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": _safe_error(e)}), 500
