@@ -329,6 +329,10 @@ def scan_and_notify(max_nouveautes=10):
         'Bénin BOAD financement',
         'Bénin financement',
         'Benin financing',
+        'site:agenceecofin.com Bénin financement OR accord OR prêt',
+        'site:jeuneafrique.com Bénin financement OR accord OR prêt',
+        'site:sikafinance.com Bénin financement OR accord',
+        'site:financialafrik.com Bénin financement OR accord',
     ]
     for query in requetes_rapides:
         bruts = _scan_google_news(query)
