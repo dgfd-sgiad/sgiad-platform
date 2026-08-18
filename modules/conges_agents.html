@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Gestion des Congés - Agents & Soldes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#0f4c81; --green:#27ae60; --red:#dc2626; --orange:#d97706; --bg:#f8f9fa; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:20px; }
+  .top-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .top-header h1 { margin:0; font-size:18px; color:var(--blue); font-weight:800; }
+  .links a { padding:6px 12px; background:#fff; color:#555; text-decoration:none; border-radius:6px; font-size:11px; border:1px solid #ddd; margin-left:6px; }
+  .btn { padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; color:#fff; }
+  .btn-success { background:var(--green); }
+  .filters-bar { background:#fff; margin-bottom:12px; padding:14px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; }
+  .filters-bar input, .filters-bar select { padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-family:inherit; }
+  .filters-bar input[type=text] { flex:1; min-width:200px; }
+  .banner { background:#e2e8f0; border-radius:8px; padding:10px 14px; font-size:12px; font-weight:700; color:#334155; margin-bottom:12px; }
+  .table-wrap { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .table-scroll { max-height:62vh; overflow-y:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:var(--blue); color:#fff; padding:10px 12px; text-align:left; font-weight:700; text-transform:uppercase; font-size:10px; letter-spacing:.5px; cursor:pointer; position:sticky; top:0; z-index:1; }
+  td { padding:9px 12px; border-bottom:1px solid #e5e7eb; }
+  tr:hover td { background:#f8fafc; cursor:pointer; }
+  .badge { padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-actif { background:#dcfce7; color:#166534; }
+  .badge-sorti { background:#fee2e2; color:#991b1b; }
+  .badge-m { background:#dbeafe; color:#1e40af; }
+  .badge-f { background:#fce7f3; color:#9d174d; }
+  .solde { font-weight:700; }
+  .solde-ok { color:#166534; } .solde-faible { color:var(--orange); } .solde-critique { color:var(--red); }
+  .btn-mini { padding:4px 8px; border:none; border-radius:5px; font-size:10px; font-weight:700; cursor:pointer; color:#fff; }
+  .modal { display:none; position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:9999; align-items:center; justify-content:center; }
+  .modal-box { background:#fff; border-radius:12px; padding:22px; width:min(700px,92%); max-height:85vh; overflow-y:auto; }
+  .modal-box h3 { margin:0 0 14px; color:var(--blue); font-size:15px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .form-group label { display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#374151; }
+  .form-group input, .form-group select { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; box-sizing:border-box; }
+  .hist-table { width:100%; margin-top:10px; font-size:11px; }
+  .hist-table th { background:#64748b; font-size:9px; padding:6px 8px; position:static; }
+  .hist-table td { padding:6px 8px; }
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <h1>👥 Gestion des Congés — Agents & Soldes</h1>
+  <div style="display:flex;align-items:center">
+    <div class="links"><a href="../index.html">🏠 Accueil</a><a href="conges_demandes.html">📝 Enregistrer un congé</a></div>
+    <button class="btn btn-success" style="margin-left:10px" onclick="ouvrirAjout()">➕ Nouvel agent</button>
+  </div>
+</div>
+
+<div class="filters-bar">
+  <input type="text" id="f-search" placeholder="🔍 Rechercher (matricule, nom, poste, contact...)">
+  <select id="f-statut"><option value="">Statut (Tous)</option><option value="actif">Actifs</option><option value="sorti">Sortis</option></select>
+  <select id="f-sexe"><option value="">Sexe (Tous)</option><option value="M">Hommes</option><option value="F">Femmes</option></select>
+  <select id="f-categorie"><option value="">Catégorie (Toutes)</option><option value="fonctionnaire">Fonctionnaires</option><option value="contractuel">Contractuels</option></select>
+  <button class="btn" style="background:#0f4c81" onclick="razFiltres()">Réinitialiser</button>
+</div>
+
+<div class="banner" id="banner">Chargement...</div>
+
+<div class="table-wrap"><div class="table-scroll">
+<table id="agents-table">
+  <thead><tr>
+    <th data-col="matricule">Matricule ⇅</th><th data-col="nom">Agent ⇅</th><th data-col="poste">Poste ⇅</th>
+    <th>Sexe</th><th data-col="categorie">Catégorie ⇅</th>
+    <th data-col="solde25">Solde 2025 ⇅</th><th data-col="solde26">Solde 2026 ⇅</th>
+    <th data-col="statut">Statut ⇅</th><th>Actions</th>
+  </tr></thead>
+  <tbody id="agents-body"></tbody>
+</table>
+</div></div>
+
+<div id="modal-detail" class="modal" onclick="if(event.target===this)fermerModal('modal-detail')"><div class="modal-box" id="detail-box"></div></div>
+
+<div id="modal-ajout" class="modal" onclick="if(event.target===this)fermerModal('modal-ajout')">
+  <div class="modal-box">
+    <h3>➕ Nouvel agent</h3>
+    <form onsubmit="ajouterAgent(event)">
+      <div class="form-row">
+        <div class="form-group"><label>Matricule</label><input type="text" name="matricule"></div>
+        <div class="form-group"><label>Nom et prénoms *</label><input type="text" name="nom" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Sexe</label><select name="sexe"><option value="M">Masculin</option><option value="F">Féminin</option></select></div>
+        <div class="form-group"><label>Catégorie</label><select name="categorie"><option value="fonctionnaire">Fonctionnaire</option><option value="contractuel">Contractuel</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Poste</label><input type="text" name="poste"></div>
+        <div class="form-group"><label>Structure / Direction</label><input type="text" name="structure"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Année de début</label><input type="number" name="annee" value="2026"></div>
+        <div class="form-group"><label>Report initial (jours)</label><input type="number" name="report" value="0"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button type="button" class="btn" style="background:#94a3b8" onclick="fermerModal('modal-ajout')">Annuler</button>
+        <button type="submit" class="btn btn-success">Créer l'agent</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+var AGENTS = [], FILTRES = { search:'', statut:'', sexe:'', categorie:'' }, TRI = { col:'nom', dir:'asc' };
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function mj(j){ if(j==null||isNaN(j)) return '—'; j=Math.round(j); var neg=j<0?'-':''; j=Math.abs(j); return neg+Math.floor(j/30)+' mois '+String(j%30).padStart(2,'0')+' j'; }
+function soldeClass(j){ if(j==null) return 'solde-ok'; if(j<=7) return 'solde-critique'; if(j<=30) return 'solde-faible'; return 'solde-ok'; }
+
+async function charger(){
+  try {
+    var r = await fetch('/api/conges/agents?t='+Date.now());
+    var j = await r.json();
+    AGENTS = j.agents||[];
+    afficher();
+  } catch(e){ document.getElementById('banner').textContent='❌ Erreur de chargement : '+e; }
+}
+
+function filtrer(){
+  return AGENTS.filter(function(a){
+    if(FILTRES.statut && a.statut!==FILTRES.statut) return false;
+    if(FILTRES.sexe && a.sexe!==FILTRES.sexe) return false;
+    if(FILTRES.categorie && a.categorie!==FILTRES.categorie) return false;
+    if(FILTRES.search){
+      var q=FILTRES.search.toLowerCase();
+      var hay=((a.matricule||'')+' '+(a.nom||'')+' '+(a.poste||'')+' '+(a.contact||'')).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+}
+
+function trier(data){
+  var c=TRI.col, dir=TRI.dir;
+  data.sort(function(a,b){
+    var va,vb;
+    if(c==='solde25'){ va=((a.droits||{})['2025']||{}).solde; va=va==null?-1:va; vb=((b.droits||{})['2025']||{}).solde; vb=vb==null?-1:vb; }
+    else if(c==='solde26'){ va=((a.droits||{})['2026']||{}).solde; va=va==null?-1:va; vb=((b.droits||{})['2026']||{}).solde; vb=vb==null?-1:vb; }
+    else { va=String(a[c]||'').toLowerCase(); vb=String(b[c]||'').toLowerCase(); }
+    if(va<vb) return dir==='asc'?-1:1;
+    if(va>vb) return dir==='asc'?1:-1;
+    return 0;
+  });
+  return data;
+}
+
+function afficher(){
+  var data = trier(filtrer());
+  document.getElementById('banner').textContent = data.length+' agent(s) affiché(s) / '+AGENTS.length+' dans la base';
+  var tb = document.getElementById('agents-body');
+  if(!data.length){ tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#6b7280">Aucun agent trouvé</td></tr>'; return; }
+  var html='';
+  data.forEach(function(a){
+    try {
+      var d25=((a.droits||{})['2025']||{}).solde, d26=((a.droits||{})['2026']||{}).solde;
+      var bStatut = a.statut==='actif' ? '<span class="badge badge-actif">Actif</span>' : '<span class="badge badge-sorti">Sorti</span>';
+      var bSexe = a.sexe==='M' ? '<span class="badge badge-m">H</span>' : (a.sexe==='F' ? '<span class="badge badge-f">F</span>' : '—');
+      var btn = a.statut==='actif'
+        ? '<button class="btn-mini" style="background:var(--red)" onclick="event.stopPropagation();changerStatut('+a.id+',\'sorti\')">Sortir</button>'
+        : '<button class="btn-mini" style="background:var(--green)" onclick="event.stopPropagation();changerStatut('+a.id+',\'actif\')">Réactiver</button>';
+      html += '<tr onclick="ouvrirDetail('+a.id+')">'
+        +'<td><b>'+esc(a.matricule||'—')+'</b></td>'
+        +'<td>'+esc(a.nom)+'</td>'
+        +'<td style="color:#6b7280;font-size:11px">'+esc((a.poste||'—').substring(0,45))+'</td>'
+        +'<td>'+bSexe+'</td>'
+        +'<td>'+esc(a.categorie||'—')+'</td>'
+        +'<td><span class="solde '+soldeClass(d25)+'">'+mj(d25)+'</span></td>'
+        +'<td><span class="solde '+soldeClass(d26)+'">'+mj(d26)+'</span></td>'
+        +'<td>'+bStatut+'</td>'
+        +'<td>'+btn+'</td></tr>';
+    } catch(e){ console.error('ligne ignorée', e); }
+  });
+  tb.innerHTML = html;
+}
+
+function ouvrirDetail(id){
+  var a = AGENTS.find(function(x){ return x.id===id; });
+  if(!a) return;
+  var d25=(a.droits||{})['2025']||{}, d26=(a.droits||{})['2026']||{};
+  var box = document.getElementById('detail-box');
+  box.innerHTML = '<div style="display:flex;justify-content:space-between"><h3>👤 '+esc(a.nom)+'</h3><span onclick="fermerModal(\'modal-detail\')" style="cursor:pointer;font-size:22px;color:#94a3b8">×</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">'
+    +'<div><b>Matricule :</b> '+esc(a.matricule||'—')+'</div>'
+    +'<div><b>Sexe :</b> '+esc(a.sexe||'—')+'</div>'
+    +'<div><b>Poste :</b> '+esc(a.poste||'—')+'</div>'
+    +'<div><b>Catégorie :</b> '+esc(a.categorie||'—')+'</div>'
+    +'<div><b>Grade :</b> '+esc(a.grade||'—')+'</div>'
+    +'<div><b>Contact :</b> '+esc(a.contact||'—')+'</div>'
+    +'<div><b>Naissance :</b> '+esc(a.date_naissance||'—')+'</div>'
+    +'<div><b>Prise de service :</b> '+esc(a.date_prise_service||'—')+'</div>'
+    +'</div>'
+    +'<h3>📅 Historique des soldes</h3>'
+    +'<table class="hist-table"><tr><th>Année</th><th>Droit</th><th>Report</th><th>Disponible</th><th>Consommé</th><th>Solde</th></tr>'
+    +'<tr><td>2025</td><td>'+(d25.droit_annuel!=null?d25.droit_annuel+' j':'—')+'</td><td>'+(d25.report!=null?d25.report+' j':'—')+'</td><td>'+(d25.disponible!=null?d25.disponible+' j':'—')+'</td><td>'+(d25.consomme!=null?d25.consomme+' j':'—')+'</td><td><b>'+(d25.solde!=null?d25.solde+' j':'—')+'</b></td></tr>'
+    +'<tr><td>2026</td><td>'+(d26.droit_annuel!=null?d26.droit_annuel+' j':'—')+'</td><td>'+(d26.report!=null?d26.report+' j':'—')+'</td><td>'+(d26.disponible!=null?d26.disponible+' j':'—')+'</td><td>'+(d26.consomme!=null?d26.consomme+' j':'—')+'</td><td><b>'+(d26.solde!=null?d26.solde+' j':'—')+'</b></td></tr>'
+    +'</table>';
+  document.getElementById('modal-detail').style.display='flex';
+}
+
+function ouvrirAjout(){ document.getElementById('modal-ajout').style.display='flex'; }
+function fermerModal(id){ document.getElementById(id).style.display='none'; }
+
+async function ajouterAgent(e){
+  e.preventDefault();
+  var fd = new FormData(e.target); var data={};
+  fd.forEach(function(v,k){ data[k]=v; });
+  var r = await fetch('/api/conges/agents', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  var j = await r.json();
+  if(!r.ok){ alert('❌ '+(j.error||'Erreur')); return; }
+  fermerModal('modal-ajout');
+  charger();
+}
+
+async function changerStatut(id, statut){
+  if(!confirm('Changer le statut en "'+statut+'" ?')) return;
+  var r = await fetch('/api/conges/agents/'+id+'/statut', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({statut:statut}) });
+  if(r.ok) charger(); else alert('❌ Erreur de changement de statut');
+}
+
+function razFiltres(){
+  FILTRES={search:'',statut:'',sexe:'',categorie:''};
+  document.getElementById('f-search').value='';
+  document.getElementById('f-statut').value='';
+  document.getElementById('f-sexe').value='';
+  document.getElementById('f-categorie').value='';
+  afficher();
+}
+
+['f-search','f-statut','f-sexe','f-categorie'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', function(){
+    FILTRES.search=document.getElementById('f-search').value;
+    FILTRES.statut=document.getElementById('f-statut').value;
+    FILTRES.sexe=document.getElementById('f-sexe').value;
+    FILTRES.categorie=document.getElementById('f-categorie').value;
+    afficher();
+  });
+});
+
+document.querySelectorAll('#agents-table th[data-col]').forEach(function(th){
+  th.addEventListener('click', function(){
+    var c=th.getAttribute('data-col');
+    if(TRI.col===c) TRI.dir=TRI.dir==='asc'?'desc':'asc'; else { TRI.col=c; TRI.dir='asc'; }
+    afficher();
+  });
+});
+
+charger();
+</script>
+</body>
+</html>

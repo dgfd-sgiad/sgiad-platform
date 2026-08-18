@@ -731,6 +731,261 @@ def _demarrer_veille():
 _demarrer_veille()
 
 
+# ══════════════════════════════════════════════════════════════════
+# MODULE CONGÉS — PAGE + API
+# ══════════════════════════════════════════════════════════════════
+
+@app.route('/conges/agents')
+def conges_agents_page():
+    return send_from_directory('modules', 'conges_agents.html')
+
+@app.route('/api/conges/agents', methods=['GET'])
+def conges_agents_liste():
+    from db import get_supabase
+    sb = get_supabase()
+    agents = sb.table('conges_agents').select('*').order('nom').execute().data or []
+    droits = sb.table('conges_droits').select('*').execute().data or []
+    par_agent = {}
+    for d in droits:
+        par_agent.setdefault(d['agent_id'], {})[str(d['annee'])] = d
+    for a in agents:
+        a['droits'] = par_agent.get(a['id'], {})
+    return jsonify({'agents': agents})
+
+
+@app.route('/api/conges/agents', methods=['POST'])
+def conges_agent_ajouter():
+    data = request.get_json(force=True) or {}
+    nom = (data.get('nom') or '').strip()
+    if not nom:
+        return jsonify({'error': 'Le nom est requis'}), 400
+    from db import get_supabase
+    sb = get_supabase()
+    annee = int(data.get('annee') or 2026)
+    report = int(data.get('report') or 0)
+    ins = sb.table('conges_agents').insert({
+        'matricule': (data.get('matricule') or '').strip() or None,
+        'nom': nom,
+        'sexe': (data.get('sexe') or '').strip() or None,
+        'poste': (data.get('poste') or '').strip() or None,
+        'structure': (data.get('structure') or '').strip() or None,
+        'statut_admin': (data.get('statut_admin') or '').strip() or None,
+        'categorie': data.get('categorie') or 'fonctionnaire',
+        'statut': 'actif',
+    }).execute()
+    agent_id = ins.data[0]['id']
+    sb.table('conges_droits').insert({
+        'agent_id': agent_id, 'annee': annee, 'droit_annuel': 30,
+        'report': report, 'disponible': 30 + report,
+        'consomme': 0, 'solde': 30 + report,
+    }).execute()
+    sb.table('conges_journal').insert({
+        'agent_id': agent_id, 'action': 'creation',
+        'details': 'Agent ajoute avec report ' + str(report) + ' j pour ' + str(annee),
+        'par': 'gestionnaire',
+    }).execute()
+    return jsonify({'ok': True, 'id': agent_id})
+
+
+@app.route('/api/conges/types', methods=['GET'])
+def conges_types_liste():
+    from db import get_supabase
+    sb = get_supabase()
+    types = sb.table('conges_types').select('*').order('code').execute().data or []
+    return jsonify({'types': types})
+
+
+@app.route('/api/conges/demandes', methods=['GET'])
+def conges_demandes_liste():
+    from db import get_supabase
+    sb = get_supabase()
+    demandes = sb.table('conges_demandes').select('*').order('date_debut', desc=True).execute().data or []
+    agents = sb.table('conges_agents').select('id, nom, matricule, direction, poste').execute().data or []
+    agents_map = {}
+    for a in agents:
+        agents_map[a['id']] = a
+        agents_map[str(a['id'])] = a
+    for d in demandes:
+        aid = d.get('agent_id')
+        d['conges_agents'] = agents_map.get(aid) or agents_map.get(str(aid) if aid is not None else None) or {}
+    return jsonify({'demandes': demandes})
+
+
+@app.route('/api/conges/demandes', methods=['POST'])
+def conges_demande_ajouter():
+    from db import get_supabase
+    from datetime import datetime, date
+    data = request.get_json(force=True) or {}
+    
+    agent_id = data.get('agent_id')
+    type_code = data.get('type')
+    date_debut_str = data.get('date_debut')
+    date_fin_str = data.get('date_fin')
+    
+    if not all([agent_id, type_code, date_debut_str, date_fin_str]):
+        return jsonify({'error': 'Champs manquants'}), 400
+    
+    date_debut = datetime.strptime(date_debut_str, '%Y-%m-%d').date()
+    date_fin = datetime.strptime(date_fin_str, '%Y-%m-%d').date()
+    
+    if date_fin < date_debut:
+        return jsonify({'error': 'Date fin avant date début'}), 400
+    
+    nb_jours = (date_fin - date_debut).days + 1
+    annee = date_debut.year
+    
+    sb = get_supabase()
+    
+    type_info = sb.table('conges_types').select('*').eq('code', type_code).execute().data
+    if not type_info:
+        return jsonify({'error': 'Type de congé inconnu'}), 400
+    deduit = type_info[0]['deduit_solde']
+    
+    payload = {
+        'agent_id': int(agent_id),
+        'type_conge': type_code,
+        'date_debut': date_debut.isoformat(),
+        'date_fin': date_fin.isoformat(),
+        'nb_jours': nb_jours,
+        'annee_imputation': annee,
+        'statut': 'approuvee',
+        'deductible': deduit,
+    }
+    ins = sb.table('conges_demandes').insert(payload).execute()
+    demande_id = None
+    if ins.data and len(ins.data) > 0:
+        demande_id = ins.data[0].get('id')
+    else:
+        latest = sb.table('conges_demandes').select('id').eq('agent_id', int(agent_id)).eq('date_debut', date_debut.isoformat()).order('id', desc=True).limit(1).execute().data
+        if latest:
+            demande_id = latest[0]['id']
+    
+    if deduit:
+        droit = sb.table('conges_droits').select('*').eq('agent_id', int(agent_id)).eq('annee', annee).execute().data
+        if droit:
+            nouveau_conso = (droit[0]['consomme'] or 0) + nb_jours
+            nouveau_solde = droit[0]['disponible'] - nouveau_conso
+            sb.table('conges_droits').update({
+                'consomme': nouveau_conso,
+                'solde': nouveau_solde,
+            }).eq('id', droit[0]['id']).execute()
+        
+        try:
+            sb.table('conges_journal').insert({
+                'agent_id': int(agent_id),
+                'action': 'conge_enregistre',
+                'details': f'{type_code} du {date_debut} au {date_fin} ({nb_jours} j) - Solde mis à jour',
+                'par': 'gestionnaire',
+            }).execute()
+        except Exception:
+            pass
+    else:
+        try:
+            sb.table('conges_journal').insert({
+                'agent_id': int(agent_id),
+                'action': 'conge_enregistre',
+                'details': f'{type_code} du {date_debut} au {date_fin} ({nb_jours} j) - Non déductible',
+                'par': 'gestionnaire',
+            }).execute()
+        except Exception:
+            pass
+    
+    return jsonify({'ok': True, 'id': demande_id, 'nb_jours': nb_jours})
+
+
+@app.route('/api/conges/demandes/<int:demande_id>', methods=['DELETE'])
+def conges_demande_supprimer(demande_id):
+    from db import get_supabase
+    sb = get_supabase()
+    demande = sb.table('conges_demandes').select('*').eq('id', demande_id).execute().data
+    if not demande:
+        return jsonify({'error': 'Demande introuvable'}), 404
+    d = demande[0]
+    if d.get('deductible'):
+        droit = sb.table('conges_droits').select('*').eq('agent_id', d['agent_id']).eq('annee', d['annee_imputation']).execute().data
+        if droit:
+            nouveau_conso = max(0, (droit[0]['consomme'] or 0) - d['nb_jours'])
+            nouveau_solde = droit[0]['disponible'] - nouveau_conso
+            sb.table('conges_droits').update({
+                'consomme': nouveau_conso,
+                'solde': nouveau_solde,
+            }).eq('id', droit[0]['id']).execute()
+        sb.table('conges_journal').insert({
+            'agent_id': d['agent_id'], 'action': 'conge_supprime',
+            'details': f"Demande {demande_id} supprimee - Solde restaure ({d['nb_jours']} j)",
+            'par': 'gestionnaire',
+        }).execute()
+    sb.table('conges_demandes').delete().eq('id', demande_id).execute()
+    return jsonify({'ok': True, 'restored': d['nb_jours'] if d.get('deductible') else 0})
+
+
+@app.route('/api/conges/demandes/<int:demande_id>', methods=['PUT'])
+def conges_demande_modifier(demande_id):
+    from db import get_supabase
+    from datetime import datetime
+    sb = get_supabase()
+    data = request.get_json(force=True) or {}
+    demande = sb.table('conges_demandes').select('*').eq('id', demande_id).execute().data
+    if not demande:
+        return jsonify({'error': 'Demande introuvable'}), 404
+    ancien = demande[0]
+
+    if ancien.get('deductible'):
+        droit = sb.table('conges_droits').select('*').eq('agent_id', ancien['agent_id']).eq('annee', ancien['annee_imputation']).execute().data
+        if droit:
+            ancien_conso = max(0, (droit[0]['consomme'] or 0) - ancien['nb_jours'])
+            sb.table('conges_droits').update({
+                'consomme': ancien_conso,
+                'solde': droit[0]['disponible'] - ancien_conso,
+            }).eq('id', droit[0]['id']).execute()
+
+    date_debut = datetime.strptime(data['date_debut'], '%Y-%m-%d').date()
+    date_fin = datetime.strptime(data['date_fin'], '%Y-%m-%d').date()
+    nb_jours = (date_fin - date_debut).days + 1
+    annee = date_debut.year
+    type_code = data.get('type', ancien['type_conge'])
+    type_info = sb.table('conges_types').select('*').eq('code', type_code).execute().data
+    deduit = type_info[0]['deduit_solde'] if type_info else False
+
+    sb.table('conges_demandes').update({
+        'type_conge': type_code,
+        'date_debut': date_debut.isoformat(),
+        'date_fin': date_fin.isoformat(),
+        'nb_jours': nb_jours,
+        'annee_imputation': annee,
+        'deductible': deduit,
+    }).eq('id', demande_id).execute()
+
+    if deduit:
+        droit = sb.table('conges_droits').select('*').eq('agent_id', ancien['agent_id']).eq('annee', annee).execute().data
+        if droit:
+            nouveau_conso = (droit[0]['consomme'] or 0) + nb_jours
+            nouveau_solde = droit[0]['disponible'] - nouveau_conso
+            sb.table('conges_droits').update({
+                'consomme': nouveau_conso,
+                'solde': nouveau_solde,
+            }).eq('id', droit[0]['id']).execute()
+
+    return jsonify({'ok': True, 'id': demande_id, 'nb_jours': nb_jours})
+
+
+@app.route('/api/conges/agents/<int:agent_id>/statut', methods=['POST'])
+def conges_agent_statut(agent_id):
+    data = request.get_json(force=True) or {}
+    statut = data.get('statut') or 'actif'
+    from db import get_supabase
+    from datetime import date
+    sb = get_supabase()
+    payload = {'statut': statut}
+    payload['date_sortie'] = date.today().isoformat() if statut != 'actif' else None
+    sb.table('conges_agents').update(payload).eq('id', agent_id).execute()
+    sb.table('conges_journal').insert({
+        'agent_id': agent_id, 'action': 'changement_statut',
+        'details': 'Statut passe a ' + statut, 'par': 'gestionnaire',
+    }).execute()
+    return jsonify({'ok': True})
+
+
 @app.route('/api/accueil/login', methods=['POST'])
 def accueil_login():
     """Connexion depuis la page d'accueil via Supabase Auth

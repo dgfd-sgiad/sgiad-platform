@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Enregistrement des Congés</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --blue:#0f4c81; --green:#27ae60; --red:#dc2626; --bg:#f8f9fa; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:20px; }
+  .top-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .top-header h1 { margin:0; font-size:18px; color:var(--blue); font-weight:800; }
+  .links a { padding:6px 12px; background:#fff; color:#555; text-decoration:none; border-radius:6px; font-size:11px; border:1px solid #ddd; margin-left:6px; }
+  .grid { display:grid; grid-template-columns:440px 1fr; gap:16px; align-items:start; }
+  .card { background:#fff; border-radius:10px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .card h3 { margin:0 0 14px; color:var(--blue); font-size:14px; }
+  label { display:block; font-size:11px; font-weight:700; color:#374151; margin-bottom:4px; }
+  select, input[type=date] { width:100%; padding:9px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; box-sizing:border-box; margin-bottom:12px; font-family:inherit; }
+  input[readonly] { background:#f1f5f9; color:#64748b; cursor:not-allowed; font-weight:700; }
+  .info-line { font-size:12px; padding:8px 12px; border-radius:6px; margin-bottom:8px; background:#f1f5f9; color:#334155; }
+  .info-warn { background:#fef2f2; color:#991b1b; font-weight:700; }
+  .info-preview { background:#eff6ff; color:#1e40af; font-weight:700; border:1px solid #bfdbfe; }
+  button.submit { width:100%; padding:11px; border:none; border-radius:8px; background:var(--green); color:#fff; font-weight:800; font-size:13px; cursor:pointer; }
+  button.cancel { width:100%; padding:9px; border:1px solid #cbd5e1; background:#fff; color:#64748b; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; margin-top:6px; }
+  #msg { margin-top:10px; font-size:12px; font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:var(--blue); color:#fff; padding:9px 10px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; }
+  td { padding:9px 10px; border-bottom:1px solid #e5e7eb; }
+  .badge { padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-deduit { background:#fee2e2; color:#991b1b; }
+  .badge-nodeduit { background:#e0e7ff; color:#3730a3; }
+  .table-scroll { max-height:60vh; overflow-y:auto; }
+  .btn-action { padding:4px 8px; border:none; border-radius:5px; font-size:10px; font-weight:700; cursor:pointer; margin-right:4px; }
+  .btn-edit { background:#dbeafe; color:#1e40af; }
+  .btn-del { background:#fee2e2; color:#991b1b; }
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <h1>📝 Enregistrement des Congés — Registre officiel</h1>
+  <div class="links"><a href="conges_agents.html">👥 Agents & Soldes</a><a href="../index.html">🏠 Accueil</a></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3 id="form-title">➕ Nouvel enregistrement (congé autorisé)</h3>
+    <input type="hidden" id="edit-id">
+    <label>Agent</label>
+    <select id="sel-agent"><option value="">— Choisir un agent —</option></select>
+    <label>Solde actuel de cet agent (2026)</label>
+    <input type="text" id="solde-actuel" readonly placeholder="—">
+    <label>Type de congé</label>
+    <select id="sel-type"><option value="">— Choisir un type —</option></select>
+    <label>Date de début</label>
+    <input type="date" id="d-debut">
+    <label>Date de fin</label>
+    <input type="date" id="d-fin">
+    <div class="info-line" id="info-jours">Durée : —</div>
+    <div class="info-line" id="info-type"></div>
+    <div class="info-line info-preview" id="info-preview" style="display:none"></div>
+    <div class="info-line info-warn" id="info-alerte" style="display:none"></div>
+    <button class="submit" id="btn-submit" onclick="enregistrer()">✅ Enregistrer le congé</button>
+    <button class="cancel" id="btn-cancel" style="display:none" onclick="annulerEdition()">Annuler la modification</button>
+    <div id="msg"></div>
+  </div>
+
+  <div class="card">
+    <h3>📋 Congés enregistrés (plus récents d'abord)</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Matricule</th><th>Agent</th><th>Type</th><th>Période</th><th>Jours</th><th>Déduction</th><th>Actions</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var AGENTS = [], TYPES = [], TYPE_BY_CODE = {}, DEMANDES = [];
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function mj(j){ if(j==null||isNaN(j)) return '—'; j=Math.round(j); var neg=j<0?'-':''; j=Math.abs(j); return neg+Math.floor(j/30)+' mois '+String(j%30).padStart(2,'0')+' j'; }
+function fmtDate(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function nbJours(d1,d2){ return Math.round((new Date(d2)-new Date(d1))/86400000)+1; }
+
+async function init(){
+  try {
+    var ra = await fetch('/api/conges/agents?t='+Date.now()); var ja = await ra.json();
+    AGENTS = (ja.agents||[]).filter(function(a){ return a.statut==='actif'; });
+    AGENTS.sort(function(a,b){ return (a.nom||'').localeCompare(b.nom||''); });
+    var rt = await fetch('/api/conges/types'); var jt = await rt.json();
+    TYPES = jt.types||[]; TYPE_BY_CODE = {};
+    TYPES.forEach(function(t){ TYPE_BY_CODE[t.code]=t; });
+
+    var sa = document.getElementById('sel-agent');
+    if(sa){
+      sa.innerHTML = '<option value="">— Choisir un agent —</option>' + AGENTS.map(function(a){
+        var dr26=(a.droits||{})['2026']; var solde=dr26?dr26.solde:'—';
+        return '<option value="'+a.id+'" data-solde="'+solde+'">'+esc(a.nom)+' — '+esc(a.matricule||'')+'</option>';
+      }).join('');
+    }
+    var st = document.getElementById('sel-type');
+    if(st){
+      st.innerHTML = '<option value="">— Choisir un type —</option>' + TYPES.map(function(t){
+        return '<option value="'+esc(t.code)+'">'+esc(t.libelle)+(t.deduit_solde?' (déduit)':' (non déduit)')+'</option>';
+      }).join('');
+    }
+    await chargerDemandes();
+    majInfos();
+  } catch(e){ console.error(e); }
+}
+
+async function chargerDemandes(){
+  var r = await fetch('/api/conges/demandes?t='+Date.now()); var j = await r.json();
+  DEMANDES = j.demandes||[];
+  var tb = document.getElementById('tbody');
+  if(!tb) return;
+  if(!DEMANDES.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:24px">Aucun congé enregistré.</td></tr>'; return; }
+  tb.innerHTML = DEMANDES.map(function(d){
+    var ag=d.conges_agents||{}; var t=TYPE_BY_CODE[d.type_conge]||{};
+    return '<tr><td><b>'+esc(ag.matricule||'—')+'</b></td><td>'+esc(ag.nom||'')+'</td>'
+      +'<td>'+esc(t.libelle||d.type_conge)+'</td>'
+      +'<td>'+fmtDate(d.date_debut)+' → '+fmtDate(d.date_fin)+'</td>'
+      +'<td><b>'+d.nb_jours+' j</b></td>'
+      +'<td>'+(d.deductible?'<span class="badge badge-deduit">Déduit</span>':'<span class="badge badge-nodeduit">Non déduit</span>')+'</td>'
+      +'<td><button class="btn-action btn-edit" onclick="editer('+d.id+')">✏️ Modifier</button>'
+      +'<button class="btn-action btn-del" onclick="supprimer('+d.id+','+d.nb_jours+')">🗑️ Supprimer</button></td></tr>';
+  }).join('');
+}
+
+function majInfos(){
+  var sel = document.getElementById('sel-agent');
+  if(!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var soldeStr = opt ? opt.getAttribute('data-solde') : '—';
+  var solde = (soldeStr && soldeStr!=='—' && soldeStr!=null) ? parseInt(soldeStr) : null;
+
+  var elSolde = document.getElementById('solde-actuel');
+  if(elSolde) elSolde.value = solde!=null ? solde+' j ('+mj(solde)+')' : '—';
+
+  var type = TYPE_BY_CODE[document.getElementById('sel-type').value];
+  var d1 = document.getElementById('d-debut').value;
+  var d2 = document.getElementById('d-fin').value;
+  var nj = (d1 && d2 && d2>=d1) ? nbJours(d1,d2) : 0;
+
+  var elJours = document.getElementById('info-jours');
+  if(elJours) elJours.textContent = nj>0 ? 'Durée : '+nj+' jour(s) (calendaires)' : 'Durée : —';
+  var elType = document.getElementById('info-type');
+  if(elType) elType.textContent = type ? (type.deduit_solde ? '🔻 Ce type DÉDUIT le solde annuel' : '➖ Ce type ne déduit PAS le solde') : '';
+
+  var elPreview = document.getElementById('info-preview');
+  var elAlerte = document.getElementById('info-alerte');
+  if(elAlerte) elAlerte.style.display='none';
+  if(elPreview) elPreview.style.display='none';
+
+  if(type && type.deduit_solde && nj>0 && solde!=null){
+    var ns = solde - nj;
+    if(elPreview){ elPreview.textContent='📊 Solde APRÈS enregistrement : '+ns+' j ('+mj(ns)+')'; elPreview.style.display='block'; }
+    if(nj>solde && elAlerte){ elAlerte.textContent='⚠️ ATTENTION : durée ('+nj+' j) > solde ('+solde+' j).'; elAlerte.style.display='block'; }
+  }
+}
+
+async function enregistrer(){
+  var agentId = document.getElementById('sel-agent').value;
+  var type = document.getElementById('sel-type').value;
+  var d1 = document.getElementById('d-debut').value;
+  var d2 = document.getElementById('d-fin').value;
+  var msg = document.getElementById('msg');
+  var editId = document.getElementById('edit-id').value;
+
+  if(!agentId||!type||!d1||!d2){ if(msg){msg.style.color='#991b1b'; msg.textContent='❌ Complète agent, type et dates.';} return; }
+  if(d2<d1){ if(msg){msg.style.color='#991b1b'; msg.textContent='❌ Date de fin avant date début.';} return; }
+
+  var url = editId ? '/api/conges/demandes/'+editId : '/api/conges/demandes';
+  var method = editId ? 'PUT' : 'POST';
+
+  var r = await fetch(url, { method:method, headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ agent_id: parseInt(agentId), type: type, date_debut: d1, date_fin: d2 }) });
+  var j = await r.json();
+  if(!r.ok){ if(msg){msg.style.color='#991b1b'; msg.textContent='❌ '+(j.error||'Erreur');} return; }
+
+  if(msg){ msg.style.color='#166534'; msg.textContent = editId ? '✅ Congé modifié : '+j.nb_jours+' j. Solde recalculé.' : '✅ Congé enregistré : '+j.nb_jours+' j. Solde mis à jour.'; }
+  annulerEdition();
+  await init();
+}
+
+async function supprimer(id, nb){
+  if(!confirm('Supprimer ce congé de '+nb+' jours ?\nLe solde sera restauré automatiquement.')) return;
+  var r = await fetch('/api/conges/demandes/'+id, { method:'DELETE' });
+  var j = await r.json();
+  var msg = document.getElementById('msg');
+  if(!r.ok){ if(msg){msg.style.color='#991b1b'; msg.textContent='❌ '+(j.error||'Impossible de supprimer');} return; }
+  await init();
+  if(msg){ msg.style.color='#166534'; msg.textContent='✅ Congé supprimé. Solde restauré.'; }
+}
+
+window.editer = function(id){
+  var d = DEMANDES.find(function(x){ return x.id===id; });
+  if(!d) return;
+  document.getElementById('edit-id').value = id;
+  document.getElementById('sel-agent').value = d.agent_id;
+  document.getElementById('sel-type').value = d.type_conge;
+  document.getElementById('d-debut').value = d.date_debut;
+  document.getElementById('d-fin').value = d.date_fin;
+  document.getElementById('form-title').textContent = '✏️ Modifier le congé #'+id;
+  document.getElementById('btn-submit').textContent = '💾 Enregistrer les modifications';
+  document.getElementById('btn-cancel').style.display = 'block';
+  majInfos();
+  window.scrollTo({ top:0, behavior:'smooth' });
+};
+
+window.annulerEdition = function(){
+  document.getElementById('edit-id').value='';
+  document.getElementById('sel-agent').value='';
+  document.getElementById('sel-type').value='';
+  document.getElementById('d-debut').value='';
+  document.getElementById('d-fin').value='';
+  document.getElementById('form-title').textContent='➕ Nouvel enregistrement (congé autorisé)';
+  document.getElementById('btn-submit').textContent='✅ Enregistrer le congé';
+  document.getElementById('btn-cancel').style.display='none';
+  var msg=document.getElementById('msg'); if(msg) msg.textContent='';
+  majInfos();
+};
+
+document.addEventListener('DOMContentLoaded', function(){
+  ['sel-agent','sel-type','d-debut','d-fin'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.addEventListener('change', majInfos);
+  });
+  init();
+});
+</script>
+</body>
+</html>
