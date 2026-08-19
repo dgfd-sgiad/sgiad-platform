@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Historique des Congés</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root { --violet:#7c3aed; --green:#27ae60; --orange:#d97706; --blue:#0f4c81; --bg:#f8f9fa; }
+  * { box-sizing:border-box; }
+  body { font-family:'Open Sans',sans-serif; background:var(--bg); margin:0; padding:20px; }
+  .top-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .top-header h1 { margin:0; font-size:18px; color:var(--orange); font-weight:800; }
+  .links a { padding:6px 12px; background:#fff; color:#555; text-decoration:none; border-radius:6px; font-size:11px; border:1px solid #ddd; margin-left:6px; }
+  .btn { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; color:#fff; margin-left:6px; }
+  .filters-bar { background:#fff; margin-bottom:12px; padding:14px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .filters-bar select { padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-family:inherit; min-width:220px; }
+  .banner { background:#fef3c7; border-radius:8px; padding:10px 14px; font-size:12px; font-weight:700; color:#92400e; margin-bottom:12px; }
+  .table-wrap { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); margin-bottom:20px; }
+  .table-scroll { overflow:auto; max-height:55vh; }
+  table { width:100%; border-collapse:collapse; font-size:10px; white-space:nowrap; }
+  th { background:var(--orange); color:#fff; padding:6px 8px; text-align:left; font-weight:700; text-transform:uppercase; font-size:9px; position:sticky; top:0; z-index:10; }
+  td { padding:4px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top; line-height:1.25; }
+  tr:hover td { background:#fffbeb; }
+  h2.section { font-size:14px; color:var(--blue); margin:20px 0 10px; }
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <h1>📜 Historique des Congés</h1>
+  <div style="display:flex;align-items:center">
+    <div class="links"><a href="conges_accueil.html">🏠 Accueil RH</a></div>
+    <button class="btn" style="background:var(--green)" onclick="exportExcel()">📥 Excel</button>
+    <button class="btn" style="background:var(--orange)" onclick="exportPDF()">📄 PDF</button>
+    <button class="btn" style="background:var(--blue)" onclick="exportWord()">📝 Word</button>
+  </div>
+</div>
+
+<div class="filters-bar">
+  <select id="f-agent"></select>
+  <select id="f-annee"></select>
+  <button class="btn" style="background:var(--blue)" onclick="raz()">Réinitialiser</button>
+</div>
+
+<div class="banner" id="banner">Chargement...</div>
+
+<div class="table-wrap"><div class="table-scroll">
+<table>
+  <thead><tr><th>Matricule</th><th>Nom & prénoms</th><th>Année</th><th>Droit annuel</th><th>Report</th><th>Disponible</th><th>Consommé</th><th>Solde</th></tr></thead>
+  <tbody id="body-droits"></tbody>
+</table>
+</div></div>
+
+<div id="section-pris" style="display:none">
+  <h2 class="section" id="titre-pris">🗓️ Congés pris par l'agent</h2>
+  <div class="table-wrap"><div class="table-scroll">
+  <table>
+    <thead><tr><th>Année</th><th>Début</th><th>Fin</th><th>Jours</th><th>Statut</th></tr></thead>
+    <tbody id="body-pris"></tbody>
+  </table>
+  </div></div>
+</div>
+
+<script>
+var AGENTS=[], DEMANDES=[], F={agent:'', annee:''};
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dateStr(){ return new Date().toISOString().slice(0,10); }
+
+async function charger(){
+  var r=await fetch('/api/conges/agents?t='+Date.now()); var j=await r.json(); AGENTS=(j.agents||[]).filter(function(a){ return (a.statut||'actif')==='actif'; });
+  try { var r2=await fetch('/api/conges/demandes'); var j2=await r2.json(); DEMANDES=j2.demandes||(Array.isArray(j2)?j2:[]); } catch(e){ DEMANDES=[]; }
+  remplirFiltres(); afficher();
+}
+
+function remplirFiltres(){
+  document.getElementById('f-agent').innerHTML='<option value="">👥 Tous les agents</option>'+AGENTS.slice().sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');}).map(function(a){return '<option value="'+a.id+'">'+esc(a.nom)+' ('+esc(a.matricule)+')</option>';}).join('');
+  var an={}; AGENTS.forEach(function(a){ Object.keys(a.droits||{}).forEach(function(y){ an[y]=1; }); });
+  document.getElementById('f-annee').innerHTML='<option value="">📆 Toutes les années</option>'+Object.keys(an).sort().map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+  document.getElementById('f-agent').value=F.agent; document.getElementById('f-annee').value=F.annee;
+}
+
+function lignesDroits(){
+  var rows=[];
+  AGENTS.forEach(function(a){
+    if(F.agent && String(a.id)!==String(F.agent)) return;
+    var d=a.droits||{};
+    Object.keys(d).sort().forEach(function(y){
+      if(F.annee && y!==F.annee) return;
+      rows.push({mat:a.matricule, nom:a.nom, annee:y, droit:d[y].droit_annuel, report:d[y].report, dispo:d[y].disponible, conso:d[y].consomme, solde:d[y].solde});
+    });
+  });
+  return rows;
+}
+
+function resume(){
+  var p=[];
+  if(F.agent){ var a=AGENTS.find(function(x){return String(x.id)===String(F.agent);}); if(a) p.push(a.nom); }
+  if(F.annee) p.push('Année '+F.annee);
+  return p.join(' · ')||'Tous les agents · toutes les années';
+}
+
+function afficher(){
+  var rows=lignesDroits();
+  document.getElementById('banner').textContent=rows.length+' ligne(s) d\'historique — '+resume();
+  document.getElementById('body-droits').innerHTML=rows.map(function(r){
+    return '<tr><td><b>'+esc(r.mat||'—')+'</b></td><td>'+esc(r.nom||'—')+'</td><td><b>'+r.annee+'</b></td><td>'+(r.droit!=null?r.droit+' j':'—')+'</td><td>'+(r.report!=null?r.report+' j':'—')+'</td><td>'+(r.dispo!=null?r.dispo+' j':'—')+'</td><td>'+(r.conso!=null?r.conso+' j':'—')+'</td><td><b>'+(r.solde!=null?r.solde+' j':'—')+'</b></td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px">Aucune donnée</td></tr>';
+  var sec=document.getElementById('section-pris');
+  if(F.agent){
+    var da=DEMANDES.filter(function(x){ return String(x.agent_id)===String(F.agent); });
+    document.getElementById('body-pris').innerHTML=da.map(function(x){
+      return '<tr><td>'+esc(x.annee||'—')+'</td><td>'+esc(x.date_debut||x.debut||'—')+'</td><td>'+esc(x.date_fin||x.fin||'—')+'</td><td><b>'+esc(x.jours!=null?x.jours:(x.nb_jours||'—'))+'</b></td><td>'+esc(x.statut||'—')+'</td></tr>';
+    }).join('')||'<tr><td colspan="5" style="text-align:center;padding:20px">Aucun congé enregistré</td></tr>';
+    sec.style.display='block';
+  } else sec.style.display='none';
+}
+
+function raz(){ F={agent:'',annee:''}; remplirFiltres(); afficher(); }
+
+function exportExcel(){
+  var rows=lignesDroits();
+  var aoa=[['SGIAD — Historique des Congés'],['Filtres : '+resume()],['Exporté le : '+new Date().toLocaleString('fr-FR')],[],['Matricule','Nom & prénoms','Année','Droit annuel','Report','Disponible','Consommé','Solde']];
+  rows.forEach(function(r){ aoa.push([r.mat,r.nom,r.annee,r.droit,r.report,r.dispo,r.conso,r.solde]); });
+  var ws=XLSX.utils.aoa_to_sheet(aoa); var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Historique');
+  XLSX.writeFile(wb,'historique_conges_'+dateStr()+'.xlsx');
+}
+
+function exportPDF(){
+  var rows=lignesDroits();
+  var doc=new jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  doc.setFontSize(13); doc.text('SGIAD — Historique des Congés',10,10);
+  doc.setFontSize(9); doc.setTextColor(100);
+  doc.text('Filtres : '+resume()+' — Exporté le '+new Date().toLocaleString('fr-FR'),10,16);
+  doc.autoTable({startY:22,
+    head:[['Matricule','Nom','Année','Droit','Report','Disponible','Consommé','Solde']],
+    body:rows.map(function(r){ return [r.mat,r.nom,r.annee,r.droit!=null?r.droit:'',r.report!=null?r.report:'',r.dispo!=null?r.dispo:'',r.conso!=null?r.conso:'',r.solde!=null?r.solde:'']; }),
+    styles:{fontSize:8}, headStyles:{fillColor:[217,119,6]}});
+  doc.save('historique_conges_'+dateStr()+'.pdf');
+}
+
+function exportWord(){
+  var rows=lignesDroits();
+  var t='<table border="1" cellpadding="4"><tr><th>Matricule</th><th>Nom & prénoms</th><th>Année</th><th>Droit annuel</th><th>Report</th><th>Disponible</th><th>Consommé</th><th>Solde</th></tr>';
+  rows.forEach(function(r){ t+='<tr><td>'+esc(r.mat)+'</td><td>'+esc(r.nom)+'</td><td>'+r.annee+'</td><td>'+(r.droit!=null?r.droit:'')+'</td><td>'+(r.report!=null?r.report:'')+'</td><td>'+(r.dispo!=null?r.dispo:'')+'</td><td>'+(r.conso!=null?r.conso:'')+'</td><td>'+(r.solde!=null?r.solde:'')+'</td></tr>'; });
+  t+='</table>';
+  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Historique</title></head><body><h2>SGIAD — Historique des Congés</h2><p>Filtres : '+esc(resume())+' — Exporté le '+new Date().toLocaleString('fr-FR')+'</p>'+t+'</body></html>';
+  var blob=new Blob(['\ufeff',html],{type:'application/msword'});
+  var u=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=u; a.download='historique_conges_'+dateStr()+'.doc'; a.click();
+}
+
+document.getElementById('f-agent').addEventListener('change',function(){ F.agent=this.value; afficher(); });
+document.getElementById('f-annee').addEventListener('change',function(){ F.annee=this.value; afficher(); });
+charger();
+</script>
+</body>
+</html>

@@ -67,7 +67,7 @@
   <thead><tr>
     <th data-col="matricule">Matricule ⇅</th><th data-col="nom">Agent ⇅</th><th data-col="poste">Poste ⇅</th>
     <th>Sexe</th><th data-col="categorie">Catégorie ⇅</th>
-    <th data-col="solde25">Solde 2025 ⇅</th><th data-col="solde26">Solde 2026 ⇅</th>
+    <th data-col="solde25" id="th-solde-p">Solde ⇅</th><th data-col="solde26" id="th-solde-c">Solde ⇅</th>
     <th data-col="statut">Statut ⇅</th><th>Actions</th>
   </tr></thead>
   <tbody id="agents-body"></tbody>
@@ -93,7 +93,7 @@
         <div class="form-group"><label>Structure / Direction</label><input type="text" name="structure"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Année de début</label><input type="number" name="annee" value="2026"></div>
+        <div class="form-group"><label>Année de début</label><input type="number" name="annee" value="" id="champ-annee"></div>
         <div class="form-group"><label>Report initial (jours)</label><input type="number" name="report" value="0"></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
@@ -138,8 +138,8 @@ function trier(data){
   var c=TRI.col, dir=TRI.dir;
   data.sort(function(a,b){
     var va,vb;
-    if(c==='solde25'){ va=((a.droits||{})['2025']||{}).solde; va=va==null?-1:va; vb=((b.droits||{})['2025']||{}).solde; vb=vb==null?-1:vb; }
-    else if(c==='solde26'){ va=((a.droits||{})['2026']||{}).solde; va=va==null?-1:va; vb=((b.droits||{})['2026']||{}).solde; vb=vb==null?-1:vb; }
+    if(c==='solde25'){ va=((a.droits||{})[ANNEE_P]||{}).solde; va=va==null?-1:va; vb=((b.droits||{})[ANNEE_P]||{}).solde; vb=vb==null?-1:vb; }
+    else if(c==='solde26'){ va=((a.droits||{})[ANNEE_C]||{}).solde; va=va==null?-1:va; vb=((b.droits||{})[ANNEE_C]||{}).solde; vb=vb==null?-1:vb; }
     else { va=String(a[c]||'').toLowerCase(); vb=String(b[c]||'').toLowerCase(); }
     if(va<vb) return dir==='asc'?-1:1;
     if(va>vb) return dir==='asc'?1:-1;
@@ -156,7 +156,7 @@ function afficher(){
   var html='';
   data.forEach(function(a){
     try {
-      var d25=((a.droits||{})['2025']||{}).solde, d26=((a.droits||{})['2026']||{}).solde;
+      var d25=((a.droits||{})[ANNEE_P]||{}).solde, d26=((a.droits||{})[ANNEE_C]||{}).solde;
       var bStatut = a.statut==='actif' ? '<span class="badge badge-actif">Actif</span>' : '<span class="badge badge-sorti">Sorti</span>';
       var bSexe = a.sexe==='M' ? '<span class="badge badge-m">H</span>' : (a.sexe==='F' ? '<span class="badge badge-f">F</span>' : '—');
       var btn = a.statut==='actif'
@@ -180,7 +180,7 @@ function afficher(){
 function ouvrirDetail(id){
   var a = AGENTS.find(function(x){ return x.id===id; });
   if(!a) return;
-  var d25=(a.droits||{})['2025']||{}, d26=(a.droits||{})['2026']||{};
+  var d25=(a.droits||{})[ANNEE_P]||{}, d26=(a.droits||{})[ANNEE_C]||{};
   var box = document.getElementById('detail-box');
   box.innerHTML = '<div style="display:flex;justify-content:space-between"><h3>👤 '+esc(a.nom)+'</h3><span onclick="fermerModal(\'modal-detail\')" style="cursor:pointer;font-size:22px;color:#94a3b8">×</span></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">'
@@ -195,8 +195,8 @@ function ouvrirDetail(id){
     +'</div>'
     +'<h3>📅 Historique des soldes</h3>'
     +'<table class="hist-table"><tr><th>Année</th><th>Droit</th><th>Report</th><th>Disponible</th><th>Consommé</th><th>Solde</th></tr>'
-    +'<tr><td>2025</td><td>'+(d25.droit_annuel!=null?d25.droit_annuel+' j':'—')+'</td><td>'+(d25.report!=null?d25.report+' j':'—')+'</td><td>'+(d25.disponible!=null?d25.disponible+' j':'—')+'</td><td>'+(d25.consomme!=null?d25.consomme+' j':'—')+'</td><td><b>'+(d25.solde!=null?d25.solde+' j':'—')+'</b></td></tr>'
-    +'<tr><td>2026</td><td>'+(d26.droit_annuel!=null?d26.droit_annuel+' j':'—')+'</td><td>'+(d26.report!=null?d26.report+' j':'—')+'</td><td>'+(d26.disponible!=null?d26.disponible+' j':'—')+'</td><td>'+(d26.consomme!=null?d26.consomme+' j':'—')+'</td><td><b>'+(d26.solde!=null?d26.solde+' j':'—')+'</b></td></tr>'
+    +'<tr><td>'+ANNEE_P+'</td><td>'+(d25.droit_annuel!=null?d25.droit_annuel+' j':'—')+'</td><td>'+(d25.report!=null?d25.report+' j':'—')+'</td><td>'+(d25.disponible!=null?d25.disponible+' j':'—')+'</td><td>'+(d25.consomme!=null?d25.consomme+' j':'—')+'</td><td><b>'+(d25.solde!=null?d25.solde+' j':'—')+'</b></td></tr>'
+    +'<tr><td>'+ANNEE_C+'</td><td>'+(d26.droit_annuel!=null?d26.droit_annuel+' j':'—')+'</td><td>'+(d26.report!=null?d26.report+' j':'—')+'</td><td>'+(d26.disponible!=null?d26.disponible+' j':'—')+'</td><td>'+(d26.consomme!=null?d26.consomme+' j':'—')+'</td><td><b>'+(d26.solde!=null?d26.solde+' j':'—')+'</b></td></tr>'
     +'</table>';
   document.getElementById('modal-detail').style.display='flex';
 }
@@ -249,6 +249,15 @@ document.querySelectorAll('#agents-table th[data-col]').forEach(function(th){
 });
 
 charger();
+</script>
+<script>
+var ANNEE_C = new Date().getFullYear();
+var ANNEE_P = ANNEE_C - 1;
+(function(){
+  var tp=document.getElementById('th-solde-p'); if(tp) tp.textContent='Solde '+ANNEE_P+' ⇅';
+  var tc=document.getElementById('th-solde-c'); if(tc) tc.textContent='Solde '+ANNEE_C+' ⇅';
+  var ca=document.getElementById('champ-annee'); if(ca) ca.value=ANNEE_C;
+})();
 </script>
 </body>
 </html>

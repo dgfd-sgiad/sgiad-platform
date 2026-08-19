@@ -2207,7 +2207,7 @@ def login_redirect():
 def conges_agent_modifier(agent_id):
     from db import get_supabase
     data = request.get_json(force=True) or {}
-    ALLOWED = ['matricule','nom','npi_ifu','direction','sexe','poste','statut_admin',
+    ALLOWED = ['matricule','nom','npi','ifu','direction','sexe','poste','statut_admin',
       'date_retraite','annee_retraite','date_naissance','date_prise_service',
       'prise_service_structure','anciennete_fp','corps','grade','grade_paye',
       'cat_admin','categorie','contact','diplome','diplome_reconnu','date_formation',
@@ -2216,11 +2216,14 @@ def conges_agent_modifier(agent_id):
     payload = {k: (v if v != '' else None) for k, v in data.items() if k in ALLOWED}
     if not payload:
         return jsonify({'error': 'Aucun champ valide'}), 400
-    sb = get_supabase()
-    r = sb.table('conges_agents').update(payload).eq('id', agent_id).execute()
-    if not r.data:
-        return jsonify({'error': 'Agent introuvable'}), 404
-    return jsonify({'ok': True, 'id': agent_id})
+    try:
+        sb = get_supabase()
+        r = sb.table('conges_agents').update(payload).eq('id', agent_id).execute()
+        if not r.data:
+            return jsonify({'error': 'Agent introuvable'}), 404
+        return jsonify({'ok': True, 'id': agent_id})
+    except Exception as ex:
+        return jsonify({'error': 'Erreur base : ' + str(ex)}), 500
 
 
 @app.route('/api/conges/indicateurs', methods=['GET'])
@@ -2250,6 +2253,31 @@ def conges_indicateurs_supprimer(ind_id):
     sb = get_supabase()
     sb.table('conges_indicateurs').delete().eq('id', ind_id).execute()
     return jsonify({'ok': True})
+
+
+@app.route('/api/conges/nouvelle_annee', methods=['POST'])
+def conges_nouvelle_annee():
+    from db import get_supabase
+    from datetime import date
+    sb = get_supabase()
+    annee = date.today().year
+    test = sb.table('conges_droits').select('id').eq('annee', annee).limit(1).execute()
+    if test.data:
+        return jsonify({'message': f"L'année {annee} est déjà ouverte."})
+    rows = sb.table('conges_droits').select('annee').execute().data or []
+    annee_prec = max([int(r['annee']) for r in rows]) if rows else annee - 1
+    agents = sb.table('conges_agents').select('id').execute().data or []
+    n = 0
+    for a in agents:
+        prec = sb.table('conges_droits').select('solde').eq('agent_id', a['id']).eq('annee', annee_prec).execute().data
+        report = int(prec[0]['solde'] or 0) if prec else 0
+        sb.table('conges_droits').insert({
+            'agent_id': a['id'], 'annee': annee,
+            'droit_annuel': 30, 'report': report,
+            'disponible': 30 + report, 'consomme': 0, 'solde': 30 + report,
+        }).execute()
+        n += 1
+    return jsonify({'ok': True, 'message': f'Année {annee} ouverte : {n} agents (report du solde {annee_prec}).'})
 
 
 if __name__ == '__main__':
