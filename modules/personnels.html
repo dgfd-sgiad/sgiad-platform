@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Gestion du Personnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root { --blue:#0f4c81; --green:#27ae60; --red:#dc2626; --orange:#d97706; --bg:#f8f9fa; }
+  * { box-sizing: border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); margin:0; padding:20px; }
+  .top-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .top-header h1 { margin:0; font-size:18px; color:var(--blue); font-weight:800; }
+  .links a { padding:6px 12px; background:#fff; color:#555; text-decoration:none; border-radius:6px; font-size:11px; border:1px solid #ddd; margin-left:6px; }
+  .btn { padding:8px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:700; font-size:12px; color:#fff; }
+  .btn-success { background:var(--green); }
+  .btn-blue { background:var(--blue); }
+  .btn-orange { background:var(--orange); }
+  .btn-red { background:var(--red); }
+  
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+  .stat-card { background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,.05); border-left:4px solid var(--blue); }
+  .stat-card.green { border-left-color:var(--green); }
+  .stat-card.orange { border-left-color:var(--orange); }
+  .stat-card.red { border-left-color:var(--red); }
+  .stat-card h3 { margin:0; font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; }
+  .stat-card .value { font-size:24px; font-weight:800; color:var(--blue); margin:6px 0; }
+  .stat-card .detail { font-size:11px; color:#94a3b8; }
+  
+  .filters-bar { background:#fff; margin-bottom:12px; padding:14px; border-radius:8px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .filters-bar input, .filters-bar select { padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-family:inherit; }
+  .filters-bar input[type=text] { flex:1; min-width:200px; }
+  
+  .banner { background:#e2e8f0; border-radius:8px; padding:10px 14px; font-size:12px; font-weight:700; color:#334155; margin-bottom:12px; }
+  
+  .table-wrap { background:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .table-scroll { overflow-x:auto; max-height:62vh; overflow-y:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; white-space:nowrap; }
+  th { background:var(--blue); color:#fff; padding:10px 12px; text-align:left; font-weight:700; text-transform:uppercase; font-size:10px; letter-spacing:.5px; position:sticky; top:0; z-index:10; cursor:pointer; }
+  td { padding:9px 12px; border-bottom:1px solid #e5e7eb; }
+  tr:hover td { background:#f8fafc; }
+  
+  .badge { padding:3px 8px; border-radius:10px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-actif { background:#dcfce7; color:#166534; }
+  .badge-sorti { background:#fee2e2; color:#991b1b; }
+  .badge-m { background:#dbeafe; color:#1e40af; }
+  .badge-f { background:#fce7f3; color:#9d174d; }
+  
+  .btn-mini { padding:4px 8px; border:none; border-radius:5px; font-size:10px; font-weight:700; cursor:pointer; color:#fff; margin-right:4px; }
+  
+  .modal { display:none; position:fixed; inset:0; background:rgba(15,23,42,.6); z-index:9999; align-items:center; justify-content:center; }
+  .modal-box { background:#fff; border-radius:12px; padding:22px; width:min(800px,92%); max-height:90vh; overflow-y:auto; }
+  .modal-box h3 { margin:0 0 14px; color:var(--blue); font-size:15px; display:flex; justify-content:space-between; align-items:center; }
+  .modal-box .close { cursor:pointer; font-size:24px; color:#94a3b8; }
+  
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .form-group label { display:block; font-size:11px; font-weight:700; margin-bottom:4px; color:#374151; }
+  .form-group input, .form-group select, .form-group textarea { width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-family:inherit; }
+  .form-group textarea { resize:vertical; min-height:60px; }
+  
+  .detail-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:16px; }
+  .detail-item { background:#f8fafc; padding:10px; border-radius:6px; }
+  .detail-item label { display:block; font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px; }
+  .detail-item .value { font-size:13px; color:#0f172a; font-weight:600; }
+  
+  .indicateurs-section { background:#fff; padding:16px; border-radius:10px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .indicateurs-section h3 { margin:0 0 12px; font-size:14px; color:var(--blue); }
+  .indicateurs-list { display:flex; flex-wrap:wrap; gap:8px; }
+  .indicateur-chip { background:#e0e7ff; color:#3730a3; padding:6px 12px; border-radius:16px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .indicateur-chip .remove { cursor:pointer; color:#991b1b; font-weight:800; }
+</style>
+</head>
+<body>
+
+<div class="top-header">
+  <h1>👥 Gestion du Personnel</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="links"><a href="conges_accueil.html">🏠 Accueil RH</a></div>
+    <button class="btn btn-blue" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Export Excel</button>
+    <button class="btn btn-orange" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+  </div>
+</div>
+
+<div class="stats" id="stats-container"></div>
+
+<div class="indicateurs-section">
+  <h3><i class="fas fa-chart-pie"></i> Indicateurs personnalisés</h3>
+  <div class="indicateurs-list" id="indicateurs-list"></div>
+  <button class="btn btn-success" style="margin-top:10px" onclick="ouvrirAjoutIndicateur()">+ Ajouter un indicateur</button>
+</div>
+
+<div class="filters-bar">
+  <input type="text" id="f-search" placeholder="🔍 Rechercher (matricule, nom, poste, contact...)">
+  <select id="f-sexe"><option value="">Sexe (Tous)</option><option value="M">Hommes</option><option value="F">Femmes</option></select>
+  <select id="f-categorie"><option value="">Catégorie (Toutes)</option></select>
+  <select id="f-structure"><option value="">Structure (Toutes)</option></select>
+  <select id="f-corps"><option value="">Corps (Tous)</option></select>
+  <select id="f-statut"><option value="">Statut (Tous)</option><option value="actif">Actifs</option><option value="sorti">Sortis</option></select>
+  <button class="btn btn-blue" onclick="razFiltres()">Réinitialiser</button>
+</div>
+
+<div class="banner" id="banner">Chargement...</div>
+
+<div class="table-wrap"><div class="table-scroll">
+<table id="agents-table">
+  <thead><tr>
+    <th data-col="matricule">Matricule ⇅</th>
+    <th data-col="nom">Nom ⇅</th>
+    <th data-col="sexe">Sexe</th>
+    <th data-col="direction">Structure ⇅</th>
+    <th data-col="poste">Poste ⇅</th>
+    <th data-col="corps">Corps ⇅</th>
+    <th data-col="grade">Grade ⇅</th>
+    <th data-col="cat_admin">Cat. ⇅</th>
+    <th data-col="age">Âge ⇅</th>
+    <th data-col="anciennete_fp">Ancienneté FP ⇅</th>
+    <th data-col="statut">Statut ⇅</th>
+    <th>Actions</th>
+  </tr></thead>
+  <tbody id="agents-body"></tbody>
+</table>
+</div></div>
+
+<div id="modal-detail" class="modal" onclick="if(event.target===this)fermerModal('modal-detail')"><div class="modal-box" id="detail-box"></div></div>
+<div id="modal-edit" class="modal" onclick="if(event.target===this)fermerModal('modal-edit')"><div class="modal-box" id="edit-box"></div></div>
+<div id="modal-indicateur" class="modal" onclick="if(event.target===this)fermerModal('modal-indicateur')">
+  <div class="modal-box">
+    <h3>+ Nouvel indicateur <span class="close" onclick="fermerModal('modal-indicateur')">×</span></h3>
+    <div class="form-group"><label>Nom de l'indicateur *</label><input type="text" id="ind-nom" placeholder="Ex: Femmes catégorie A, Retraites 2026..."></div>
+    <div class="form-row">
+      <div class="form-group"><label>Sexe</label><select id="ind-sexe"><option value="">Tous</option><option value="M">Hommes</option><option value="F">Femmes</option></select></div>
+      <div class="form-group"><label>Catégorie</label><select id="ind-categorie"><option value="">Toutes</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Structure</label><select id="ind-structure"><option value="">Toutes</option></select></div>
+      <div class="form-group"><label>Corps</label><select id="ind-corps"><option value="">Tous</option></select></div>
+    </div>
+    <div class="form-group"><label>Statut</label><select id="ind-statut"><option value="">Tous</option><option value="actif">Actifs</option><option value="sorti">Sortis</option></select></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+      <button class="btn" style="background:#94a3b8" onclick="fermerModal('modal-indicateur')">Annuler</button>
+      <button class="btn btn-success" onclick="creerIndicateur()">Créer l'indicateur</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var AGENTS = [], FILTRES = { search:'', sexe:'', categorie:'', structure:'', corps:'', statut:'' }, TRI = { col:'nom', dir:'asc' }, INDICATEURS = [];
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function calculerAge(dateNaissance){
+  if(!dateNaissance) return null;
+  var parts = dateNaissance.split('/');
+  if(parts.length!==3) return null;
+  var jour=parseInt(parts[0]), mois=parseInt(parts[1])-1, annee=parseInt(parts[2]);
+  if(annee<100) annee+=1900;
+  var naissance = new Date(annee, mois, jour);
+  var aujourd = new Date();
+  var age = aujourd.getFullYear() - naissance.getFullYear();
+  var m = aujourd.getMonth() - naissance.getMonth();
+  if(m<0 || (m===0 && aujourd.getDate()<naissance.getDate())) age--;
+  return age;
+}
+
+async function charger(){
+  try {
+    var r = await fetch('/api/conges/agents?t='+Date.now());
+    var j = await r.json();
+    AGENTS = j.agents||[];
+    AGENTS.forEach(function(a){ a.age = calculerAge(a.date_naissance); });
+    remplirFiltres();
+    await chargerIndicateurs();
+    afficher();
+  } catch(e){ document.getElementById('banner').textContent='❌ Erreur : '+e; console.error(e); }
+}
+
+function remplirFiltres(){
+  var cats = {}, structs = {}, corps = {};
+  AGENTS.forEach(function(a){
+    if(a.cat_admin) cats[a.cat_admin]=1;
+    if(a.direction) structs[a.direction]=1;
+    if(a.corps) corps[a.corps]=1;
+  });
+  ['f-categorie','ind-categorie'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if(sel) sel.innerHTML = '<option value="">Catégorie (Toutes)</option>' + Object.keys(cats).sort().map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('');
+  });
+  ['f-structure','ind-structure'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if(sel) sel.innerHTML = '<option value="">Structure (Toutes)</option>' + Object.keys(structs).sort().map(function(s){ return '<option value="'+esc(s)+'">'+esc(s)+'</option>'; }).join('');
+  });
+  ['f-corps','ind-corps'].forEach(function(id){
+    var sel = document.getElementById(id);
+    if(sel) sel.innerHTML = '<option value="">Corps (Tous)</option>' + Object.keys(corps).sort().map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('');
+  });
+}
+
+async function chargerIndicateurs(){
+  try {
+    var r = await fetch('/api/conges/indicateurs');
+    var j = await r.json();
+    INDICATEURS = j.indicateurs||[];
+    afficherIndicateurs();
+  } catch(e){ console.error(e); }
+}
+
+function afficherIndicateurs(){
+  var html = INDICATEURS.map(function(ind){
+    var criteres = ind.criteres||{};
+    var texte = ind.nom;
+    var details = [];
+    if(criteres.sexe) details.push(criteres.sexe==='M'?'Hommes':'Femmes');
+    if(criteres.categorie) details.push('Cat.'+criteres.categorie);
+    if(criteres.structure) details.push(criteres.structure);
+    if(criteres.corps) details.push(criteres.corps);
+    if(criteres.statut) details.push(criteres.statut);
+    if(details.length) texte += ' ('+details.join(', ')+')';
+    return '<div class="indicateur-chip">'+esc(texte)+' <span class="remove" onclick="supprimerIndicateur('+ind.id+')">×</span></div>';
+  }).join('');
+  document.getElementById('indicateurs-list').innerHTML = html || '<span style="color:#94a3b8;font-size:11px">Aucun indicateur personnalisé</span>';
+}
+
+function filtrer(){
+  return AGENTS.filter(function(a){
+    if(FILTRES.statut && a.statut!==FILTRES.statut) return false;
+    if(FILTRES.sexe && a.sexe!==FILTRES.sexe) return false;
+    if(FILTRES.categorie && a.cat_admin!==FILTRES.categorie) return false;
+    if(FILTRES.structure && a.direction!==FILTRES.structure) return false;
+    if(FILTRES.corps && a.corps!==FILTRES.corps) return false;
+    if(FILTRES.search){
+      var q=FILTRES.search.toLowerCase();
+      var hay=((a.matricule||'')+' '+(a.nom||'')+' '+(a.poste||'')+' '+(a.contact||'')).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+}
+
+function trier(data){
+  var c=TRI.col, dir=TRI.dir;
+  data.sort(function(a,b){
+    var va,vb;
+    if(c==='age'){ va=a.age; va=va==null?999:va; vb=b.age; vb=vb==null?999:vb; }
+    else { va=String(a[c]||'').toLowerCase(); vb=String(b[c]||'').toLowerCase(); }
+    if(va<vb) return dir==='asc'?-1:1;
+    if(va>vb) return dir==='asc'?1:-1;
+    return 0;
+  });
+  return data;
+}
+
+function afficher(){
+  var data = trier(filtrer());
+  afficherStats(data);
+  document.getElementById('banner').textContent = data.length+' agent(s) affiché(s) / '+AGENTS.length+' dans la base';
+  var tb = document.getElementById('agents-body');
+  if(!data.length){ tb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:30px;color:#6b7280">Aucun agent trouvé</td></tr>'; return; }
+  var html='';
+  data.forEach(function(a){
+    try {
+      var bStatut = a.statut==='actif' ? '<span class="badge badge-actif">Actif</span>' : '<span class="badge badge-sorti">Sorti</span>';
+      var bSexe = a.sexe==='M' ? '<span class="badge badge-m">H</span>' : (a.sexe==='F' ? '<span class="badge badge-f">F</span>' : '—');
+      html += '<tr onclick="ouvrirDetail('+a.id+')">'
+        +'<td><b>'+esc(a.matricule||'—')+'</b></td>'
+        +'<td>'+esc(a.nom||'—')+'</td>'
+        +'<td>'+bSexe+'</td>'
+        +'<td>'+esc(a.direction||'—')+'</td>'
+        +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">'+esc((a.poste||'—').substring(0,50))+'</td>'
+        +'<td>'+esc(a.corps||'—')+'</td>'
+        +'<td>'+esc(a.grade||'—')+'</td>'
+        +'<td>'+esc(a.cat_admin||'—')+'</td>'
+        +'<td>'+(a.age!=null?a.age+' ans':'—')+'</td>'
+        +'<td>'+esc(a.anciennete_fp||'—')+'</td>'
+        +'<td>'+bStatut+'</td>'
+        +'<td><button class="btn-mini" style="background:var(--blue)" onclick="event.stopPropagation();editer('+a.id+')">✏️</button></td></tr>';
+    } catch(e){ console.error('ligne ignorée', e); }
+  });
+  tb.innerHTML = html;
+}
+
+function afficherStats(data){
+  var total = data.length;
+  var hommes = data.filter(function(a){ return a.sexe==='M'; }).length;
+  var femmes = data.filter(function(a){ return a.sexe==='F'; }).length;
+  var ages = data.filter(function(a){ return a.age!=null; }).map(function(a){ return a.age; });
+  var ageMoyen = ages.length ? Math.round(ages.reduce(function(s,v){return s+v;},0)/ages.length) : 0;
+  
+  document.getElementById('stats-container').innerHTML = 
+    '<div class="stat-card"><h3>Total agents</h3><div class="value">'+total+'</div><div class="detail">Filtrés</div></div>'
+    +'<div class="stat-card green"><h3>Hommes</h3><div class="value">'+hommes+'</div><div class="detail">'+(total?Math.round(hommes/total*100):0)+'%</div></div>'
+    +'<div class="stat-card orange"><h3>Femmes</h3><div class="value">'+femmes+'</div><div class="detail">'+(total?Math.round(femmes/total*100):0)+'%</div></div>'
+    +'<div class="stat-card red"><h3>Âge moyen</h3><div class="value">'+ageMoyen+'</div><div class="detail">ans</div></div>';
+}
+
+function ouvrirDetail(id){
+  var a = AGENTS.find(function(x){ return x.id===id; });
+  if(!a) return;
+  var box = document.getElementById('detail-box');
+  var fields = [
+    ['Matricule', a.matricule], ['Nom', a.nom], ['Sexe', a.sexe==='M'?'Masculin':(a.sexe==='F'?'Féminin':'—')],
+    ['NPI IFU', a.npi_ifu], ['Structure', a.direction], ['Poste', a.poste],
+    ['Corps', a.corps], ['Grade actuel', a.grade], ['Grade payé', a.grade_paye], ['Catégorie admin', a.cat_admin],
+    ['Date de naissance', a.date_naissance], ['Âge actuel', a.age?a.age+' ans':'—'],
+    ['Date retraite probable', a.date_retraite], ['Année retraite', a.annee_retraite],
+    ['Prise de service FP', a.date_prise_service], ['Prise de service structure', a.prise_service_structure],
+    ['Ancienneté FP', a.anciennete_fp], ['Contact WhatsApp', a.contact],
+    ['Dernier diplôme', a.diplome], ['Diplôme reconnu', a.diplome_reconnu], ['Date formation', a.date_formation],
+    ['Service interrompu', a.service_interrompu], ['Période dernier congé', a.periode_dernier_conge],
+    ['Nombre jours congé', a.nb_jours_dernier_conge], ['Observation', a.observation],
+    ['Statut', a.statut==='actif'?'Actif':'Sorti'], ['Catégorie', a.categorie]
+  ];
+  box.innerHTML = '<h3>👤 '+esc(a.nom||'—')+' <span class="close" onclick="fermerModal(\'modal-detail\')">×</span></h3>'
+    +'<div class="detail-grid">'+fields.map(function(f){
+      return '<div class="detail-item"><label>'+esc(f[0])+'</label><div class="value">'+esc(f[1]||'—')+'</div></div>';
+    }).join('')+'</div>'
+    +'<div style="display:flex;gap:10px;justify-content:flex-end">'
+    +'<button class="btn btn-blue" onclick="fermerModal(\'modal-detail\');editer('+a.id+')">✏️ Modifier</button>'
+    +'</div>';
+  document.getElementById('modal-detail').style.display='flex';
+}
+
+function editer(id){
+  var a = AGENTS.find(function(x){ return x.id===id; });
+  if(!a) return;
+  var box = document.getElementById('edit-box');
+  var fields = [
+    ['matricule','Matricule','text'], ['nom','Nom','text'], ['npi_ifu','NPI IFU','text'],
+    ['direction','Structure','text'], ['sexe','Sexe','select',['M','F']], ['poste','Poste','text'],
+    ['corps','Corps','text'], ['grade','Grade actuel','text'], ['grade_paye','Grade payé','text'],
+    ['cat_admin','Catégorie admin','text'], ['categorie','Catégorie','select',['fonctionnaire','contractuel']],
+    ['date_naissance','Date de naissance','text'], ['date_retraite','Date retraite','text'], ['annee_retraite','Année retraite','text'],
+    ['date_prise_service','Prise de service FP','text'], ['prise_service_structure','Prise de service structure','text'],
+    ['anciennete_fp','Ancienneté FP','text'], ['contact','Contact WhatsApp','text'],
+    ['diplome','Dernier diplôme','textarea'], ['diplome_reconnu','Diplôme reconnu','textarea'], ['date_formation','Date formation','text'],
+    ['service_interrompu','Service interrompu','text'], ['periode_dernier_conge','Période dernier congé','text'],
+    ['nb_jours_dernier_conge','Nombre jours congé','text'], ['observation','Observation','textarea'],
+    ['statut','Statut','select',['actif','sorti']]
+  ];
+  box.innerHTML = '<h3>✏️ Modifier '+esc(a.nom||'—')+' <span class="close" onclick="fermerModal(\'modal-edit\')">×</span></h3>'
+    +'<form onsubmit="sauvegarderAgent(event,'+a.id+')"><div class="form-row">'
+    +fields.map(function(f){
+      var val = a[f[0]]||'';
+      if(f[2]==='select'){
+        return '<div class="form-group"><label>'+esc(f[1])+'</label><select name="'+f[0]+'"><option value="">—</option>'+f[3].map(function(o){
+          return '<option value="'+esc(o)+'" '+(val===o?'selected':'')+'>'+esc(o)+'</option>';
+        }).join('')+'</select></div>';
+      } else if(f[2]==='textarea'){
+        return '<div class="form-group" style="grid-column:1/-1"><label>'+esc(f[1])+'</label><textarea name="'+f[0]+'">'+esc(val)+'</textarea></div>';
+      } else {
+        return '<div class="form-group"><label>'+esc(f[1])+'</label><input type="'+f[2]+'" name="'+f[0]+'" value="'+esc(val)+'"></div>';
+      }
+    }).join('')+'</div>'
+    +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">'
+    +'<button type="button" class="btn" style="background:#94a3b8" onclick="fermerModal(\'modal-edit\')">Annuler</button>'
+    +'<button type="submit" class="btn btn-success">Sauvegarder</button></div></form>';
+  document.getElementById('modal-edit').style.display='flex';
+}
+
+async function sauvegarderAgent(e, id){
+  e.preventDefault();
+  var fd = new FormData(e.target); var data={};
+  fd.forEach(function(v,k){ data[k]=v; });
+  try {
+    var r = await fetch('/api/conges/agents/'+id, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    var j = await r.json();
+    if(!r.ok){ alert('❌ '+(j.error||'Erreur')); return; }
+    fermerModal('modal-edit');
+    charger();
+  } catch(e){ alert('❌ Erreur : '+e); }
+}
+
+function fermerModal(id){ document.getElementById(id).style.display='none'; }
+
+function ouvrirAjoutIndicateur(){ document.getElementById('modal-indicateur').style.display='flex'; }
+
+async function creerIndicateur(){
+  var nom = document.getElementById('ind-nom').value.trim();
+  if(!nom){ alert('Nom requis'); return; }
+  var criteres = {};
+  ['sexe','categorie','structure','corps','statut'].forEach(function(k){
+    var v = document.getElementById('ind-'+k).value;
+    if(v) criteres[k] = v;
+  });
+  try {
+    var r = await fetch('/api/conges/indicateurs', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({nom:nom, criteres:criteres}) });
+    if(r.ok){ fermerModal('modal-indicateur'); chargerIndicateurs(); }
+    else alert('❌ Erreur');
+  } catch(e){ alert('❌ '+e); }
+}
+
+async function supprimerIndicateur(id){
+  if(!confirm('Supprimer cet indicateur ?')) return;
+  try {
+    var r = await fetch('/api/conges/indicateurs/'+id, { method:'DELETE' });
+    if(r.ok) chargerIndicateurs();
+  } catch(e){ alert('❌ '+e); }
+}
+
+function razFiltres(){
+  FILTRES={search:'',sexe:'',categorie:'',structure:'',corps:'',statut:''};
+  ['f-search','f-sexe','f-categorie','f-structure','f-corps','f-statut'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  afficher();
+}
+
+function exportExcel(){
+  var data = trier(filtrer());
+  var csv = 'Matricule;Nom;Sexe;Structure;Poste;Corps;Grade;Catégorie;Âge;Ancienneté FP;Statut\n';
+  data.forEach(function(a){
+    csv += [a.matricule,a.nom,a.sexe,a.direction,a.poste,a.corps,a.grade,a.cat_admin,a.age||'',a.anciennete_fp,a.statut].map(function(v){
+      return '"'+String(v||'').replace(/"/g,'""')+'"';
+    }).join(';')+'\n';
+  });
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href=url; a.download='personnel_'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
+}
+
+function exportPDF(){
+  window.print();
+}
+
+['f-search','f-sexe','f-categorie','f-structure','f-corps','f-statut'].forEach(function(id){
+  document.getElementById(id).addEventListener('input', function(){
+    FILTRES.search=document.getElementById('f-search').value;
+    FILTRES.sexe=document.getElementById('f-sexe').value;
+    FILTRES.categorie=document.getElementById('f-categorie').value;
+    FILTRES.structure=document.getElementById('f-structure').value;
+    FILTRES.corps=document.getElementById('f-corps').value;
+    FILTRES.statut=document.getElementById('f-statut').value;
+    afficher();
+  });
+});
+
+document.querySelectorAll('#agents-table th[data-col]').forEach(function(th){
+  th.addEventListener('click', function(){
+    var c=th.getAttribute('data-col');
+    if(TRI.col===c) TRI.dir=TRI.dir==='asc'?'desc':'asc'; else { TRI.col=c; TRI.dir='asc'; }
+    afficher();
+  });
+});
+
+charger();
+</script>
+</body>
+</html>

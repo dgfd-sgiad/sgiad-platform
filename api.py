@@ -2199,6 +2199,59 @@ def login_redirect():
     from flask import redirect
     return redirect('/')
 
+# ══════════════════════════════════════════════════════════════════
+# MODULE PERSONNEL — CRUD Agent + Indicateurs personnalisés
+# ══════════════════════════════════════════════════════════════════
+
+@app.route('/api/conges/agents/<int:agent_id>', methods=['PUT'])
+def conges_agent_modifier(agent_id):
+    from db import get_supabase
+    data = request.get_json(force=True) or {}
+    ALLOWED = ['matricule','nom','npi_ifu','direction','sexe','poste','statut_admin',
+      'date_retraite','annee_retraite','date_naissance','date_prise_service',
+      'prise_service_structure','anciennete_fp','corps','grade','grade_paye',
+      'cat_admin','categorie','contact','diplome','diplome_reconnu','date_formation',
+      'service_interrompu','periode_dernier_conge','nb_jours_dernier_conge',
+      'observation','statut']
+    payload = {k: (v if v != '' else None) for k, v in data.items() if k in ALLOWED}
+    if not payload:
+        return jsonify({'error': 'Aucun champ valide'}), 400
+    sb = get_supabase()
+    r = sb.table('conges_agents').update(payload).eq('id', agent_id).execute()
+    if not r.data:
+        return jsonify({'error': 'Agent introuvable'}), 404
+    return jsonify({'ok': True, 'id': agent_id})
+
+
+@app.route('/api/conges/indicateurs', methods=['GET'])
+def conges_indicateurs_liste():
+    from db import get_supabase
+    sb = get_supabase()
+    data = sb.table('conges_indicateurs').select('*').order('id', desc=True).execute().data or []
+    return jsonify({'indicateurs': data})
+
+
+@app.route('/api/conges/indicateurs', methods=['POST'])
+def conges_indicateurs_creer():
+    from db import get_supabase
+    data = request.get_json(force=True) or {}
+    nom = (data.get('nom') or '').strip()
+    if not nom:
+        return jsonify({'error': 'Nom requis'}), 400
+    criteres = data.get('criteres') or {}
+    sb = get_supabase()
+    r = sb.table('conges_indicateurs').insert({'nom': nom, 'criteres': criteres}).execute()
+    return jsonify({'ok': True, 'id': r.data[0]['id']})
+
+
+@app.route('/api/conges/indicateurs/<int:ind_id>', methods=['DELETE'])
+def conges_indicateurs_supprimer(ind_id):
+    from db import get_supabase
+    sb = get_supabase()
+    sb.table('conges_indicateurs').delete().eq('id', ind_id).execute()
+    return jsonify({'ok': True})
+
+
 if __name__ == '__main__':
     import socket
     local_ip = socket.gethostbyname(socket.gethostname())
