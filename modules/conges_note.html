@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SGIAD - Notes de Service</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Open Sans',sans-serif;background:#f8f9fa;margin:0;padding:20px}
+  .top-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .top-header h1{margin:0;font-size:18px;color:#0f4c81;font-weight:800}
+  .links a{padding:6px 12px;background:#fff;color:#555;text-decoration:none;border-radius:6px;font-size:11px;border:1px solid #ddd;margin-left:6px}
+  .filters-bar{background:#fff;margin-bottom:12px;padding:14px;border-radius:8px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .filters-bar select{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;min-width:200px}
+  .table-wrap{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .table-scroll{overflow:auto;max-height:65vh}
+  table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}
+  th{background:#0f4c81;color:#fff;padding:6px 8px;text-align:left;font-size:9px;text-transform:uppercase;position:sticky;top:0}
+  td{padding:5px 8px;border-bottom:1px solid #e5e7eb}
+  .btn-mini{padding:5px 10px;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;color:#fff;background:#7c3aed}
+</style>
+</head>
+<body>
+<div class="top-header">
+  <h1>📄 Notes de Service — Jouissance de congés</h1>
+  <div class="links"><a href="/modules/conges_accueil.html" onclick="window.location.href='/modules/conges_accueil.html';return false;">🏠 Accueil RH</a></div>
+</div>
+<div class="filters-bar">
+  <select id="f-agent"></select>
+  <select id="f-statut"></select>
+  <label style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px">🖼️ En-tête (logo) : <input type="file" id="logo-input" accept="image/*"></label>
+  <button onclick="retirerLogo()" style="padding:6px 10px;border:1px solid #ddd;background:#fff;border-radius:6px;font-size:10px;cursor:pointer">Retirer</button>
+</div>
+<div class="table-wrap"><div class="table-scroll">
+<table><thead><tr><th>Agent</th><th>Matricule</th><th>Année</th><th>Départ</th><th>Retour</th><th>Jours</th><th>Statut</th><th>Action</th></tr></thead>
+<tbody id="body"></tbody></table>
+</div></div>
+<script>
+var AGENTS=[],DEMANDES=[],F={agent:'',statut:''};
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function parseDate(s){
+  if(!s)return null; var t=String(s).trim(),p;
+  if(t.indexOf('-')>0){p=t.slice(0,10).split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+  p=t.split('/'); if(p.length===3){var y=+p[2];if(y<100)y+=2000;return new Date(y,+p[1]-1,+p[0]);}
+  var d=new Date(t); return isNaN(d)?null:d;
+}
+function soldeADate(a){var d=a.droits||{},an=Object.keys(d).sort();if(!an.length)return 0;var s=parseInt(d[an[an.length-1]].solde)||0;return s>0?s:0;}
+function decomposer(total){var parts=[],y=new Date().getFullYear(),rest=total;while(rest>0&&y>1990){var p=Math.min(rest,30);parts.push({y:y,j:p});rest-=p;y--;}return parts;}
+function enLettres(n){
+  var U=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze','treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
+  var D=['','dix','vingt','trente','quarante','cinquante','soixante'];
+  function c99(x){if(x<20)return U[x];if(x<70){var q=Math.floor(x/10),r=x%10;if(r===0)return D[q];if(r===1)return D[q]+' et un';return D[q]+'-'+U[r];}if(x<80)return x===71?'soixante et un':'soixante-'+U[x-60];return x===80?'quatre-vingts':'quatre-vingt-'+U[x-80];}
+  if(n<100)return c99(n);
+  if(n<1000){var c=Math.floor(n/100),r=n%100;var s=(c===1)?'cent':U[c]+' cent'+(r===0?'s':'');return r===0?s:s+' '+c99(r);}
+  return String(n);
+}
+function dateLongue(d){return d?d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';}
+function dateCourte(d){return d?d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'—';}
+function parseGrade(g){var m=/^([A-E])\s*(\d+)\s*-\s*(\d+)$/.exec(String(g||'').trim());return m?{cat:m[1],ech:m[2],echel:m[3]}:null;}
+function logoData(){return localStorage.getItem('note_logo')||'';}
+document.getElementById('logo-input').addEventListener('change',function(){
+  var f=this.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){ localStorage.setItem('note_logo',r.result); alert('✅ En-tête mis à jour — inclus dans toutes les notes (écran, PDF et Word).'); };
+  r.readAsDataURL(f);
+});
+function retirerLogo(){ localStorage.removeItem('note_logo'); alert('Logo retiré — en-tête texte par défaut.'); }
+
+async function charger(){
+  var r=await fetch('/api/conges/agents?t='+Date.now());var j=await r.json();AGENTS=j.agents||[];
+  try{var r2=await fetch('/api/conges/demandes');var j2=await r2.json();DEMANDES=j2.demandes||(Array.isArray(j2)?j2:[]);}catch(e){DEMANDES=[];}
+  remplir();afficher();
+}
+function remplir(){
+  document.getElementById('f-agent').innerHTML='<option value="">👥 Tous les agents</option>'+AGENTS.slice().sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'');}).map(function(a){return '<option value="'+a.id+'">'+esc(a.nom)+'</option>';}).join('');
+  var st={};DEMANDES.forEach(function(x){if(x.statut)st[x.statut]=1;});
+  document.getElementById('f-statut').innerHTML='<option value="">📌 Tous statuts</option>'+Object.keys(st).sort().map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join('');
+}
+function afficher(){
+  var rows=DEMANDES.filter(function(x){
+    if(F.agent&&String(x.agent_id)!==String(F.agent))return false;
+    if(F.statut&&x.statut!==F.statut)return false;
+    return true;
+  });
+  document.getElementById('body').innerHTML=rows.map(function(x){
+    var a=AGENTS.find(function(g){return String(g.id)===String(x.agent_id);});
+    var i=DEMANDES.indexOf(x);
+    return '<tr><td><b>'+esc(a?a.nom:'?')+'</b></td><td>'+esc(a?a.matricule:'')+'</td><td>'+esc(x.annee||'')+'</td><td>'+esc(x.date_debut||x.debut||'')+'</td><td>'+esc(x.date_fin||x.fin||'')+'</td><td><b>'+esc(x.jours!=null?x.jours:(x.nb_jours||''))+'</b></td><td>'+esc(x.statut||'')+'</td><td><button class="btn-mini" onclick="genererNote('+i+')">📄 Note de service</button></td></tr>';
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px">Aucune demande</td></tr>';
+}
+
+function genererNote(i){
+  var x=DEMANDES[i];
+  var a=AGENTS.find(function(g){return String(g.id)===String(x.agent_id);});
+  if(!a)return;
+  var N=parseInt(x.jours!=null?x.jours:(x.nb_jours||30))||30;
+  var depart=parseDate(x.date_debut||x.debut);
+  var retour=depart?new Date(depart.getTime()+N*86400000):null;
+  var gr=parseGrade(a.grade);
+  var cat=gr?gr.cat:(a.cat_admin||'');
+  var civ=a.sexe==='F'?'Madame':'Monsieur';
+  var qual=(a.categorie==='contractuel')?'Agent de l\'Etat':'Fonctionnaire de l\'Etat';
+  var avant=soldeADate(a)+N;
+  var parts=decomposer(avant).reverse();
+  var rest=N,conso=[],rema=[];
+  parts.forEach(function(p){
+    if(rest>0){conso.push(p.y);
+      if(p.j>rest){rema.push({y:p.y,j:p.j-rest});rest=0;}else rest-=p.j;
+    } else rema.push({y:p.y,j:p.j});
+  });
+  var titreAnnees=conso.join(' et ');
+  var anneeJouissance=conso.join('-');
+  var obs=rema.length?('Reste de congés à faire valoir : '+rema.map(function(r){return r.j<30?r.y+' ('+r.j+' jours dus)':String(r.y);}).join(', ')+'.'):'Néant.';
+  var refDate=parseDate(x.date_demande||x.created_at);
+  var auj=new Date();
+  var numSuggere=String(DEMANDES.length+1).padStart(4,'0');
+  var logo=logoData();
+
+  var inner=
+   '<table class="noborder" style="width:100%"><tr>'
+   +'<td style="width:55%">'+(logo?'<img src="'+logo+'" style="width:70px;height:70px;float:left;margin-right:8px">':'')+'<b>MINISTÈRE DE L\'ÉCONOMIE ET DES FINANCES</b><br><b><u>RÉPUBLIQUE DU BÉNIN</u></b></td>'
+   +'<td style="width:45%;text-align:right;font-size:10pt">388, Avenue Pape Jean Paul II<br>01 BP 302 COTONOU<br>Tél : 21 30 10 20 - Fax : 21 30 18 51<br>www.finances.bj</td>'
+   +'</tr></table>'
+   +'<table class="noborder" style="width:100%;margin-top:25pt"><tr>'
+   +'<td style="width:60%"><b>Le Directeur général du Financement du Développement</b></td>'
+   +'<td style="width:40%;text-align:right">Cotonou, le <span contenteditable="true">'+auj.toLocaleDateString('fr-FR')+'</span></td>'
+   +'</tr></table>'
+   +'<p>N° <span contenteditable="true">'+numSuggere+'</span>/MEF/DC/SGM/DGFD/DDAR/SRH/SA</p>'
+   +'<p style="text-align:center;font-weight:bold;text-decoration:underline;font-size:14pt;margin:20pt 0">NOTE DE SERVICE</p>'
+   +'<p><b>Objet :</b> Jouissance de congés administratifs</p>'
+   +'<p><b>Référence :</b> Demande de l\'intéressé en date du '+dateCourte(refDate)+'.</p>'
+   +'<p style="text-align:justify">Le Directeur général du Financement du Développement autorise '+civ+' <b>'+esc(a.nom)+'</b>, '+qual+', '+esc(a.corps||'')+', matricule <b>'+esc(a.matricule)+'</b>, catégorie <b>'+esc(cat)+'</b>, échelle '+esc(gr?gr.ech:'__')+', échelon '+esc(gr?gr.echel:'__')+', à jouir de <b>'+enLettres(N)+' ('+N+') jours</b> de congés administratifs au titre des années <b>'+titreAnnees+'</b>.</p>'
+   +'<table class="data"><tr><th rowspan="2">ANNEE DE<br>JOUISSANCE</th><th rowspan="2">NOMBRE<br>DE JOURS</th><th rowspan="2">JOURS<br>DEDUCTIBLES</th><th colspan="2">DATE</th><th rowspan="2">OBSERVATION</th></tr>'
+   +'<tr><th>DEPART</th><th>RETOUR</th></tr>'
+   +'<tr><td>'+anneeJouissance+'</td><td>'+N+'</td><td>Néant</td><td>'+dateLongue(depart)+'</td><td>'+dateLongue(retour)+'</td><td style="text-align:left">'+obs+'</td></tr></table>'
+   +'<p style="text-align:right;margin-top:40pt">Le Directeur Général<br><br><br><br><b contenteditable="true">Serge DOSSOU YOVO</b></p>'
+   +'<p style="margin-top:40pt;font-size:10pt"><b>Ampliations :</b><br>DGAFD : 01<br>TDT : 05<br>Intéressé : 01<br>Chrono : 01</p>';
+
+  var css="body{font-family:'Bookman Old Style',serif;font-size:12pt;line-height:1.5;margin:40px 60px}p{line-height:1.5}table.data td,table.data th{line-height:1.5}table.data{border-collapse:collapse;width:100%}table.data td,table.data th{border:1px solid #000;padding:6pt;font-size:10.5pt;text-align:center}table.noborder,table.noborder td{border:none}.noprint{position:fixed;top:10px;right:10px}.noprint button{padding:10px 14px;margin-left:6px;border:none;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}@media print{.noprint{display:none}}";
+
+  var w=window.open('','_blank');
+  w.document.write('<html><head><meta charset="utf-8"><title>Note de service</title><style>'+css+'</style></head><body>'
+   +'<div class="noprint"><button style="background:#7c3aed" onclick="window.print()">🖨️ Imprimer / PDF</button><button style="background:#0f4c81" onclick="teleWord()">📝 Télécharger Word</button></div>'
+   +inner+'</body></html>');
+  w.document.close();
+  w.teleWord=function(){
+    var b=w.document.body.cloneNode(true);
+    var n=b.querySelector('.noprint'); if(n)n.remove();
+    var word='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]--><style>@page{size:21cm 29.7cm;margin:2cm 2.5cm}body{font-family:"Bookman Old Style",serif;font-size:12pt;line-height:1.5}p{line-height:1.5}td,th{line-height:1.5}table.data{border-collapse:collapse;width:100%}table.data td,table.data th{border:1px solid #000;padding:6pt;font-size:10.5pt;text-align:center}table.noborder,table.noborder td{border:none}</style></head>'+b.outerHTML+'</html>';
+    var blob=new Blob(['\ufeff',word],{type:'application/msword'});
+    var u=URL.createObjectURL(blob);
+    var el=document.createElement('a'); el.href=u; el.download='note_service_'+(a.nom||'agent').split(' ')[0]+'.doc';
+    document.body.appendChild(el); el.click(); el.remove();
+  };
+}
+
+document.getElementById('f-agent').addEventListener('change',function(){F.agent=this.value;afficher();});
+document.getElementById('f-statut').addEventListener('change',function(){F.statut=this.value;afficher();});
+charger();
+</script>
+</body>
+</html>

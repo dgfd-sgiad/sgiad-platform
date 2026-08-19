@@ -2280,6 +2280,77 @@ def conges_nouvelle_annee():
     return jsonify({'ok': True, 'message': f'Année {annee} ouverte : {n} agents (report du solde {annee_prec}).'})
 
 
+@app.route('/api/conges/documents', methods=['POST'])
+def conges_documents_ajouter():
+    from db import get_supabase
+    import time, os
+    sb = get_supabase()
+    f = request.files.get('fichier')
+    agent_id = request.form.get('agent_id')
+    if not f or not agent_id:
+        return jsonify({'error': 'fichier et agent_id requis'}), 400
+    nom = (request.form.get('nom') or '').strip() or f.filename
+    import re, os
+    ext = os.path.splitext(f.filename or '')[1] or '.bin'
+    ext = re.sub(r"[^A-Za-z0-9.]+", "", ext)
+    chemin = f"{agent_id}/{int(time.time())}_piece{ext}"
+    data = f.read()
+    try:
+        sb.storage.from_('rh_agents').upload(chemin, data, {'content_type': f.mimetype or 'application/octet-stream'})
+        r = sb.table('conges_documents').insert({
+            'agent_id': int(agent_id), 'nom': nom, 'chemin': chemin,
+            'type': f.mimetype or '', 'taille': len(data),
+        }).execute()
+        return jsonify({'ok': True, 'id': r.data[0]['id']})
+    except Exception as ex:
+        return jsonify({'error': 'Erreur : ' + str(ex)}), 500
+
+
+@app.route('/api/conges/documents', methods=['GET'])
+def conges_documents_liste():
+    from db import get_supabase
+    sb = get_supabase()
+    q = sb.table('conges_documents').select('*')
+    agent_id = request.args.get('agent_id')
+    if agent_id:
+        q = q.eq('agent_id', agent_id)
+    rows = q.order('cree_le', desc=True).execute().data or []
+    return jsonify({'documents': rows})
+
+
+@app.route('/api/conges/documents/<int:doc_id>/telecharger')
+def conges_documents_telecharger(doc_id):
+    from db import get_supabase
+    sb = get_supabase()
+    row = sb.table('conges_documents').select('*').eq('id', doc_id).execute().data
+    if not row:
+        return jsonify({'error': 'introuvable'}), 404
+    d = row[0]
+    data = sb.storage.from_('rh_agents').download(d['chemin'])
+    resp = make_response(data)
+    resp.headers['Content-Type'] = d.get('type') or 'application/octet-stream'
+    from urllib.parse import quote
+    if request.args.get('apercu') == '1':
+        resp.headers['Content-Disposition'] = 'inline'
+    else:
+        resp.headers['Content-Disposition'] = "attachment; filename*=UTF-8''" + quote(d['nom'])
+    return resp
+
+
+@app.route('/api/conges/documents/<int:doc_id>', methods=['DELETE'])
+def conges_documents_supprimer(doc_id):
+    from db import get_supabase
+    sb = get_supabase()
+    row = sb.table('conges_documents').select('*').eq('id', doc_id).execute().data
+    if row:
+        try:
+            sb.storage.from_('rh_agents').remove([row[0]['chemin']])
+        except Exception:
+            pass
+        sb.table('conges_documents').delete().eq('id', doc_id).execute()
+    return jsonify({'ok': True})
+
+
 if __name__ == '__main__':
     import socket
     local_ip = socket.gethostbyname(socket.gethostname())

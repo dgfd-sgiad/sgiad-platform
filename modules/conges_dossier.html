@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>SGIAD - Dossiers des Agents</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Open Sans',sans-serif;background:#f8f9fa;margin:0;padding:20px}
+  .top-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .top-header h1{margin:0;font-size:18px;color:#27ae60;font-weight:800}
+  .links a{padding:6px 12px;background:#fff;color:#555;text-decoration:none;border-radius:6px;font-size:11px;border:1px solid #ddd;margin-left:6px}
+  .box{background:#fff;border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .box h3{margin:0 0 12px;font-size:13px;color:#27ae60}
+  select,input{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-family:inherit}
+  select{min-width:280px}
+  .btn{padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  th{background:#27ae60;color:#fff;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase}
+  td{padding:6px 8px;border-bottom:1px solid #e5e7eb}
+  .btn-mini{padding:4px 9px;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;color:#fff;margin-right:4px}
+  .notif{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;z-index:99999}
+</style>
+</head>
+<body>
+<div class="top-header">
+  <h1>📁 Dossiers numériques des agents</h1>
+  <div class="links"><a href="/modules/conges_accueil.html">🏠 Accueil RH</a><a href="/modules/personnels.html">🗂️ Personnels</a></div>
+</div>
+
+<div class="box">
+  <h3>1️⃣ Choisir l'agent</h3>
+  <select id="sel-agent" onchange="chargerDocs()"></select>
+  <span id="info-agent" style="font-size:11px;color:#64748b;margin-left:10px"></span>
+</div>
+
+<div class="box">
+  <h3>2️⃣ Ajouter une pièce au dossier</h3>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <input type="file" id="f-fichier">
+    <input type="text" id="f-nom" placeholder="Nom du document (optionnel — automatique si vide)" style="min-width:260px">
+    <button class="btn" style="background:#27ae60" onclick="ajouter()">⬆️ Ajouter au dossier</button>
+  </div>
+</div>
+
+<div class="box">
+  <h3>3️⃣ Pièces classées dans le dossier</h3>
+  <table><thead><tr><th>Nom du document</th><th>Type</th><th>Taille</th><th>Ajouté le</th><th>Actions</th></tr></thead>
+  <tbody id="body"></tbody></table>
+</div>
+
+<script>
+var AGENTS=[],DOCS=[];
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function notif(m,t){var n=document.createElement('div');n.className='notif';n.style.background=t==='error'?'#dc2626':'#27ae60';n.textContent=m;document.body.appendChild(n);setTimeout(function(){n.remove();},3000);}
+function taille(o){if(o<1024)return o+' o';if(o<1048576)return (o/1024).toFixed(1)+' Ko';return (o/1048576).toFixed(1)+' Mo';}
+
+async function charger(){
+  var r=await fetch('/api/conges/agents?t='+Date.now());var j=await r.json();AGENTS=j.agents||[];
+  var pre=new URLSearchParams(window.location.search).get('agent')||'';
+  document.getElementById('sel-agent').innerHTML='<option value="">— Choisir un agent —</option>'+AGENTS.slice().sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'');}).map(function(a){return '<option value="'+a.id+'">'+esc(a.nom)+' ('+esc(a.matricule)+')</option>';}).join('');
+  if(pre)document.getElementById('sel-agent').value=pre;
+  chargerDocs();
+}
+
+function agentSel(){return AGENTS.find(function(a){return String(a.id)===document.getElementById('sel-agent').value;});}
+
+function chargerDocs(){
+  var a=agentSel();
+  document.getElementById('info-agent').textContent=a?('Matricule '+a.matricule+' · '+a.direction+' · '+a.poste):'';
+  if(!a){document.getElementById('body').innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">Sélectionne un agent pour voir son dossier</td></tr>';return;}
+  fetch('/api/conges/documents?agent_id='+a.id).then(function(r){return r.json();}).then(function(j){
+    DOCS=j.documents||[];var docs=DOCS;
+    document.getElementById('body').innerHTML=docs.map(function(d){
+      return '<tr><td><b>📄 '+esc(d.nom)+'</b></td><td>'+esc((d.type||'').split('/')[1]||d.type||'—')+'</td><td>'+taille(d.taille||0)+'</td><td>'+esc(String(d.cree_le||'').slice(0,10))+'</td>'
+        +'<td><button class="btn-mini" style="background:#7c3aed" onclick="apercuDoc('+d.id+')">👁️ Voir</button><button class="btn-mini" style="background:#0f4c81" onclick="window.location.href=\'/api/conges/documents/'+d.id+'/telecharger\'">⬇️</button>'
+        +'<button class="btn-mini" style="background:#dc2626" onclick="supprimer('+d.id+')">🗑️</button></td></tr>';
+    }).join('')||'<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8">Dossier vide — ajoute la première pièce ci-dessus</td></tr>';
+  });
+}
+
+async function ajouter(){
+  var a=agentSel();
+  if(!a){notif('❌ Choisis d\'abord un agent','error');return;}
+  var f=document.getElementById('f-fichier').files[0];
+  if(!f){notif('❌ Choisis un fichier','error');return;}
+  var fd=new FormData();
+  fd.append('fichier',f);
+  fd.append('agent_id',a.id);
+  fd.append('nom',document.getElementById('f-nom').value);
+  try{
+    var r=await fetch('/api/conges/documents',{method:'POST',body:fd});
+    var j=await r.json();
+    if(!r.ok){notif('❌ '+(j.error||'Erreur'),'error');return;}
+    document.getElementById('f-fichier').value='';document.getElementById('f-nom').value='';
+    notif('✅ « '+f.filename+' » classé dans le dossier de '+a.nom);
+    chargerDocs();
+  }catch(e){notif('❌ '+e.message,'error');}
+}
+
+async function supprimer(id){
+  if(!confirm('Retirer cette pièce du dossier ?'))return;
+  var r=await fetch('/api/conges/documents/'+id,{method:'DELETE'});
+  if(r.ok){notif('✅ Pièce retirée');chargerDocs();}
+}
+
+function apercuDoc(id){
+  var d=DOCS.find(function(x){return x.id===id;});
+  var url=window.location.origin+'/api/conges/documents/'+id+'/telecharger?apercu=1';
+  var n=((d&&d.nom)||'').toLowerCase();
+  if(n.slice(-5)==='.docx'||n.slice(-4)==='.doc'||((d&&d.type)||'').indexOf('word')>=0){
+    window.open('https://view.officeapps.live.com/op/view.aspx?src='+encodeURIComponent(url),'_blank');
+  } else {
+    window.open(url,'_blank');
+  }
+}
+charger();
+</script>
+</body>
+</html>

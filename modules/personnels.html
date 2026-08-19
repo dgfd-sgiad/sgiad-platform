@@ -366,7 +366,7 @@ function afficher(){
         +'<td title="Solde à date — même valeur que le module Agents & Soldes"><b>'+congesNonConsommes(a)+'</b></td>'
         +'<td style="white-space:normal;line-height:1.6">'+anneesNonConsommees(a)+'</td>'
         +'<td>'+bStatut+'</td>'
-        +'<td><button class="btn-mini" style="background:var(--blue)" onclick="event.stopPropagation();editer('+a.id+')">✏️</button></td></tr>';
+        +'<td><button class="btn-mini" style="background:var(--blue)" onclick="event.stopPropagation();editer('+a.id+')">✏️</button><button class="btn-mini" style="background:#d97706" onclick="event.stopPropagation();window.location.href=\'conges_dossier.html?agent='+a.id+'\'">📁 Dossier</button></td></tr>';
     } catch(e){ console.error('ligne ignorée', e); }
   });
   tb.innerHTML = html;
