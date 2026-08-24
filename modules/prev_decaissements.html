@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SGIAD - Prévisions & Décaissements</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<style>
+  *{box-sizing:border-box}body{margin:0;font-family:'Inter',sans-serif;background:#f4f6fa;display:flex;min-height:100vh}
+  .sidebar{width:210px;background:#0b1c33;color:#cbd5e1;display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;transition:width .2s}
+  .sidebar .logo{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:8px;align-items:center}
+  .sidebar .logo h2{margin:0;color:#fff;font-size:16px;font-weight:800;white-space:nowrap}
+  .nav{flex:1;padding:10px 8px;overflow:auto}
+  .nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;margin-bottom:2px;border-radius:8px;color:#b6c5da;text-decoration:none;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav a.active{background:#2563eb;color:#fff}
+  .nav .ico{width:18px;text-align:center;flex:none}
+  .userbox{padding:10px 16px;border-top:1px solid rgba(255,255,255,.08);font-size:10.5px;white-space:nowrap}
+  .userbox b{color:#fff;display:block}
+  body.sb-min .sidebar{width:56px}
+  body.sb-min .lbl,body.sb-min .logo h2,body.sb-min .userbox{display:none}
+  body.sb-min .main{margin-left:56px}
+  .main{margin-left:210px;flex:1;padding:14px 16px;transition:margin-left .2s}
+  .page-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .page-head h1{margin:0;font-size:16px;font-weight:800;color:#0b1c33}
+  .page-head p{margin:2px 0 0;font-size:10px;color:#64748b}
+  .head-actions{display:flex;gap:6px;align-items:center}
+  .head-actions select{padding:6px 8px;border:1px solid #dbe2ec;border-radius:7px;font-size:11px;font-family:inherit;background:#fff}
+  .btn{padding:7px 11px;border:none;border-radius:7px;cursor:pointer;font-weight:700;font-size:11px;font-family:inherit}
+  .btn-dark{background:#0b1c33;color:#fff}.btn-green{background:#16a34a;color:#fff}.btn-orange{background:#f59e0b;color:#fff}.btn-ghost{background:#fff;color:#334155;border:1px solid #dbe2ec}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+  .kpi{background:#fff;border:1px solid #e6eaf2;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+  .kpi .ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+  .kpi .t{font-size:9px;font-weight:700;color:#64748b}
+  .kpi .v{font-size:15px;font-weight:800;color:#0b1c33;margin:1px 0}
+  .filters-bar{background:#fff;border:1px solid #e6eaf2;border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filters-bar select{padding:6px 8px;border:1px solid #dbe2ec;border-radius:7px;font-size:11px;font-family:inherit;min-width:130px}
+  .filters-bar .chk{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#334155}
+  .charts{display:grid;grid-template-columns:minmax(300px,.72fr) 1.28fr;gap:10px;margin-bottom:10px}
+  .card{background:#fff;border:1px solid #e6eaf2;border-radius:10px;padding:10px 12px}
+  .card h3{margin:0 0 8px;font-size:11px;font-weight:800;color:#0b1c33}
+  .chart-box{height:165px;position:relative}
+  .mix{display:flex;gap:12px}
+  .mix .bars-wrap{flex:1;height:165px;overflow:auto}
+  .donut-box{width:110px;height:110px;position:relative;flex:none}
+  .legende{font-size:9px;font-weight:600;color:#334155;margin-top:6px}
+  .legende div{display:flex;align-items:center;gap:5px;margin-bottom:3px}
+  .legende .pt{width:8px;height:8px;border-radius:50%}
+  .bar-row{display:flex;align-items:center;gap:6px;margin-bottom:7px}
+  .bar-label{width:100px;font-size:9.5px;font-weight:600;color:#334155;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar-track{flex:1;height:8px;background:#eef2f7;border-radius:6px;overflow:hidden}
+  .bar-fill{height:100%;background:#2563eb;border-radius:6px}
+  .bar-val{width:42px;font-size:9.5px;font-weight:700;color:#334155}
+  .seg{display:inline-flex;border:1px solid #dbe2ec;border-radius:7px;overflow:hidden;margin-bottom:8px}
+  .seg button{padding:4px 9px;border:none;background:#fff;font-size:9.5px;font-weight:700;cursor:pointer;color:#64748b;font-family:inherit}
+  .seg button.on{background:#2563eb;color:#fff}
+  .table-card{background:#fff;border:1px solid #e6eaf2;border-radius:10px;padding:10px 12px}
+  .table-scroll{overflow:auto;max-height:60vh}
+  table{width:100%;border-collapse:collapse;font-size:9.5px}
+  th{background:#f8fafc;color:#334155;padding:6px 7px;text-align:left;font-size:8.5px;text-transform:uppercase;border-bottom:2px solid #e6eaf2;position:sticky;top:0;white-space:nowrap}
+  td{padding:6px 7px;border-bottom:1px solid #eef2f7;color:#334155;white-space:nowrap}
+  td.wrap{white-space:normal}
+  tr:hover td{background:#f8fafc}
+  tr.total td{font-weight:800;background:#f1f5f9;color:#0b1c33}
+  .prog{width:50px;height:5px;background:#e6eaf2;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:5px}
+  .prog i{display:block;height:100%;background:#2563eb;border-radius:4px}
+  .badge{padding:2px 8px;border-radius:12px;font-size:8.5px;font-weight:700}
+  .b-encours{background:#dcfce7;color:#166534}.b-cloture{background:#e2e8f0;color:#475569}
+  .btn-mini{padding:4px 8px;border:none;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;color:#fff;background:#2563eb}
+  .modal{display:none;position:fixed;inset:0;background:rgba(11,28,51,.55);z-index:999;align-items:center;justify-content:center}
+  .modal-box{background:#fff;border-radius:14px;padding:20px;width:min(720px,94%);max-height:88vh;overflow:auto}
+  .modal-box h3{margin:0 0 10px;color:#0b1c33;font-size:14px}
+  .close{float:right;cursor:pointer;font-size:20px;color:#94a3b8}
+  .op-row{display:flex;justify-content:space-between;gap:10px;padding:9px;border:1px solid #e6eaf2;border-radius:9px;margin-bottom:7px;font-size:10.5px;align-items:center}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .form-group label{display:block;font-size:10px;font-weight:700;color:#334155;margin-bottom:4px}
+  .form-group input,.form-group select,.form-group textarea{width:100%;padding:8px;border:1px solid #dbe2ec;border-radius:7px;font-size:12px;font-family:inherit}
+  .notif{position:fixed;top:20px;right:20px;padding:12px 18px;border-radius:10px;color:#fff;font-weight:700;font-size:12px;z-index:99999}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"><span style="font-size:18px">📊</span><h2>SGIAD</h2></div>
+  <div class="nav">
+    <a href="/accueil.html"><span class="ico">🏠</span><span class="lbl">Tableau de bord</span></a>
+    <a href="/modules/banque_projets.html"><span class="ico">🗂️</span><span class="lbl">Projets</span></a>
+    <a href="/modules/coop_dec.html"><span class="ico">🤝</span><span class="lbl">Partenaires</span></a>
+    <a href="/modules/prev_decaissements.html" class="active"><span class="ico">📈</span><span class="lbl">Prévisions & Décaissements</span></a>
+    <a href="/modules/suivi.html"><span class="ico">🧭</span><span class="lbl">Indicateurs</span></a>
+    <a href="/modules/accords.html"><span class="ico">💰</span><span class="lbl">TEF / TEP</span></a>
+    <a href="/modules/suivi_recos.html"><span class="ico">✅</span><span class="lbl">Recommandations</span></a>
+    <a href="/modules/veille.html"><span class="ico">🔔</span><span class="lbl">Alertes & Veille</span></a>
+    <a href="/modules/admin_plateforme.html"><span class="ico">⚙️</span><span class="lbl">Paramètres</span></a>
+  </div>
+  <div class="userbox"><b>Ernest K.</b>Administrateur</div>
+</div>
+
+<div class="main">
+  <div class="page-head">
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-ghost" onclick="document.body.classList.toggle('sb-min')" title="Réduire le menu">☰</button>
+      <div><h1>Prévisions & Décaissements</h1><p>Engagements · Prévisions · Décaissements CAGD — montants en M/Mds FCFA</p></div>
+    </div>
+    <div class="head-actions">
+      <select id="h-annee"></select>
+      <button class="btn btn-green" onclick="exportExcel()">📥 Excel</button>
+      <button class="btn" style="background:#7c3aed;color:#fff" onclick="listeOfficielle()">📋 Liste officielle</button>
+      <button class="btn btn-orange" onclick="exportPDF()">📄 PDF</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="ic" style="background:#dbeafe">📜</div><div><div class="t">Engagements totaux</div><div class="v" id="k-eng">—</div></div></div>
+    <div class="kpi"><div class="ic" style="background:#ede9fe">📅</div><div><div class="t">Prévisions <span id="lbl-annee"></span></div><div class="v" id="k-prev">—</div></div></div>
+    <div class="kpi"><div class="ic" style="background:#dcfce7">💵</div><div><div class="t">Décaissé CAGD <span id="lbl-annee2"></span></div><div class="v" id="k-reel">—</div></div></div>
+    <div class="kpi"><div class="ic" style="background:#ffedd5">🎯</div><div><div class="t">Taux cumulé / Solde restant</div><div class="v" id="k-taux">—</div><div class="t" id="k-solde"></div></div></div>
+  </div>
+
+  <div class="filters-bar">
+    <select id="f-part"><option value="">Partenaire : tous</option></select>
+    <select id="f-sect"><option value="">Secteur : tous</option></select>
+    <select id="f-proj"><option value="">Projet : tous</option></select>
+    <select id="f-stat"><option value="">En cours (par défaut)</option><option value="tous">Tous (y compris clôturés)</option><option value="cloture">Clôturés uniquement</option></select>
+    <label class="chk"><input type="checkbox" id="f-onlydata" checked onchange="tout()"> Avec données uniquement</label>
+    <button class="btn btn-dark" onclick="appliquerFiltres()">🔽 Filtrer</button>
+    <button class="btn btn-ghost" onclick="razFiltres()">↺ Réinitialiser</button>
+  </div>
+
+  <div class="charts">
+    <div class="card"><h3>Prév. cumulées vs Décaiss. saisis — <span class="an"></span></h3><div class="chart-box"><canvas id="chart-lignes"></canvas></div></div>
+    <div class="card">
+      <h3>Taux d'exécution (CAGD / engagement) & répartition des décaissements</h3>
+      <div class="seg"><button id="seg-projet" class="on" onclick="setBarMode('projet')">Projet</button><button id="seg-secteur" onclick="setBarMode('secteur')">Secteur</button><button id="seg-part" onclick="setBarMode('partenaire')">Partenaire</button></div>
+      <div class="mix">
+        <div class="bars-wrap" id="bars"></div>
+        <div><div class="donut-box"><canvas id="chart-donut"></canvas></div><div class="legende" id="legende"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <h3 style="margin:0 0 8px;font-size:11.5px;font-weight:800;color:#0b1c33">Détail par projet — <span class="an"></span> (en cours : clôture après le 01/01/<span id="tbl-annee2"></span>)</h3>
+    <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Code</th><th rowspan="2">Intitulé du projet</th><th rowspan="2">Partenaire</th><th rowspan="2">Secteur</th>
+          <th rowspan="2">Engagement total</th>
+          <th rowspan="2">Cumul décaissé <span id="h-n1"></span></th>
+          <th rowspan="2">Décaissé <span class="an"></span></th>
+          <th rowspan="2">Prévision <span class="an"></span></th>
+          <th colspan="4" style="text-align:center">Prév. par trimestre</th>
+          <th colspan="4" style="text-align:center">Décaissé saisi par trimestre</th>
+          <th rowspan="2">Cumul <span class="an"></span></th>
+          <th rowspan="2">Taux trim. T1→T4</th>
+          <th rowspan="2" title="Décaissé N / Prévision N">Taux annuel</th>
+          <th rowspan="2" title="Cumul N / Engagement total">Taux cumulé</th>
+          <th rowspan="2">Solde restant</th>
+          <th rowspan="2">Clôture</th><th rowspan="2">Statut</th><th rowspan="2"></th>
+        </tr>
+        <tr><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th></tr>
+      </thead>
+      <tbody id="body"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<div id="modal-ops" class="modal" onclick="if(event.target===this)fermerOps()">
+  <div class="modal-box">
+    <h3 id="ops-titre">Opérations <span class="close" onclick="fermerOps()">×</span></h3>
+    <div id="ops-liste"></div>
+    <div id="ops-form" style="display:none">
+      <p id="mr-info" style="font-size:11px;color:#64748b"></p>
+      <div class="form-row">
+        <div class="form-group"><label>Montant réalisé (FCFA)</label><input type="number" id="mr-montant"></div>
+        <div class="form-group"><label>Date réelle</label><input type="date" id="mr-date"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label>Statut</label><select id="mr-statut"><option value="prevu">Prévu</option><option value="realise">Réalisé</option><option value="reporte">Reporté</option></select></div>
+      <div class="form-group" style="margin-bottom:12px"><label>Observations</label><textarea id="mr-obs" rows="3"></textarea></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn" style="background:#94a3b8;color:#fff" onclick="retourListe()">← Retour</button>
+        <button class="btn btn-green" onclick="sauverReel()">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var ACCORDS=[],PREVS=[],CAGD=[],MAP={},MAPC={},CAGD_IDX={},FILT={part:'',sect:'',proj:'',stat:''},ONLY_DATA=true,ANNEE=new Date().getFullYear(),BARMODE='projet',EDIT_ID=null,CH1=null,CH2=null;
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmt(n){return n==null?'—':Number(n).toLocaleString('fr-FR');}
+function fmtC(n){if(n==null)return '—';n=Number(n);var a=Math.abs(n);if(a>=1e9)return (n/1e9).toLocaleString('fr-FR',{maximumFractionDigits:2})+' Md';if(a>=1e6)return (n/1e6).toLocaleString('fr-FR',{maximumFractionDigits:0})+' M';return n.toLocaleString('fr-FR');}
+function md(n){return (n/1e9).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mds';}
+function trimestre(d){if(!d)return 0;return Math.ceil(parseInt(String(d).slice(5,7),10)/3);}
+function anneeDe(d){return d?parseInt(String(d).slice(0,4),10):0;}
+function norm(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9 ]/g,' ');}
+function pct(x){return x.toFixed(1).replace('.',',')+'%';}
+function notif(m,t){var n=document.createElement('div');n.className='notif';n.style.background=t==='error'?'#dc2626':'#16a34a';n.textContent=m;document.body.appendChild(n);setTimeout(function(){n.remove();},3000);}
+
+function matchNames(noms){
+  var out={};
+  noms.forEach(function(nom){
+    var mots=norm(nom).split(' ').filter(function(w){return w.length>=4;});
+    if(!mots.length){out[nom]=null;return;}
+    var best=null;
+    ACCORDS.forEach(function(a){
+      var o=norm(a.objet_accord)+' '+norm(a.code_projet);
+      var score=0;
+      mots.forEach(function(w){if(o.indexOf(w)>=0)score++;});
+      if(score>0&&(!best||score>best.score))best={code:a.code_projet,score:score};
+    });
+    out[nom]=best?best.code:null;
+  });
+  return out;
+}
+function buildMaps(){
+  var nP={},nC={};
+  PREVS.forEach(function(p){nP[p.projet]=1;});
+  CAGD.forEach(function(c){nC[c.projet]=1;});
+  MAP=matchNames(Object.keys(nP));
+  MAPC=matchNames(Object.keys(nC));
+  CAGD_IDX={};
+  CAGD.forEach(function(c){
+    var code=MAPC[c.projet];if(!code)return;
+    CAGD_IDX[code]=CAGD_IDX[code]||{};
+    CAGD_IDX[code][c.periode]=(CAGD_IDX[code][c.periode]||0)+(Number(c.montant_total_fcfa)||0);
+  });
+}
+function opsLiees(code){return PREVS.filter(function(p){return (p.code_projet&&p.code_projet===code)||(MAP[p.projet]===code);});}
+function cagdPour(code,annee){return ((CAGD_IDX[code]||{})[String(annee)])||0;}
+
+async function charger(){
+  var r1=await fetch('/api/accords/list?t='+Date.now());var j1=await r1.json();ACCORDS=Array.isArray(j1)?j1:[];
+  var r2=await fetch('/api/suivi/financier?t='+Date.now());var j2=await r2.json();PREVS=j2.previsions||[];
+  var r3=await fetch('/api/decaissements/cagd?t='+Date.now());var j3=await r3.json();CAGD=Array.isArray(j3)?j3:[];
+  buildMaps();
+  var annees={};
+  PREVS.forEach(function(p){var y=anneeDe(p.date_previsionnelle);if(y>=2010&&y<=2035)annees[y]=1;});
+  CAGD.forEach(function(c){var y=parseInt(c.periode);if(y>=2010&&y<=2035)annees[y]=1;});
+  for(var y=ANNEE-3;y<=ANNEE+4;y++)annees[y]=1;
+  var ys=Object.keys(annees).sort();
+  if(ys.indexOf(String(ANNEE))<0)ANNEE=Number(ys[ys.length-1]);
+  document.getElementById('h-annee').innerHTML=ys.map(function(y){return '<option value="'+y+'"'+(Number(y)===ANNEE?' selected':'')+'>'+y+'</option>';}).join('');
+  majLibelles();remplirFiltres();tout();
+}
+function majLibelles(){
+  document.getElementById('lbl-annee').textContent=ANNEE;
+  document.getElementById('lbl-annee2').textContent=ANNEE;
+  document.getElementById('tbl-annee2').textContent=ANNEE;
+  document.getElementById('h-n1').textContent=(ANNEE-1);
+  document.querySelectorAll('.an').forEach(function(e){e.textContent=ANNEE;});
+}
+function remplirFiltres(){
+  var parts={},sects={},projs={};
+  ACCORDS.forEach(function(a){if(a.partenaire)parts[a.partenaire]=1;if(a.secteur_principal)sects[a.secteur_principal]=1;if(a.code_projet)projs[a.code_projet]=1;});
+  document.getElementById('f-part').innerHTML='<option value="">Partenaire : tous</option>'+Object.keys(parts).sort().map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+  document.getElementById('f-sect').innerHTML='<option value="">Secteur : tous</option>'+Object.keys(sects).sort().map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+  document.getElementById('f-proj').innerHTML='<option value="">Projet : tous</option>'+Object.keys(projs).sort().map(function(x){return '<option>'+esc(x)+'</option>';}).join('');
+}
+function clotureDe(a){return a.nouvelle_date_cloture||a.date_cloture;}
+function enCours(a){var c=clotureDe(a);return !c||String(c)>=ANNEE+'-01-01';}
+function accordsFiltres(){
+  ONLY_DATA=document.getElementById('f-onlydata').checked;
+  return ACCORDS.filter(function(a){
+    if(FILT.stat==='cloture'){if(enCours(a))return false;}
+    else if(FILT.stat!=='tous'){if(!enCours(a))return false;}
+    if(FILT.part&&a.partenaire!==FILT.part)return false;
+    if(FILT.sect&&(a.secteur_principal||'')!==FILT.sect)return false;
+    if(FILT.proj&&a.code_projet!==FILT.proj)return false;
+    if(ONLY_DATA&&opsLiees(a.code_projet).length===0&&cagdPour(a.code_projet,ANNEE)===0)return false;
+    return true;
+  });
+}
+function appliquerFiltres(){
+  FILT.part=document.getElementById('f-part').value;
+  FILT.sect=document.getElementById('f-sect').value;
+  FILT.proj=document.getElementById('f-proj').value;
+  FILT.stat=document.getElementById('f-stat').value;
+  tout();
+}
+function razFiltres(){
+  FILT={part:'',sect:'',proj:'',stat:''};
+  document.getElementById('f-part').value='';document.getElementById('f-sect').value='';document.getElementById('f-proj').value='';document.getElementById('f-stat').value='';
+  tout();
+}
+function tout(){
+  majLibelles();
+  var accords=accordsFiltres();
+  var eng=0,prev=0,reel=0;
+  accords.forEach(function(a){
+    eng+=Number(a.montant_total_fcfa)||0;
+    reel+=cagdPour(a.code_projet,ANNEE);
+    opsLiees(a.code_projet).forEach(function(p){if(anneeDe(p.date_previsionnelle)===ANNEE)prev+=Number(p.montant_fcfa)||0;});
+  });
+  document.getElementById('k-eng').textContent=md(eng);
+  document.getElementById('k-prev').textContent=md(prev);
+  document.getElementById('k-reel').textContent=md(reel);
+  document.getElementById('k-taux').textContent=eng?pct(reel/eng*100):'—';
+  document.getElementById('k-solde').textContent='Solde restant : '+md(eng-reel);
+  courbes(accords);barres(accords);donut(accords);tableau(accords);
+}
+function courbes(accords){
+  var cP=new Array(12).fill(0),cR=new Array(12).fill(0);
+  accords.forEach(function(a){
+    opsLiees(a.code_projet).forEach(function(p){
+      var m=anneeDe(p.date_previsionnelle)===ANNEE?parseInt(String(p.date_previsionnelle).slice(5,7),10):0;if(m)cP[m-1]+=Number(p.montant_fcfa)||0;
+      if(p.montant_reel_fcfa!=null){var ar=anneeDe(p.date_reelle);var mr=ar===ANNEE?parseInt(String(p.date_reelle).slice(5,7),10):0;if(mr)cR[mr-1]+=Number(p.montant_reel_fcfa)||0;}
+    });
+  });
+  for(var i=1;i<12;i++){cP[i]+=cP[i-1];cR[i]+=cR[i-1];}
+  if(CH1)CH1.destroy();
+  CH1=new Chart(document.getElementById('chart-lignes'),{type:'line',
+    data:{labels:['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'],
+      datasets:[{label:'Prév. cumulées',data:cP,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.10)',fill:true,tension:.3,pointRadius:2},
+                {label:'Décaiss. saisis',data:cR,borderColor:'#16a34a',backgroundColor:'rgba(22,163,74,.10)',fill:true,tension:.3,pointRadius:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:9}}}},scales:{y:{ticks:{font:{size:8},callback:function(v){return (v/1e9).toFixed(0)+' Mds';}}},x:{ticks:{font:{size:8}}}}}});
+}
+function setBarMode(m){BARMODE=m;document.querySelectorAll('.seg button').forEach(function(b){b.classList.remove('on');});document.getElementById('seg-'+m).classList.add('on');barres(accordsFiltres());}
+function barres(accords){
+  var g={};
+  accords.forEach(function(a){
+    var k=BARMODE==='projet'?a.code_projet:(BARMODE==='secteur'?(a.secteur_principal||'Non classé'):a.partenaire);
+    var r=g[k]||(g[k]={eng:0,reel:0});
+    r.eng+=Number(a.montant_total_fcfa)||0;
+    r.reel+=cagdPour(a.code_projet,ANNEE);
+  });
+  var rows=Object.keys(g).map(function(k){return {p:k,t:g[k].eng?g[k].reel/g[k].eng*100:0};}).sort(function(a,b){return b.t-a.t;}).slice(0,8);
+  document.getElementById('bars').innerHTML=rows.map(function(r){
+    return '<div class="bar-row"><div class="bar-label" title="'+esc(r.p)+'">'+esc(r.p)+'</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.min(r.t,100)+'%"></div></div><div class="bar-val">'+pct(r.t)+'</div></div>';
+  }).join('')||'<p style="font-size:10px;color:#94a3b8">Aucune donnée</p>';
+}
+function donut(accords){
+  var g={};
+  accords.forEach(function(a){var v=cagdPour(a.code_projet,ANNEE);if(a.partenaire&&v>0)g[a.partenaire]=(g[a.partenaire]||0)+v;});
+  var keys=Object.keys(g).sort(function(a,b){return g[b]-g[a];}).slice(0,6);
+  var cols=['#2563eb','#16a34a','#f59e0b','#7c3aed','#0ea5e9','#94a3b8'];
+  if(CH2)CH2.destroy();
+  CH2=new Chart(document.getElementById('chart-donut'),{type:'doughnut',data:{labels:keys,datasets:[{data:keys.map(function(k){return g[k];}),backgroundColor:cols}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+  var tot=keys.reduce(function(s,k){return s+g[k];},0);
+  document.getElementById('legende').innerHTML=keys.map(function(k,i){return '<div><span class="pt" style="background:'+cols[i]+'"></span>'+esc(k)+' '+(tot?(g[k]/tot*100).toFixed(0):0)+'%</div>';}).join('')||'<div>Aucun décaissement</div>';
+}
+function cellM(v){return '<td title="'+fmt(v)+'">'+fmtC(v)+'</td>';}
+function tableau(accords){
+  var html='',TE=0,TP=0,TC=0,TD=0,TS=0;
+  accords.forEach(function(a){
+    var ops=opsLiees(a.code_projet);
+    var eng=Number(a.montant_total_fcfa)||0;
+    var prev=0,qP=[0,0,0,0],qR=[0,0,0,0];
+    ops.forEach(function(p){
+      if(anneeDe(p.date_previsionnelle)===ANNEE){prev+=Number(p.montant_fcfa)||0;var q=trimestre(p.date_previsionnelle);if(q)qP[q-1]+=Number(p.montant_fcfa)||0;}
+      if(p.montant_reel_fcfa!=null){var ar=anneeDe(p.date_reelle);if(ar===ANNEE){var q2=trimestre(p.date_reelle);if(q2)qR[q2-1]+=Number(p.montant_reel_fcfa)||0;}}
+    });
+    var cumN=cagdPour(a.code_projet,ANNEE);
+    var cumN1=cagdPour(a.code_projet,ANNEE-1);
+    var decN=cumN-cumN1;
+    var tauxAn=prev?decN/prev*100:0;
+    var tauxCum=eng?cumN/eng*100:0;
+    var solde=eng-cumN;
+    var tTr=[0,1,2,3].map(function(i){return qP[i]?Math.round(qR[i]/qP[i]*100):(qR[i]>0?100:0);});
+    TE+=eng;TP+=prev;TC+=cumN;TD+=decN;TS+=solde;
+    var clo=clotureDe(a);
+    var clotStr=clo?String(clo).slice(0,10):'—';
+    var badge=enCours(a)?'<span class="badge b-encours">En cours</span>':'<span class="badge b-cloture">Clôturé</span>';
+    html+='<tr>'
+      +'<td>'+esc(a.code_projet)+'</td>'
+      +'<td class="wrap" style="min-width:170px;max-width:240px"><b>'+esc(a.objet_accord||a.code_projet)+'</b></td>'
+      +'<td class="wrap" style="min-width:70px;max-width:110px">'+esc(a.partenaire)+'</td>'
+      +'<td class="wrap" style="min-width:60px;max-width:90px">'+esc(a.secteur_principal||'—')+'</td>'
+      +cellM(eng||null)
+      +cellM(cumN1||null)
+      +cellM(decN||null)
+      +cellM(prev||null)
+      +cellM(qP[0]||null)+cellM(qP[1]||null)+cellM(qP[2]||null)+cellM(qP[3]||null)
+      +cellM(qR[0]||null)+cellM(qR[1]||null)+cellM(qR[2]||null)+cellM(qR[3]||null)
+      +cellM(cumN||null)
+      +'<td style="font-size:8.5px">'+tTr.join(' · ')+' %</td>'
+      +'<td>'+pct(tauxAn)+'</td>'
+      +'<td><span class="prog"><i style="width:'+Math.min(tauxCum,100)+'%"></i></span>'+pct(tauxCum)+'</td>'
+      +cellM(solde)
+      +'<td>'+clotStr+'</td><td>'+badge+'</td>'
+      +'<td><button class="btn-mini" onclick="ouvrirOps(\''+esc(a.code_projet).replace(/'/g,'\\\'')+'\')">📋</button></td></tr>';
+  });
+  html+='<tr class="total"><td colspan="4">Total</td>'+cellM(TE)+cellM(null)+cellM(TD)+cellM(TP)+'<td colspan="8"></td>'+cellM(TC)+'<td colspan="2"></td><td>'+pct(TE?TC/TE*100:0)+'</td>'+cellM(TS)+'<td colspan="3"></td></tr>';
+  document.getElementById('body').innerHTML=html||'<tr><td colspan="23" style="text-align:center;padding:16px">Aucun projet avec données pour '+ANNEE+'</td></tr>';
+}
+
+function ouvrirOps(code){
+  document.getElementById('ops-titre').innerHTML='📋 '+esc(code)+' — opérations <span class="close" onclick="fermerOps()">×</span>';
+  var ops=opsLiees(code);
+  document.getElementById('ops-liste').innerHTML=ops.map(function(p){
+    return '<div class="op-row"><div><b>'+esc(p.operation)+'</b><br><span style="color:#64748b">'+fmt(p.montant_fcfa)+' FCFA · prévu '+esc(p.date_previsionnelle||'ND')+' · '+esc(p.taux_cible)+(p.non_decaissable_2026?' · ND':'')+'</span></div><button class="btn-mini" onclick="ouvrirReel('+p.id+')">✏️ Réalisé</button></div>';
+  }).join('')||'<p style="padding:16px;text-align:center">Aucune opération liée à ce projet</p>';
+  document.getElementById('ops-liste').style.display='block';
+  document.getElementById('ops-form').style.display='none';
+  document.getElementById('modal-ops').style.display='flex';
+}
+function fermerOps(){document.getElementById('modal-ops').style.display='none';}
+function retourListe(){document.getElementById('ops-form').style.display='none';document.getElementById('ops-liste').style.display='block';}
+function ouvrirReel(id){
+  var p=PREVS.find(function(x){return x.id===id;});if(!p)return;
+  EDIT_ID=id;
+  document.getElementById('mr-info').textContent=p.operation+' (prévu : '+fmt(p.montant_fcfa)+' FCFA)';
+  document.getElementById('mr-montant').value=p.montant_reel_fcfa||'';
+  document.getElementById('mr-date').value=p.date_reelle||'';
+  document.getElementById('mr-statut').value=p.statut_reel||'prevu';
+  document.getElementById('mr-obs').value=p.observations||'';
+  document.getElementById('ops-liste').style.display='none';
+  document.getElementById('ops-form').style.display='block';
+}
+async function sauverReel(){
+  var payload={montant_reel_fcfa:document.getElementById('mr-montant').value===''?null:Number(document.getElementById('mr-montant').value),
+    date_reelle:document.getElementById('mr-date').value||null,statut_reel:document.getElementById('mr-statut').value,observations:document.getElementById('mr-obs').value};
+  try{
+    var r=await fetch('/api/previsions/'+EDIT_ID,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!r.ok){var j=await r.json();notif('❌ '+(j.error||'Erreur'),'error');return;}
+    notif('✅ Décaissement mis à jour');fermerOps();charger();
+  }catch(e){notif('❌ '+e.message,'error');}
+}
+
+function listeOfficielle(){
+  var sect=document.getElementById('f-sect').value;
+  var part=document.getElementById('f-part').value;
+  var accords=ACCORDS.filter(function(a){
+    if(!enCours(a))return false;
+    if(sect&&(a.secteur_principal||'')!==sect)return false;
+    if(part&&a.partenaire!==part)return false;
+    return true;
+  });
+  accords.sort(function(a,b){return (a.partenaire||'').localeCompare(b.partenaire||'')||(a.objet_accord||'').localeCompare(b.objet_accord||'');});
+  var aoa=[['République du Bénin — Ministère de l\'Economie et des Finances'],
+    ['Direction Générale du Financement du Développement'],[],
+    ['LISTE DES PROJETS EN COURS — SECTEUR : '+(sect||'TOUS SECTEURS')],
+    ['Année de référence : '+ANNEE+' (projets en cours au 01/01/'+ANNEE+')'],
+    ['Source : SGIAD — accords consolidés · Édité le '+new Date().toLocaleString('fr-FR')],[],
+    ['N°','Code projet','Intitulé du projet','Partenaire','Montant (FCFA)','Date de clôture','Statut']];
+  var n=0,tot=0,cur=null,sPart=0;
+  accords.forEach(function(a){
+    if(cur!==null&&a.partenaire!==cur){aoa.push(['','Sous-total '+cur,'','',sPart,'','']);sPart=0;}
+    cur=a.partenaire;n++;
+    var m=Number(a.montant_total_fcfa)||0;sPart+=m;tot+=m;
+    aoa.push([n,a.code_projet,a.objet_accord||'',a.partenaire,m,clotureDe(a)||'','En cours']);
+  });
+  if(cur!==null)aoa.push(['','Sous-total '+cur,'','',sPart,'','']);
+  aoa.push([]);
+  aoa.push(['','TOTAL GÉNÉRAL ('+n+' projets)','','',tot,'','']);
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:4},{wch:16},{wch:70},{wch:24},{wch:18},{wch:12},{wch:10}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Projets en cours');
+  XLSX.writeFile(wb,'projets_en_cours_'+(sect||'tous_secteurs').replace(/\s+/g,'_')+'_'+ANNEE+'.xlsx');
+  notif('✅ Liste officielle générée : '+n+' projets');
+}
+
+function exportExcel(){
+  var accords=accordsFiltres();
+  var aoa=[['SGIAD — Prévisions & Décaissements '+ANNEE],['Source décaissements : CAGD'],['Exporté le : '+new Date().toLocaleString('fr-FR')],[],
+    ['Code','Intitulé','Partenaire','Secteur','Engagement total','Cumul '+ (ANNEE-1),'Décaissé '+ANNEE,'Prévision '+ANNEE,'Cumul '+ANNEE,'Taux annuel %','Taux cumulé %','Solde restant','Clôture','Statut']];
+  accords.forEach(function(a){
+    var eng=Number(a.montant_total_fcfa)||0,prev=0;
+    opsLiees(a.code_projet).forEach(function(p){if(anneeDe(p.date_previsionnelle)===ANNEE)prev+=Number(p.montant_fcfa)||0;});
+    var cumN=cagdPour(a.code_projet,ANNEE),cumN1=cagdPour(a.code_projet,ANNEE-1);
+    aoa.push([a.code_projet,a.objet_accord||'',a.partenaire,a.secteur_principal||'',eng,cumN1,cumN-cumN1,prev,cumN,prev?((cumN-cumN1)/prev*100).toFixed(1):'',eng?(cumN/eng*100).toFixed(1):'',eng-cumN,clotureDe(a)||'',enCours(a)?'En cours':'Clôturé']);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Prévisions '+ANNEE);
+  XLSX.writeFile(wb,'previsions_decaissements_'+ANNEE+'.xlsx');
+}
+function exportPDF(){
+  var accords=accordsFiltres();
+  var doc=new jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  doc.setFontSize(13);doc.text('SGIAD — Prévisions & Décaissements '+ANNEE,10,10);
+  doc.setFontSize(9);doc.setTextColor(100);doc.text('Source décaissements : CAGD — Exporté le '+new Date().toLocaleString('fr-FR'),10,16);
+  doc.autoTable({startY:22,head:[['Code','Intitulé','Partenaire','Secteur','Engagement','Cumul '+(ANNEE-1),'Décaissé '+ANNEE,'Prévision','Cumul '+ANNEE,'Taux annuel','Taux cumulé','Solde','Statut']],
+    body:accords.map(function(a){
+      var eng=Number(a.montant_total_fcfa)||0,prev=0;
+      opsLiees(a.code_projet).forEach(function(p){if(anneeDe(p.date_previsionnelle)===ANNEE)prev+=Number(p.montant_fcfa)||0;});
+      var cumN=cagdPour(a.code_projet,ANNEE),cumN1=cagdPour(a.code_projet,ANNEE-1);
+      return [a.code_projet,a.objet_accord||'',a.partenaire,a.secteur_principal||'',fmtC(eng),fmtC(cumN1),fmtC(cumN-cumN1),fmtC(prev),fmtC(cumN),prev?pct((cumN-cumN1)/prev*100):'—',eng?pct(cumN/eng*100):'—',fmtC(eng-cumN),enCours(a)?'En cours':'Clôturé'];
+    }),
+    styles:{fontSize:7},headStyles:{fillColor:[11,28,51]}});
+  doc.save('previsions_decaissements_'+ANNEE+'.pdf');
+}
+
+document.getElementById('h-annee').addEventListener('change',function(){ANNEE=Number(this.value);tout();});
+charger();
+</script>
+</body>
+</html>

@@ -2351,6 +2351,47 @@ def conges_documents_supprimer(doc_id):
     return jsonify({'ok': True})
 
 
+@app.route('/api/previsions/<int:prev_id>', methods=['PUT'])
+def previsions_modifier(prev_id):
+    from db import get_supabase
+    data = request.get_json(force=True) or {}
+    ALLOWED = ['partenaire','projet','operation','montant_fcfa','taux_cible','date_previsionnelle',
+      'delai_texte','montant_cumule_fcfa','observations','non_decaissable_2026',
+      'date_reelle','montant_reel_fcfa','statut_reel','code_projet','secteur','date_cloture']
+    payload = {k: v for k, v in data.items() if k in ALLOWED}
+    if not payload:
+        return jsonify({'error': 'Aucun champ valide'}), 400
+    try:
+        sb = get_supabase()
+        sb.table('previsions_decaissements').update(payload).eq('id', prev_id).execute()
+        return jsonify({'ok': True})
+    except Exception as ex:
+        return jsonify({'error': str(ex)}), 500
+
+
+@app.route('/api/accords/liste', methods=['GET'])
+@app.route('/api/accords/list', methods=['GET'])
+def accords_liste():
+    from db import get_supabase
+    try:
+        sb = get_supabase()
+        r = sb.table('accords_consolides').select('*').order('code_projet').execute()
+        return jsonify(r.data or [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/api/decaissements/cagd', methods=['GET'])
+def decaissements_cagd():
+    from db import get_supabase
+    try:
+        sb = get_supabase()
+        r = sb.table('decaissements_cagd').select('*').execute()
+        return jsonify(r.data or [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     import socket
     local_ip = socket.gethostbyname(socket.gethostname())

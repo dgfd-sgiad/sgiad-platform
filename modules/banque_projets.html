@@ -2669,25 +2669,26 @@
             let html = '';
             TAB_FIELDS.forEach((fields, i) => {
                 html += `<div id="exp-tab-${i}" class="exp-tab-content${i === 0 ? ' active' : ''}">`;
-                if (i === 5) {
+                if (i === 7) {
                     html += `<p style="font-size:11px; color:#666;"><i>ℹ️ Champs Coordination : ${COORDINATION_FIELDS.map(f => f.label).join(', ')}</i></p>`;
                     html += `<div class="checkbox-grid">${COORDINATION_FIELDS.map(f => `<label><input type="checkbox" value="${f.key}" style="accent-color:var(--secondary-green);"> ${f.label}</label>`).join('')}</div>`;
-                } else if (i === 6) {
+                } else if (i === 8) {
                     html += `<p style="font-size:11px; color:#666;"><i>ℹ️ Champs Maturité : ${MATURITE_FIELDS.map(f => f.label).join(', ')}</i></p>`;
                     html += `<div class="checkbox-grid">${MATURITE_FIELDS.map(f => `<label><input type="checkbox" value="${f.key}" style="accent-color:var(--secondary-green);"> ${f.label}</label>`).join('')}</div>`;
-                } else if (i === 1) {
+                } else if (i === 3) {
                     html +=
-                        `<div id="exp-loc-selector-container" style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #e9ecef;"></div>`;
+                        `<div id="exp-loc-selector-container" style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #e9ecef; margin-bottom:8px;"></div>` +
+`<div style="border-top:1px dashed #eee; padding-top:8px;"><h5 style="font-size:10px; color:#666; margin:0 0 6px 0;">✅ Colonnes à exporter :</h5><div class="checkbox-grid">${fields.filter(k => k !== 'Zone').map(k => `<label><input type="checkbox" value="${k}" checked style="accent-color:var(--secondary-green);"> ${k}</label>`).join('')}</div></div>`;
                 } else {
                     const selectFields = fields.filter(k => COLUMNS_BY_KEY[k] && COLUMNS_BY_KEY[k].type === 'select');
                     // Year filters for tabs 0 (signature) and 2 (closure)
                     const yearFields = [];
-                    if (i === 0 && fields.includes('Annee de signature')) yearFields.push('Annee de signature');
-                    if (i === 2 && fields.includes('Annee de cloture')) yearFields.push('Annee de cloture');
+                    if (i === 4 && fields.includes('Annee de signature')) yearFields.push('Annee de signature');
+                    if (i === 4 && fields.includes('Annee de cloture')) yearFields.push('Annee de cloture');
                     // Date range filters for tab 2 (Calendrier)
                     const dateFields = [];
-                    if (i === 2) {
-                        dateFields.push('Date de signature', "Date d'approbation", 'Date de clôture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture');
+                    if (i === 4) {
+                        dateFields.push('Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Nouvelle date de clôture');
                     }
                     if (selectFields.length > 0 || yearFields.length > 0 || dateFields.length > 0) {
                         html += `<div class="exp-filter-grid">`;
@@ -2733,7 +2734,7 @@
             document.querySelectorAll('#export-tabs-nav .tab-btn').forEach(btn => btn.classList.remove('active'));
             getEl(`exp-tab-${index}`)?.classList.add('active');
             document.querySelectorAll('#export-tabs-nav .tab-btn')[index]?.classList.add('active');
-            if (index === 1 && !exportLocSelectorReady) {
+            if (index === 3 && !exportLocSelectorReady) {
                 exportLocSelector = new LocalisationSelector('#exp-loc-selector-container', { apiBase: FLASK_BASE,
                     onChange: updateExportMatchCount });
                 exportLocSelector.init();
@@ -2773,7 +2774,7 @@
                 if (values.length > 0) filters[fieldName] = values;
             });
             // Date range filters
-            const dateFields = ['Date de signature', "Date d'approbation", 'Date de clôture', 'Date de mise en vigueur', 'Date de démarrage', 'Date de prorogation', 'Nouvelle date de clôture'];
+            const dateFields = ['Date de signature', "Date d'approbation", 'Date entree en vigueur', 'Date_Demarrage', 'Date de clôture', 'Nouvelle date de clôture'];
             dateFields.forEach(df => {
                 const fromEl = getEl(`exp-date-from-${df}`);
                 const toEl = getEl(`exp-date-to-${df}`);
