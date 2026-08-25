@@ -139,7 +139,7 @@
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
             overflow-x: auto;
             max-height: calc(100vh - 340px);
-            min-height: 400px;
+            min-height: 400px; position: relative; z-index: 1;
             overflow-y: auto;
             position: relative;
             margin-bottom: 20px;
@@ -1056,7 +1056,7 @@
             <button class="btn-fab" onclick="openModal()">+</button>
 
             <!-- MODAL -->
-            <div id="modal-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+            <div id="modal-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1200;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
                 <div class="modal-content">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
                         <h2 style="margin:0;color:var(--primary-blue);font-size:16px; cursor:grab;" id="modal-title">NOUVEL ACCORD</h2>
@@ -1084,7 +1084,7 @@
             </div>
 
             <!-- MODAL GESTION PARAMETRES -->
-            <div id="modal-param-manager" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+            <div id="modal-param-manager" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1400;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
                 <div style="background:white; border-radius:12px; padding:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.2);">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:2px solid var(--primary-blue); padding-bottom:10px;">
                         <h3 style="margin:0; color:var(--primary-blue); font-size:14px;">
@@ -1140,7 +1140,7 @@
             </div>
 
             <!-- MODAL FICHE PROJET -->
-            <div id="modal-fiche-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:350;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+            <div id="modal-fiche-projet" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1500;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
                 <div style="background:white; border-radius:10px; width:95%; height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
                     <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 16px; border-bottom:2px solid var(--primary-blue); flex-shrink:0;">
                         <h3 style="margin:0; color:var(--primary-blue); font-size:14px;">
@@ -3915,36 +3915,38 @@ async function deleteLinkedSousSecteur(sousSecteur) {
 
 // Update sous-secteur dropdown when secteur changes in the form
 async function updateSousSecteurFilterForSecteur(secteur) {
-    if (!secteur) return;
-    try {
-        const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
-        if (!res.ok) return;
-        const sousSecteurs = await res.json();
-        
-        // Update the sous-secteur select in the form
-        const ssKey = window._sousSecteurKey || 'SOUS SECTEUR';
-        const ssSelect = document.querySelector(`#form-projet select[data-field-key="${ssKey}"]`);
-        if (ssSelect && sousSecteurs.length > 0) {
-            const currentVal = ssSelect.value;
-            // Merge with existing options (from database column)
-            const col = COLUMNS_BY_KEY[ssKey];
-            const allOptions = [...new Set([...sousSecteurs, ...(col?.options || [])])].sort();
-            ssSelect.innerHTML = '<option value="">-- Sélectionner --</option>' + allOptions.map(o => `<option value="${o}">${o}</option>`).join('');
-            if (allOptions.includes(currentVal)) ssSelect.value = currentVal;
-        }
-    } catch (e) {
-        console.error('Error updating sous-secteur filter:', e);
-    }
+const ssKey = window._sousSecteurKey || 'SOUS SECTEUR';
+const ssSelect = document.querySelector(`#form-projet select[data-field-key="${ssKey}"]`);
+if (!ssSelect) return;
+const currentVal = ssSelect.value;
+if (!secteur) {
+const col0 = COLUMNS_BY_KEY[ssKey];
+ssSelect.innerHTML = '<option value="">-- Sélectionner --</option>' + (col0?.options || []).slice().sort().map(o => `<option value="${o}">${o}</option>`).join('');
+ssSelect.value = '';
+return;
 }
-
-// Listen for secteur changes in the form to update sous-secteur dropdown
+let sousSecteurs = [];
+try {
+const res = await fetchWithRetry(`${window.location.origin}/api/banque/secteur_sous_secteur/by_secteur?secteur=${encodeURIComponent(secteur)}`);
+if (res.ok) {
+const data = await res.json();
+if (Array.isArray(data)) sousSecteurs = data;
+}
+} catch (e) { console.warn('Liens secteur/sous-secteur indisponibles — repli sur les projets existants'); }
+if (sousSecteurs.length === 0) {
+const sKey = window._secteurKey || 'Secteur principal';
+sousSecteurs = [...new Set(allProjets.filter(x => String(x[sKey] || '').trim() === secteur).map(x => String(x[ssKey] || '').trim()).filter(Boolean))];
+}
+const col = COLUMNS_BY_KEY[ssKey];
+const finalOptions = (sousSecteurs.length > 0 ? sousSecteurs : (col?.options || [])).slice().sort();
+ssSelect.innerHTML = '<option value="">-- Sélectionner --</option>' + finalOptions.map(o => `<option value="${o}">${o}</option>`).join('');
+if (finalOptions.includes(currentVal)) ssSelect.value = currentVal; else ssSelect.value = '';
+}
+// Listen for secteur changes in the form to update sous-secteur dropdown in the form to update sous-secteur dropdown in the form to update sous-secteur dropdown
 document.addEventListener('change', function(e) {
     if (e.target.matches('#form-projet select[data-field-key="Secteur principal"]')) {
-        const secteur = e.target.value;
-        if (secteur) {
-            updateSousSecteurFilterForSecteur(secteur);
-        }
-    }
+updateSousSecteurFilterForSecteur(e.target.value);
+}
 });
 
     </script>
