@@ -2113,7 +2113,7 @@ function projetActif(p) {
             const sel = getEl('annee-reference');
             if (sel) {
                 const current = sel.value;
-                sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+                sel.innerHTML = [...new Set([...years, ...yearsCloture])].sort((a, b) => b - a).map(y => `<option value="${y}">${y}</option>`).join('');
                 if (current && years.includes(parseInt(current))) sel.value = current;
                 else if (years.length) {
                     sel.value = String(new Date().getFullYear());
