@@ -108,7 +108,7 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
     </div>
     <div class="row2">
       <div class="card"><h3>🚨 Alertes du portefeuille</h3><div id="alert-summary"></div><div id="alert-list"></div></div>
-      <div class="card"><h3>Principaux projets en cours</h3><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="top-projets"></tbody></table></div>
+      <div class="card"><h3>Principaux projets en cours</h3><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Décaissé %</th><th>Statut</th></tr></thead><tbody id="top-projets"></tbody></table></div>
     </div>
     <div class="row3" style="grid-template-columns:1.2fr 1.2fr 0.9fr;">
       <div class="card"><h3>📅 Prochaines revues de portefeuille <span style="float:right;color:#1e5aa8;cursor:pointer;font-size:10px" onclick="showView('revues', null)">Voir tout →</span></h3>
@@ -648,9 +648,9 @@ function renderTopProjets(){
   var p = DATA.projets || [];
   var html='';
   for(var i=0;i<Math.min(10,p.length);i++){
-    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+tauxBadge(p[i].taux_fin_cagd)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
-  document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+  document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="6" class="empty">Aucun projet.</td></tr>';
 }
 
 function bientot(){ alert('Cette rubrique arrivera dans une prochaine phase du chantier Suivi.'); }

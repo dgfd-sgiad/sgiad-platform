@@ -627,6 +627,44 @@ def suivi_dashboard():
         ).execute()
         rows = resp.data or []
 
+        # --- Index CAGD : execution financiere reelle (decaissements cumules) ---
+        import re as _re
+        def _norm2(s):
+            s = _strip_accents(str(s or '').upper())
+            return _re.sub(r'[^A-Z0-9 ]', ' ', s)
+        def _acro(s):
+            m = _re.search(r'\(([A-Za-z0-9\- ]{3,})\)', str(s or ''))
+            return _norm2(m.group(1)).strip() if m else ''
+        cum_cagd = {}
+        try:
+            cagd_rows = sb.table('decaissements_cagd').select('projet, periode, montant_total_fcfa').execute().data or []
+        except Exception:
+            cagd_rows = []
+        for c in cagd_rows:
+            n = _norm2(c.get('projet'))
+            per = _to_int(c.get('periode'))
+            val = _to_float(c.get('montant_total_fcfa'))
+            cur = cum_cagd.get(n)
+            if cur is None or per > cur[0]:
+                cum_cagd[n] = (per, val)
+        by_acro, by_pref = {}, {}
+        for c in cagd_rows:
+            n = _norm2(c.get('projet'))
+            val = cum_cagd.get(n, (0, 0.0))[1]
+            a = _acro(c.get('projet'))
+            if a and len(a) >= 4 and a not in by_acro:
+                by_acro[a] = val
+            p25 = n.strip()[:25]
+            if p25 and p25 not in by_pref:
+                by_pref[p25] = val
+        def _cum_cagd(objet):
+            a = _acro(objet)
+            if a and a in by_acro:
+                return by_acro[a]
+            p25 = _norm2(objet).strip()[:25]
+            return by_pref.get(p25, 0.0)
+        taux_cagd_by_code = {}
+
         today = date.today()
         auj_iso = today.isoformat()
         dans_12_mois = (today + timedelta(days=365)).isoformat()
@@ -666,6 +704,10 @@ def suivi_dashboard():
 
             code = r.get('code_projet') or ''
             montant = _to_float(r.get('montant_total_fcfa'))
+            cum = _cum_cagd(r.get('objet_accord') or '')
+            taux_fin_cagd = round(min(100.0, cum / montant * 100), 1) if montant > 0 and cum else None
+            if taux_fin_cagd is not None:
+                taux_cagd_by_code[code] = taux_fin_cagd
             en_cours.append({
                 'code': code,
                 'objet': (r.get('objet_accord') or code)[:60],
@@ -675,6 +717,7 @@ def suivi_dashboard():
                 'statut': r.get('statut') or 'En cours',
                 'date_cloture': ref,
                 'retard': retard,
+                'taux_fin_cagd': taux_fin_cagd,
             })
             if partenaire:
                 partenaires_actifs.add(partenaire)
@@ -759,10 +802,14 @@ def suivi_dashboard():
                 if t and t['phys'] < 70:
                     al['detail'] += f" et execution physique {t['phys']:.0f}% < 70%"
                     al['niveau'] = 'critique'
+                tc = taux_cagd_by_code.get(al['code'])
+                if tc is not None and tc < 40:
+                    al['detail'] += f" et decaissement {tc:.0f}% < 40%"
+                    al['niveau'] = 'critique'
 
         # Taux moyens
         phys_vals = [t['phys'] for t in dernier_taux.values() if t['phys'] > 0]
-        fin_vals = [t['fin'] for t in dernier_taux.values() if t['fin'] > 0]
+        fin_vals = [t['fin'] for t in dernier_taux.values() if t['fin'] > 0] or [p['taux_fin_cagd'] for p in en_cours if p.get('taux_fin_cagd') is not None]
         taux_phys_moyen = round(sum(phys_vals) / len(phys_vals), 1) if phys_vals else 0
         taux_fin_moyen = round(sum(fin_vals) / len(fin_vals), 1) if fin_vals else 0
 
@@ -812,6 +859,7 @@ def suivi_dashboard():
                 'montant_fcfa': p['montant_fcfa'],
                 'taux_phys': t.get('phys', 0),
                 'taux_fin': t.get('fin', 0),
+                'taux_fin_cagd': p.get('taux_fin_cagd'),
                 'statut': p['statut'],
                 'date_cloture': p['date_cloture'],
             })
