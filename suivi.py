@@ -149,6 +149,17 @@ def _ensure_revues_tables():
                 avancement INTEGER DEFAULT 0
             );
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS reco_historique (
+                id BIGSERIAL PRIMARY KEY,
+                reco_id INTEGER,
+                ancien_statut TEXT,
+                nouveau_statut TEXT,
+                commentaire TEXT,
+                auteur TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
         cur.execute("SELECT COUNT(*) FROM revues")
         if cur.fetchone()[0] == 0:
             cur.execute("""INSERT INTO revues (date_revue, partenaire, type_revue, lieu, statut) VALUES
@@ -304,15 +315,7 @@ def get_recommandations():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/api/suivi/dashboard')
-def get_dashboard():
-    try:
-        sb = get_supabase()
-        revues = sb.table('revues').select('*').execute().data or []
-        recommandations = sb.table('recommandations').select('*').execute().data or []
-        return jsonify({'revues': revues, 'recommandations': recommandations})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# [route obsolète supprimée - version complète conservée ligne ~608]
 
 
 @bp.route('/api/suivi/recommandations', methods=['POST'])
