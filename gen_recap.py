@@ -1,0 +1,306 @@
+# -*- coding: utf-8 -*-
+HTML = r"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGIAD-Bénin — Récapitulatif · Prévisions & décaissements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+:root{--ink:#1E2A28;--ink2:#43524F;--ink3:#6E7E7A;--paper:#fff;--canvas:#F5F7F5;--line:#E3E8E5;--line2:#EDF1EE;--dec:#2F6F62;--prev:#9BAAA5;--solde:#DFE5E2;--risque:#B0523C;--risquesoft:#F6E7E2;--vig:#B5852A;--vigsoft:#F8EEDB;--oksoft:#E4EFEB;--infosoft:#E5EDF3;--radius:8px;--shadow:0 1px 2px rgba(30,42,40,.05),0 1px 12px rgba(30,42,40,.04)}
+*{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;font-size:14px}
+header{background:var(--paper);border-bottom:1px solid var(--line)}
+.hwrap{max-width:1500px;margin:0 auto;padding:18px 26px 0}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--dec);color:#fff;display:grid;place-items:center;font-weight:700}
+h1{font-family:'Fraunces',Georgia,serif;font-size:20px;margin:0}
+.sub{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.stamp{margin-left:auto;text-align:right;font-size:11.5px;color:var(--ink3)}
+.stamp b{color:var(--ink)}
+nav{display:flex;gap:26px;margin-top:16px;font-size:12.5px}
+.tab{padding:0 2px 10px;color:var(--ink3)}
+.tab.on{color:var(--dec);font-weight:600;border-bottom:2px solid var(--dec)}
+.filters{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 0}
+.fwrap{max-width:1500px;margin:0 auto;padding:0 26px;display:grid;gap:9px}
+.frow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.label{font-size:10px;letter-spacing:.08em;color:var(--ink3);font-weight:700;margin-right:4px}
+.chip{border:1px solid var(--line);background:var(--paper);color:var(--ink2);border-radius:20px;padding:5px 12px;font:inherit;font-size:11.5px;font-weight:600;cursor:pointer}
+.chip.on{background:var(--dec);border-color:var(--dec);color:#fff}
+.chip.on.vig{background:var(--vig);border-color:var(--vig)}
+.chip.on.ris{background:var(--risque);border-color:var(--risque)}
+.selstat{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--ink3);font-size:12.5px}
+.selstat b{color:var(--ink)}
+.reset{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);padding:5px 12px;border-radius:6px;cursor:pointer}
+.wrap{max-width:1500px;margin:0 auto;padding:8px 26px 46px}
+.section-head{display:flex;align-items:baseline;gap:10px;margin:30px 0 12px}
+.section-head h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:0;font-weight:600}
+.section-head span{height:1px;background:var(--line);flex:1}
+.grid{display:grid;grid-template-columns:1.05fr 1fr;gap:14px}
+.overview{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;align-items:start}
+.verdict h2{font-family:'Fraunces',serif;font-size:26px;line-height:1.15;margin:6px 0 12px}
+.verdict h2 em{font-style:normal;color:var(--dec)}
+.verdict p{font-size:12.5px;line-height:1.6;color:var(--ink2);max-width:560px}
+.figs{display:grid;grid-template-columns:1fr 1fr;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.fig{padding:14px;border-left:1px solid var(--line2);border-top:1px solid var(--line2)}
+.fig:nth-child(1),.fig:nth-child(2){border-top:0}
+.fig:nth-child(odd){border-left:0}
+.fig .lb{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);font-weight:700}
+.fig .vl{font-family:'Fraunces',serif;font-size:23px;margin-top:6px}
+.fig .vl small{font-size:10px;font-family:'Archivo';color:var(--ink3);margin-left:4px}
+.fig.hl .vl{color:var(--dec)}
+.fig .dt{font-size:10.5px;color:var(--ink3);margin-top:8px;line-height:1.4}
+.gauge{height:4px;border-radius:2px;background:var(--solde);margin-top:9px;position:relative}
+.gauge i{position:absolute;inset:0 auto 0 0;background:var(--dec);border-radius:2px}
+.gauge u{position:absolute;top:-3px;bottom:-3px;width:1.5px;background:var(--ink2)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.card h4{font-family:'Fraunces',serif;font-size:14.5px;margin:0 0 4px}
+.unit{font-size:10px;color:var(--ink3);text-align:right}
+.cardhead{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.chart{height:225px}.chart.small{height:185px}
+.note{border-top:1px solid var(--line2);margin-top:12px;padding-top:10px;font-size:11px;line-height:1.55;color:var(--ink2)}
+.note b{color:var(--ink)}
+.barrow{display:grid;grid-template-columns:120px 1fr 42px;gap:8px;align-items:center;margin:9px 0;font-size:10.5px}
+.track{height:7px;background:var(--solde);border-radius:6px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--dec);border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:top}
+th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.tnum{text-align:right}
+.code{font-size:9.5px;color:var(--ink3);margin-top:3px}
+.tt{font-weight:600}
+.progress{height:5px;background:var(--solde);border-radius:4px;overflow:hidden;width:64px;display:inline-block;vertical-align:middle;margin-right:6px}
+.progress i{display:block;height:100%;background:var(--dec)}
+.pill{font-size:10px;padding:3px 9px;border-radius:14px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--oksoft);color:#265A50}.pill.vig{background:var(--vigsoft);color:#8A6416}.pill.inf{background:var(--infosoft);color:#2C4459}
+.tl{list-style:none;margin:6px 0 0;padding:0}
+.tl li{display:grid;grid-template-columns:52px 1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:11px}
+.tl li:last-child{border:0}
+.tl .d{font-weight:700}.tl .d small{display:block;font-weight:400;color:var(--ink3)}
+.empty{padding:22px 10px;text-align:center;color:var(--ink3);font-size:12px}
+#rail{position:fixed;top:0;right:0;bottom:0;width:292px;background:var(--paper);border-left:1px solid var(--line);box-shadow:-6px 0 18px rgba(20,60,50,.07);overflow-y:auto;padding:16px 14px 24px;z-index:60}
+#rail h3{font-family:'Fraunces',serif;font-size:13.5px;margin:0 0 3px}
+#rail .rsub{font-size:10px;color:var(--ink3);margin-bottom:10px}
+.rrow{padding:9px 2px;border-bottom:1px solid var(--line2);font-size:10.5px}
+.rrow .nm{font-weight:700;line-height:1.35}
+.rrow .meta{color:var(--ink3);margin-top:3px;display:flex;justify-content:space-between;gap:6px}
+.rrow .fin{white-space:nowrap;font-weight:700;color:var(--ink2)}
+.rrow .fin.late{color:var(--risque)}
+@media(min-width:1100px){body{padding-right:292px}}
+@media(max-width:1100px){#rail{display:none}}
+@media(max-width:1000px){.grid,.overview{grid-template-columns:1fr}}
+.api-err{background:var(--risquesoft);color:#8E3E2B;padding:10px 16px;font-size:12.5px;text-align:center}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+<div class="brand"><div class="logo">S</div>
+<div><h1>SGIAD-Bénin — Suivi des projets &amp; revues</h1>
+<div class="sub">Système de gestion de l'information sur l'aide au développement · Direction générale du financement du développement</div></div>
+<div class="stamp"><b id="stamp1">Situation au —</b><br><span id="stamp2">Exercice — · données réelles</span></div></div>
+<nav><span class="tab on">◔ Tableau de bord</span><span class="tab">◈ Prévisions &amp; décaissements</span><span class="tab">▣ Projets</span><span class="tab">☷ Recommandations</span><span class="tab">▢ Revues &amp; missions</span><span class="tab">♧ Partenaires</span></nav>
+</div></header>
+<div class="filters"><div class="fwrap">
+<div class="frow"><span class="label">EXERCICE</span><select class="reset" disabled><option>2026 (en cours)</option></select>
+<span class="label" style="margin-left:14px">SECTEUR</span><span id="f-sec" style="display:contents"></span></div>
+<div class="frow"><span class="label">STATUT</span><span id="f-st" style="display:contents"></span>
+<span class="label" style="margin-left:14px">PARTENAIRE</span><span id="f-par" style="display:contents"></span>
+<span class="selstat"><span id="selinfo"></span><button class="reset" id="btn-reset">↻ Réinitialiser</button></span></div>
+</div></div>
+<div class="wrap">
+<div class="section-head"><h3>Lecture d'ensemble</h3><span></span></div>
+<div class="overview">
+<div class="verdict"><h2 id="v-title"></h2><p id="v-text"></p></div>
+<div class="figs" id="figs"></div>
+</div>
+<div class="section-head"><h3>1. Le rythme est-il tenable ?</h3><span></span></div>
+<div class="grid">
+<div class="card"><div class="cardhead"><h4>Prévisions et décaissements cumulés</h4><span class="unit">Cumul en milliards<br>de FCFA</span></div><div id="c-cum" class="chart"></div><div class="note" id="i-cum"></div></div>
+<div class="card"><div class="cardhead"><h4>Écart trimestriel prévu / réalisé</h4><span class="unit">T3 arrêté à deux<br>mois sur trois</span></div><div id="c-trim" class="chart"></div><div class="note" id="i-trim"></div></div>
+</div>
+<div class="grid" style="margin-top:14px">
+<div class="card"><div class="cardhead"><h4>Secteurs : part décaissée et reste à verser</h4><span class="unit">Classés par solde<br>décroissant</span></div><div id="sec-bars"></div><div class="note" id="i-sec"></div></div>
+<div class="card"><div class="cardhead"><h4>Partenaires : volume engagé contre taux de réalisation</h4><span class="unit">Moyenne du<br>portefeuille</span></div><div id="par-rows"></div><div class="note" id="i-par"></div></div>
+</div>
+<div class="grid" style="margin-top:14px">
+<div class="card"><div class="cardhead"><h4>Principaux projets par engagement</h4><span class="unit">Périmètre filtré</span></div>
+<table><thead><tr><th>Projet / Code · Secteur</th><th>Partenaire</th><th class="tnum">Engagé</th><th class="tnum">Taux</th><th class="tnum">Décaissé</th></tr></thead><tbody id="t-proj"></tbody></table></div>
+<div class="card"><div class="cardhead"><h4>Alertes : clôtures proches &amp; taux faibles</h4><span class="unit">Dossiers prioritaires<br>pour la revue</span></div><div id="alerts"></div><div class="note" id="i-reco"></div></div>
+</div>
+<div class="section-head"><h3>4. Prochaines échéances de dialogue</h3><span></span></div>
+<div class="grid">
+<div class="card"><div class="cardhead"><h4>Revues programmées</h4><span class="unit">4 prochains mois</span></div><ul class="tl" id="tl-revues"></ul></div>
+<div class="card"><div class="cardhead"><h4>Effort mensuel requis pour tenir la prévision</h4><span class="unit">Milliards de FCFA<br>par mois</span></div><div id="c-eff" class="chart small"></div><div class="note" id="i-eff"></div></div>
+</div>
+<div class="card" style="margin-top:14px"><div class="cardhead"><h4>Sources et méthode</h4></div>
+<div class="note" style="border:0;margin:6px 0 0">Données réelles : accords consolidés (statut « En cours ») et décaissements cumulés CAGD, appariés par similarité (acronymes + mots). Engagements = montants des accords ; décaissé = dernier cumul CAGD connu. Les filtres (mode radio) recalculent l'ensemble des indicateurs, commentaires et listes.</div></div>
+</div>
+<aside id="rail"><h3 id="rail-title">Projets du périmètre</h3><div class="rsub" id="rail-sub"></div><div id="rail-list"></div></aside>
+<button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
+<script>
+const $=id=>document.getElementById(id);
+const NB0=new Intl.NumberFormat('fr-FR');
+const NB1=new Intl.NumberFormat('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const NB2=new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f1=v=>NB1.format(v), f2=v=>NB2.format(v), mds=v=>NB2.format(v)+'\u202fMds', pc=v=>NB1.format(v)+'\u202f%';
+let D=null, RECOS=[];
+const state={sec:new Set(),par:new Set(),st:new Set()};
+const STCLS=['','vig','ris'];
+const REVUES=[{d:'15/09',m:'septembre 2026',par:'Banque mondiale',ty:'Revue de portefeuille',lieu:'Cotonou',st:'Confirmée',cls:'ok'},
+{d:'08/10',m:'octobre 2026',par:'AFD',ty:'Revue à mi-parcours',lieu:'Cotonou',st:'À confirmer',cls:'vig'},
+{d:'12/11',m:'novembre 2026',par:'BAD',ty:'Revue de performance',lieu:'Abidjan / visio',st:'À confirmer',cls:'vig'},
+{d:'05/12',m:'décembre 2026',par:'BID',ty:'Revue conjointe annuelle',lieu:'Cotonou',st:'Planifiée',cls:'inf'}];
+function agg(){
+ const c=D.cells.filter(x=>state.sec.has(x.s)&&state.par.has(x.p)&&state.st.has(x.t));
+ const a={prev:0,dec:0,n:0,pq:[0,0,0,0],dq:[0,0,0],
+  sec:D.secteurs.map(()=>({prev:0,dec:0,n:0})),par:D.partenaires.map(()=>({prev:0,dec:0,n:0})),st:D.statuts.map(()=>({prev:0,dec:0,n:0}))};
+ c.forEach(x=>{a.prev+=x.prev;a.dec+=x.dec;a.n+=x.n;
+  for(let q=0;q<4;q++)a.pq[q]+=x.pq[q];
+  for(let q=0;q<3;q++)a.dq[q]+=x.dq[q];
+  [[a.sec,x.s],[a.par,x.p],[a.st,x.t]].forEach(([arr,i])=>{if(arr[i]){arr[i].prev+=x.prev;arr[i].dec+=x.dec;arr[i].n+=x.n;}});});
+ a.solde=a.prev-a.dec; a.taux=a.prev?a.dec/a.prev*100:0;
+ a.plan=a.pq[0]+a.pq[1]+a.pq[2]*D.part_t3;
+ a.ecart=a.dec-a.plan; a.ecartPct=a.plan?a.dec/a.plan*100-100:0;
+ a.prorata=D.jours_ecoules/D.jours_annee*100; a.jrest=D.jours_annee-D.jours_ecoules;
+ a.rythmeMois=a.dec/(D.jours_ecoules/30.44); a.rythmeReq=a.solde/(a.jrest/30.44);
+ a.full=state.sec.size===D.secteurs.length&&state.par.size===D.partenaires.length&&state.st.size===D.statuts.length;
+ return a;
+}
+function chips(host,key,labels,cls){
+ const el=$(host); el.innerHTML='';
+ labels.forEach((lb,i)=>{
+  const b=document.createElement('button');
+  b.className='chip on'+(cls?' '+(STCLS[i]||''):'');
+  b.textContent=lb; b.title='Clic : afficher uniquement · Re-clic : tout afficher';
+  b.onclick=()=>{
+   const s=state[key]; const solo=s.size===1&&s.has(i);
+   if(solo){for(let j=0;j<labels.length;j++)s.add(j);}
+   else{for(let j=0;j<labels.length;j++){if(j===i)s.add(j);else s.delete(j);}}
+   Array.from(el.children).forEach((btn,j)=>btn.classList.toggle('on',s.has(j)));
+   render();
+  };
+  el.appendChild(b);
+ });
+}
+function figs(a){
+ const posPlan=Math.min(100,a.prev?a.plan/a.prev*100:0);
+ $('figs').innerHTML=[
+  {lb:'Engagements '+D.exercice,vl:f2(a.prev),un:'Mds FCFA',dt:NB0.format(a.n)+' projets · '+D.partenaires.length+' partenaires'},
+  {lb:'Décaissé au '+String(D.situation).replace(' 2026',''),vl:f2(a.dec),un:'Mds FCFA',hl:1,dt:'Échéancier attendu : '+f1(a.plan)+' Mds'},
+  {lb:"Taux d'exécution",vl:NB1.format(a.taux),un:'%',gauge:{v:a.taux,mark:posPlan},dt:'Temps écoulé : '+pc(a.prorata)+" de l'année"},
+  {lb:'Solde à décaisser',vl:f2(a.solde),un:'Mds FCFA',dt:a.jrest+' jours restants · '+f1(a.rythmeReq)+' Mds/mois requis'}
+ ].map(f=>'<div class="fig'+(f.hl?' hl':'')+'"><div class="lb">'+f.lb+'</div><div class="vl">'+f.vl+'<small>'+f.un+'</small></div>'+(f.gauge?'<div class="gauge"><i style="width:'+Math.min(100,f.gauge.v)+'%"></i><u style="left:'+f.gauge.mark+'%"></u></div>':'')+'<div class="dt">'+f.dt+'</div></div>').join('');
+}
+function verdict(a){
+ const av=a.ecart>=0, scope=a.full?'Le portefeuille':'La sélection';
+ $('v-title').innerHTML=scope+' a décaissé <em>'+pc(a.taux)+'</em> de ses engagements '+D.exercice+', soit '+f1(Math.abs(a.ecart))+'\u202fMds '+(av?"d'avance sur":'de retard sur')+" l'échéancier.";
+ $('v-text').innerHTML='Sur '+NB0.format(a.n)+' projets et '+mds(a.prev)+' de FCFA engagés, <b>'+mds(a.dec)+'</b> ont été versés au '+D.situation+'. Il reste <b>'+mds(a.solde)+'</b> à décaisser en '+a.jrest+' jours, ce qui suppose de passer de '+f1(a.rythmeMois)+' à <b>'+f1(a.rythmeReq)+'\u202fMds par mois</b>, soit un effort '+(a.rythmeReq>a.rythmeMois?'supérieur de '+NB0.format((a.rythmeReq/a.rythmeMois-1)*100)+'\u202f% au':'inférieur au')+' rythme constaté depuis janvier.';
+}
+function insights(a){
+ const av=a.ecart>=0;
+ $('i-cum').innerHTML='Le cumul décaissé atteint <b>'+mds(a.dec)+'</b> contre <b>'+f1(a.plan)+'\u202fMds</b> attendus à cette date, soit <b>'+(av?'+':'\u2212')+f1(Math.abs(a.ecartPct))+'\u202f%</b> '+(av?'au-dessus':'en dessous')+" de l'échéancier. Le T4 concentre encore "+pc(a.prev?a.pq[3]/a.prev*100:0)+' de la prévision annuelle\u202f: la fin d\u2019exercice reste le point de tension.';
+ const tq=a.pq.map((p,i)=>i<3&&p?a.dq[i]/p*100:null);
+ const best=tq.indexOf(Math.max.apply(null,tq.filter(v=>v!=null)));
+ $('i-trim').innerHTML='T1 et T2 sont exécutés à '+NB0.format(tq[0]||0)+'\u202f% et '+NB0.format(tq[1]||0)+'\u202f% de leur prévision. Le T3, arrêté après deux mois, affiche déjà '+NB0.format(tq[2]||0)+'\u202f%\u202f: <b>'+(tq[2]>100?'des tirages du T4 ont été anticipés':'le trimestre suit sa trajectoire')+'</b>. Le T'+(best+1)+' reste le trimestre le mieux tenu.';
+ const srows=D.secteurs.map((nm,i)=>({nm:nm,r:a.sec[i]})).filter(x=>x.r.prev>0.004).sort((x,y)=>(y.r.prev-y.r.dec)-(x.r.prev-x.r.dec));
+ const top3=srows.slice(0,3);
+ const partTop3=a.solde?top3.reduce((s,x)=>s+x.r.prev-x.r.dec,0)/a.solde*100:0;
+ const worst=srows.slice().sort((x,y)=>(x.r.dec/(x.r.prev||1))-(y.r.dec/(y.r.prev||1)))[0];
+ $('i-sec').innerHTML= top3.length? 'Trois secteurs concentrent <b>'+NB0.format(partTop3)+'\u202f%</b> du solde restant\u202f: <b>'+top3.map(x=>x.nm).join('</b>, <b>')+'</b>. Le taux le plus faible est celui de <b>'+(worst?worst.nm:'—')+'</b> ('+pc(worst&&worst.r.prev?worst.r.dec/worst.r.prev*100:0)+')\u202f: premier point d\u2019arbitrage de la revue.' : 'Aucun secteur sur ce périmètre.';
+ const prows=D.partenaires.map((nm,i)=>({nm:nm,r:a.par[i]})).filter(x=>x.r.prev>0.5);
+ if(prows.length){const b2=prows.slice().sort((x,y)=>(y.r.dec/y.r.prev)-(x.r.dec/x.r.prev))[0];const w2=prows.slice().sort((x,y)=>(x.r.dec/x.r.prev)-(y.r.dec/y.r.prev))[0];
+  $('i-par').innerHTML='<b>'+b2.nm+'</b> affiche le meilleur taux ('+pc(b2.r.dec/b2.r.prev*100)+') ; <b>'+w2.nm+'</b> le plus faible ('+pc(w2.r.dec/w2.r.prev*100)+'). Le volume engagé ne préjuge pas de la vitesse de décaissement\u202f: la revue doit cibler les dossiers à tirage rapide.';}
+ $('i-eff').innerHTML= a.rythmeReq<=a.rythmeMois ? 'Le rythme constaté (<b>'+f1(a.rythmeMois)+'\u202fMds par mois</b>) suffit à absorber le solde\u202f; la priorité se déplace vers la qualité des justificatifs et la préparation des clôtures.' : 'Tenir la prévision exige de passer de '+f1(a.rythmeMois)+' à <b>'+f1(a.rythmeReq)+'\u202fMds/mois</b>\u202f: un effort qui se joue d\u2019abord sur les dossiers à décaissement rapide.';
+ const late=RECOS.filter(r=>r.retard>30);
+ $('i-reco').innerHTML= late.length? '<b>'+late.length+' recommandation(s)</b> dépassent 30 jours de retard. Le délai moyen de levée conditionne directement la reprise des tirages sur les projets concernés.' : 'Aucune recommandation majeure en retard sur ce périmètre.';
+}
+const ch={};
+function chart(id){if(!window.echarts)return null;if(!ch[id])ch[id]=echarts.init($(id));return ch[id];}
+const QL=['T1','T2','T3','T4'];
+function drawCum(a){const c=chart('c-cum');if(!c)return;
+ const pcum=[];let s=0;a.pq.forEach(v=>{s+=v;pcum.push(+s.toFixed(1));});
+ const dcum=[];s=0;a.dq.forEach(v=>{s+=v;dcum.push(+s.toFixed(1));});dcum.push(null);
+ c.setOption({grid:{left:6,right:16,top:26,bottom:4,containLabel:true},tooltip:{trigger:'axis'},
+ legend:{top:0,right:0,textStyle:{fontSize:10,color:'#6E7E7A'},itemWidth:14},
+ xAxis:{type:'category',data:QL,axisLine:{lineStyle:{color:'#E3E8E5'}},axisLabel:{color:'#6E7E7A',fontSize:10}},
+ yAxis:{type:'value',splitLine:{lineStyle:{color:'#EDF1EE'}},axisLabel:{color:'#6E7E7A',fontSize:9}},
+ series:[{name:'Prévision cumulée',type:'line',data:pcum,lineStyle:{type:'dashed',color:'#9BAAA5'},itemStyle:{color:'#9BAAA5'},symbolSize:4},
+ {name:'Décaissé cumulé',type:'line',data:dcum,lineStyle:{width:3,color:'#2F6F62'},itemStyle:{color:'#2F6F62'},areaStyle:{color:'rgba(47,111,98,.08)'},symbolSize:4},
+ {name:'Échéancier attendu',type:'scatter',data:[[2,+a.plan.toFixed(1)]],symbolSize:9,itemStyle:{color:'#B5852A'}}]},true);}
+function drawTrim(a){const c=chart('c-trim');if(!c)return;
+ const tq=a.pq.map((p,i)=>i<3&&p?+(a.dq[i]/p*100).toFixed(0):null);
+ c.setOption({grid:{left:6,right:34,top:26,bottom:4,containLabel:true},tooltip:{trigger:'axis'},
+ legend:{top:0,right:0,textStyle:{fontSize:10,color:'#6E7E7A'},itemWidth:14},
+ xAxis:{type:'category',data:QL,axisLabel:{color:'#6E7E7A',fontSize:10}},
+ yAxis:[{type:'value',splitLine:{lineStyle:{color:'#EDF1EE'}},axisLabel:{color:'#6E7E7A',fontSize:9}},{type:'value',max:140,axisLabel:{formatter:'{value} %',color:'#6E7E7A',fontSize:9},splitLine:{show:false}}],
+ series:[{name:'Prévu',type:'bar',data:a.pq.map(v=>+v.toFixed(1)),barWidth:12,itemStyle:{color:'#DFE5E2'}},
+ {name:'Décaissé',type:'bar',data:a.dq.map(v=>+v.toFixed(1)).concat([null]),barWidth:12,itemStyle:{color:'#2F6F62'}},
+ {name:'Taux',type:'line',yAxisIndex:1,data:tq.concat([null]),itemStyle:{color:'#1E2A28'},lineStyle:{color:'#1E2A28'},label:{show:true,fontSize:9,formatter:'{c} %'}}]},true);}
+function drawEff(a){const c=chart('c-eff');if(!c)return;
+ c.setOption({grid:{left:6,right:34,top:8,bottom:4,containLabel:true},tooltip:{trigger:'axis'},
+ xAxis:{type:'value',splitLine:{lineStyle:{color:'#EDF1EE'}},axisLabel:{color:'#6E7E7A',fontSize:9}},
+ yAxis:{type:'category',data:['Requis\n4 mois restants','Constaté\n8 mois écoulés'],axisLabel:{color:'#43524F',fontSize:10}},
+ series:[{type:'bar',barWidth:16,data:[{value:+a.rythmeReq.toFixed(1),itemStyle:{color:'#B5852A'}},{value:+a.rythmeMois.toFixed(1),itemStyle:{color:'#2F6F62'}}],label:{show:true,position:'right',fontSize:10,formatter:'{c} Mds'}}]},true);}
+function tables(a){
+ const rows=(D.projets||[]).filter(p=>state.sec.has(p.s)&&state.par.has(p.p)&&state.st.has(p.t));
+ const top=rows.slice().sort((x,y)=>y.prev-x.prev).slice(0,8);
+ $('t-proj').innerHTML=top.map(p=>{const t=p.prev?p.dec/p.prev*100:0;return '<tr><td><div class="tt">'+p.nom+'</div><div class="code">'+(p.code||'')+' · '+D.secteurs[p.s]+'</div></td><td>'+D.partenaires[p.p]+'</td><td class="tnum">'+f2(p.prev)+'</td><td class="tnum"><span class="progress"><i style="width:'+Math.min(100,t)+'%"></i></span>'+NB0.format(t)+' %</td><td class="tnum">'+f2(p.dec)+'</td></tr>';}).join('')||'<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+ const al=rows.filter(p=>(p.fin&&p.fin<='2027-08-28')||(p.prev&&p.dec/p.prev*100<40)).sort((x,y)=>(y.prev-y.dec)-(x.prev-x.dec)).slice(0,4);
+ $('alerts').innerHTML=al.map(p=>'<div style="display:grid;grid-template-columns:1fr auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);font-size:11px"><div><div class="tt">'+p.nom+'</div><div class="code">'+D.partenaires[p.p]+' · clôture '+(p.fin?p.fin.slice(8,10)+'/'+p.fin.slice(5,7)+'/'+p.fin.slice(0,4):'—')+'</div></div><b class="tnum">'+f2(p.prev-p.dec)+'</b></div>').join('')||'<div class="empty">Aucune alerte sur ce périmètre.</div>';
+}
+function renderRail(a){
+ const el=$('rail-list');
+ const rows=(D.projets||[]).filter(p=>state.sec.has(p.s)&&state.par.has(p.p)&&state.st.has(p.t)).sort((x,y)=>(x.fin||'9999-12-31')<(y.fin||'9999-12-31')?-1:1);
+ $('rail-title').textContent=state.sec.size===1?'Projets : '+D.secteurs[Array.from(state.sec)[0]]:'Projets du périmètre';
+ $('rail-sub').textContent=rows.length+' projet(s) en cours · triés par échéance';
+ el.innerHTML=rows.map(p=>{const late=p.fin&&p.fin<='2027-08-28';return '<div class="rrow"><div class="nm">'+p.nom+'</div><div class="meta"><span>'+D.secteurs[p.s]+'</span><span class="fin'+(late?' late':'')+'">Clôture : '+(p.fin?p.fin.slice(8,10)+'/'+p.fin.slice(5,7)+'/'+p.fin.slice(0,4):'—')+'</span></div><div class="meta"><span>'+D.partenaires[p.p]+'</span><span>'+NB0.format(p.prev?p.dec/p.prev*100:0)+' % décaissé</span></div></div>';}).join('')||'<div class="empty">Aucun projet.</div>';
+}
+function renderSecBars(a){
+ const rows=D.secteurs.map((nm,i)=>({nm:nm,r:a.sec[i]})).filter(x=>x.r.prev>0.004).sort((x,y)=>(y.r.prev-y.r.dec)-(x.r.prev-x.r.dec)).slice(0,8);
+ $('sec-bars').innerHTML=rows.map(x=>{const t=x.r.dec/x.r.prev*100;return '<div class="barrow"><span>'+x.nm+'</span><div class="track"><i style="width:'+Math.min(100,t)+'%"></i></div><b>'+NB0.format(t)+' %</b></div>';}).join('')||'<div class="empty">Aucune donnée.</div>';
+}
+function renderParRows(a){
+ const rows=D.partenaires.map((nm,i)=>({nm:nm,r:a.par[i]})).filter(x=>x.r.prev>0.5).sort((x,y)=>y.r.prev-x.r.prev);
+ $('par-rows').innerHTML=rows.map(x=>{const t=x.r.dec/x.r.prev*100;return '<div class="barrow"><span>'+x.nm+'</span><div class="track"><i style="width:'+Math.min(100,t)+'%"></i></div><b>'+NB0.format(t)+' %</b></div>';}).join('')||'<div class="empty">Aucune donnée.</div>';
+}
+function renderTL(){
+ const selPar=state.par.size===1?D.partenaires[Array.from(state.par)[0]]:null;
+ const list=selPar?REVUES.filter(r=>r.par===selPar):REVUES;
+ $('tl-revues').innerHTML=(list.length?list:REVUES).map(r=>'<li><div class="d">'+r.d+'<small>'+r.m+'</small></div><div><b>'+r.par+' — '+r.ty+'</b><br><span class="code">'+r.lieu+'</span></div><span class="pill '+r.cls+'">'+r.st+'</span></li>').join('');
+}
+function render(){
+ const a=agg();
+ $('selinfo').innerHTML=(a.full?'<b>Portefeuille complet</b> · ':'<b>')+NB0.format(a.n)+' projets</b> retenus · '+f2(a.prev)+' Mds FCFA engagés';
+ figs(a);verdict(a);insights(a);tables(a);renderSecBars(a);renderParRows(a);renderRail(a);renderTL();
+ drawCum(a);drawTrim(a);drawEff(a);
+}
+addEventListener('resize',()=>{Object.values(ch).forEach(c=>c.resize());});
+$('btn-reset').onclick=()=>{
+ state.sec=new Set(D.secteurs.map((_,i)=>i));state.par=new Set(D.partenaires.map((_,i)=>i));state.st=new Set(D.statuts.map((_,i)=>i));
+ chips('f-sec','sec',D.secteurs);chips('f-st','st',D.statuts,true);chips('f-par','par',D.partenaires);
+ render();
+};
+async function init(){
+ let d=null;
+ try{const r=await fetch('/api/suivi/recap');if(r.ok)d=await r.json();}catch(e){}
+ if(!d||!d.cells){document.body.insertAdjacentHTML('afterbegin','<div class="api-err">⚠ API /api/suivi/recap indisponible — démarre le serveur (python api.py) puis recharge.</div>');
+  d={secteurs:[],partenaires:[],statuts:['En cours','À surveiller','En difficulté'],cells:[],projets:[],exercice:'2026',situation:'—',part_t3:0.667,jours_ecoules:240,jours_annee:365};}
+ D=d;
+ $('stamp1').textContent='Situation au '+D.situation;
+ $('stamp2').textContent='Exercice '+D.exercice+' · données réelles';
+ state.sec=new Set(D.secteurs.map((_,i)=>i));state.par=new Set(D.partenaires.map((_,i)=>i));state.st=new Set(D.statuts.map((_,i)=>i));
+ chips('f-sec','sec',D.secteurs);chips('f-st','st',D.statuts,true);chips('f-par','par',D.partenaires);
+ render();
+ try{const r=await fetch('/api/suivi/dashboard',{headers:{'Authorization':'Bearer '+(localStorage.getItem('sgiad_token')||'')}});
+  if(r.ok){const dd=await r.json();if(dd&&dd.recommandations){RECOS=dd.recommandations.filter(x=>!x.executee&&x.echeance).map(x=>{const e=new Date(String(x.echeance).slice(0,10));return {retard:Math.round((new Date()-e)/86400000)};}).filter(x=>x.retard>0);render();}}
+ }catch(e){}
+}
+init();
+</script>
+</body>
+</html>"""
+
+open('modules/recap.html', 'w', encoding='utf-8').write(HTML)
+print('✅ modules/recap.html généré :', len(HTML), 'caractères')
+print('👉 Ctrl + F5 sur http://127.0.0.1:5000/modules/recap.html')

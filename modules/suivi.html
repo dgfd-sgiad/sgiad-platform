@@ -56,6 +56,8 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
 <div class="sidebar">
   <div class="brand">🇧🇯 SGIAD-Bénin<br><small>Suivi des Projets & Revues</small></div>
   <div class="menu">
+    <div class="sec">RÉCAPITULATIF</div>
+    <button onclick="window.location.href='/modules/recap.html'">📊 Récapitulatif</button>
     <button class="active" onclick="showView('dash', this)">🏠 Tableau de bord</button>
     <div class="sec">PROJETS</div>
     <button class="grp" onclick="toggleGroup('g-projets')">📁 Projets <span class="caret">▾</span></button>
@@ -79,6 +81,7 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
       <button class="sub" onclick="showView('actions', this)">Suivi des actions</button>
     </div>
     <button onclick="showView('financier', this)">💰 Suivi financier</button>
+    <button onclick="window.location.href='/modules/prev_decaissements.html'">📈 Prévisions & Décaissements</button>
     <div class="sec">RAPPORTS & ANALYSES</div>
     <button onclick="showView('par-secteur', this)">📈 Analyses sectorielles</button>
     <button onclick="showView('indicateurs', this)">🔑 Indicateurs clés</button>
@@ -152,14 +155,14 @@ th{background:#f8fafc;color:#64748b;text-transform:uppercase;font-size:9px;lette
     <div id="view-par-statut" style="display:none">
       <div class="row2">
         <div class="card"><h3>Répartition par statut</h3><div class="donut-wrap"><div class="donut" id="donut-statut"></div><div class="donut-hole"><div id="donut-statut-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Projets</div></div></div><div id="statut-legend"></div></div>
-        <div class="card"><h3>Liste des projets par statut</h3><div class="filters" id="statut-tabs"></div><table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="statut-body"></tbody></table></div>
+        <div class="card"><h3>Liste des projets par statut</h3><div class="filters" id="statut-tabs"></div><table><thead><tr><th>Code</th><th>Projet</th><th>Secteur</th><th>Partenaire</th><th>Montant</th><th style="text-align:right; font-size:9px;">Décaissé %</th><th>Statut</th></tr></thead><tbody id="statut-body"></tbody></table></div>
       </div>
     </div>
 
     <div id="view-par-secteur" style="display:none">
       <div class="row2">
         <div class="card"><h3>Répartition par secteur (Mds FCFA)</h3><div class="donut-wrap"><div class="donut" id="donut-secteur"></div><div class="donut-hole"><div id="donut-secteur-total" style="font-weight:800;color:#0a2540"></div><div style="font-size:9px;color:#64748b">Mds FCFA</div></div></div><div id="secteur-legend2"></div></div>
-        <div class="card"><h3>Liste des projets par secteur</h3><div class="filters"><select id="select-secteur2" onchange="SECTEUR_COURANT=this.value; renderParSecteur()"></select></div><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th>Statut</th></tr></thead><tbody id="secteur-body"></tbody></table></div>
+        <div class="card"><h3>Liste des projets par secteur</h3><div class="filters"><select id="select-secteur2" onchange="SECTEUR_COURANT=this.value; renderParSecteur()"></select></div><table><thead><tr><th>Code</th><th>Projet</th><th>Partenaire</th><th>Montant</th><th style="text-align:right; font-size:9px;">Décaissé %</th><th>Statut</th></tr></thead><tbody id="secteur-body"></tbody></table></div>
       </div>
     </div>
 
@@ -505,7 +508,7 @@ function renderParSecteur(){
     if(p[i].secteur!==SECTEUR_COURANT) continue;
     html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
-  document.getElementById('secteur-body').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+  document.getElementById('secteur-body').innerHTML = html || '<tr><td colspan="6" class="empty">Aucun projet.</td></tr>';
 }
 
 var PARTENAIRE_COURANT = '';
@@ -545,7 +548,7 @@ function renderParPartenaire(){
     if((p[i].partenaire||'Non précisé')!==PARTENAIRE_COURANT) continue;
     html += '<tr><td><b>'+esc(p[i].code)+'</b></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].secteur)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
-  document.getElementById('partenaire-body').innerHTML = html || '<tr><td colspan="5" class="empty">Aucun projet.</td></tr>';
+  document.getElementById('partenaire-body').innerHTML = html || '<tr><td colspan="6" class="empty">Aucun projet.</td></tr>';
 }
 
 function renderKpis(){
@@ -648,7 +651,7 @@ function renderTopProjets(){
   var p = DATA.projets || [];
   var html='';
   for(var i=0;i<Math.min(10,p.length);i++){
-    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+tauxBadge(p[i].taux_fin_cagd)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
+    html += '<tr><td><a href="#" onclick="ouvrirFiche(\''+esc(p[i].code)+'\');return false;" style="color:#1e5aa8;font-weight:700">'+esc(p[i].code)+'</a></td><td>'+esc(p[i].objet)+'</td><td>'+esc(p[i].partenaire)+'</td><td>'+fmtMds(mds(p[i].montant_fcfa))+'</td><td>'+tauxBadge(p[i].taux_fin_cagd)+'</td><td>'+tauxBadge(p[i].taux_fin_cagd)+'</td><td>'+statutBadge(p[i].statut)+'</td></tr>';
   }
   document.getElementById('top-projets').innerHTML = html || '<tr><td colspan="6" class="empty">Aucun projet.</td></tr>';
 }

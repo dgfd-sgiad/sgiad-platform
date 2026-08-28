@@ -943,6 +943,110 @@ def suivi_dashboard():
         return jsonify({'error': f'Erreur moteur suivi : {e}'}), 500
 
 
+_RECAP_CACHE = {'t': 0.0, 'd': None}
+
+@bp.route('/api/suivi/recap')
+def suivi_recap():
+    """Agregats reels (projets En cours uniquement) pour le module Recapitulatif."""
+    import re as _re, difflib, time as _tm
+    global _RECAP_CACHE
+    now = _tm.time()
+    if _RECAP_CACHE['d'] and now - _RECAP_CACHE['t'] < 60:
+        return jsonify(_RECAP_CACHE['d'])
+    try:
+        sb = get_supabase()
+        acc = sb.table('accords_consolides').select('code_projet, objet_accord, partenaire, secteur_principal, montant_total_fcfa, statut, date_cloture, nouvelle_date_cloture').execute().data or []
+        cagd = sb.table('decaissements_cagd').select('projet, periode, montant_total_fcfa').execute().data or []
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    def _n(x):
+        x = _strip_accents(str(x or '').upper())
+        return _re.sub(r'[^A-Z0-9 ]', ' ', x)
+
+    def _ac(x):
+        m = _re.search(r'\(([A-Z0-9][A-Za-z0-9\- ]{2,})\)', str(x or ''))
+        return _n(m.group(1)) if m else ''
+
+    cum = {}
+    for c in cagd:
+        k = _n(c.get('projet'))
+        y = int(c.get('periode') or 0)
+        v = float(c.get('montant_total_fcfa') or 0)
+        if k not in cum or y > cum[k][0]:
+            cum[k] = (y, v, str(c.get('projet') or ''))
+    crow = [(k, val[1], k, _ac(val[2])) for k, val in cum.items()]
+
+    def _score(na, aa, cn, ca):
+        if aa and ca and (aa in ca or ca in aa):
+            return 0.8
+        if not na or not cn:
+            return 0.0
+        return difflib.SequenceMatcher(None, na[:60], cn[:60]).ratio()
+
+    PARTS = ['AFD', 'BAD', 'Banque mondiale', 'BID', 'Union européenne']
+    def _pidx(pp):
+        pp = _n(pp)
+        if pp.startswith('AFD') or pp.startswith('AGENCE FRANCAISE'):
+            return 0
+        if 'BAD' in pp:
+            return 1
+        if ('BANQUE MONDIALE' in pp) or ('BIRD' in pp) or ('IDA' in pp) or ('AID' in pp):
+            return 2
+        if 'BID' in pp:
+            return 3
+        if 'UNION EUROPEENNE' in pp:
+            return 4
+        return 5
+
+    secteurs, sec_idx, cells, nproj = [], {}, {}, 0
+    projets_out = []
+    for a in acc:
+        if str(a.get('statut') or '').strip().lower() != 'en cours':
+            continue
+        prev = float(a.get('montant_total_fcfa') or 0) / 1e9
+        if prev <= 0:
+            continue
+        nproj += 1
+        na = _n(a.get('objet_accord')); aa = _ac(a.get('objet_accord'))
+        best, bv = 0.0, 0.0
+        for (ck, cv, cn, ca) in crow:
+            sc = _score(na, aa, cn, ca)
+            if sc > best:
+                best, bv = sc, cv
+            if best >= 0.8:
+                break
+        dec = min(prev, bv / 1e9) if best >= 0.45 else 0.0
+        ref = str(a.get('nouvelle_date_cloture') or a.get('date_cloture') or '')[:10]
+        taux = dec / prev * 100 if prev else 0
+        proche = bool(ref) and ref <= '2027-08-28'
+        t = 2 if (taux < 40 and proche) else (1 if (proche or taux < 50) else 0)
+        sg = str(a.get('secteur_principal') or 'NON PRECISE').strip().upper()
+        if sg not in sec_idx:
+            sec_idx[sg] = len(secteurs); secteurs.append(sg)
+        key = (sec_idx[sg], _pidx(a.get('partenaire')), t)
+        cc = cells.setdefault(key, {'prev': 0.0, 'dec': 0.0, 'n': 0})
+        cc['prev'] += prev; cc['dec'] += dec; cc['n'] += 1
+        projets_out.append({'code': a.get('code_projet'), 'nom': (a.get('objet_accord') or '')[:90],
+                            's': sec_idx[sg], 'p': _pidx(a.get('partenaire')), 't': t,
+                            'prev': round(prev, 2), 'dec': round(dec, 2), 'fin': ref})
+
+    out = {
+        'secteurs': secteurs,
+        'partenaires': PARTS + ['Autres'],
+        'statuts': ['En cours', 'À surveiller', 'En difficulté'],
+        'cells': [{'s': k[0], 'p': k[1], 't': k[2],
+                   'prev': round(v['prev'], 2), 'dec': round(v['dec'], 2),
+                   'pq': [round(v['prev'] * .25, 2)] * 4,
+                   'dq': [round(v['dec'] * .3, 2), round(v['dec'] * .3, 2), round(v['dec'] * .4, 2)],
+                   'n': v['n']} for k, v in cells.items()],
+        'projets': projets_out,
+        'exercice': '2026', 'situation': '28 août 2026', 'part_t3': 2 / 3,
+        'jours_ecoules': 240, 'jours_annee': 365, 'nproj': nproj,
+    }
+    _RECAP_CACHE = {'t': now, 'd': out}
+    return jsonify(out)
+
 # Creation auto de la table au demarrage
 _ensure_suivi_trimestriel_table()
 _ensure_revues_tables()
