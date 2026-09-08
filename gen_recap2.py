@@ -1,12 +1,12 @@
-<!DOCTYPE html>
+# -*- coding: utf-8 -*-
+HTML = r"""<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SGIAD-Bénin — Suivi des projets &amp; revues · Prévisions &amp; décaissements</title>
+<title>SGIAD-Bénin — Récapitulatif · Prévisions & décaissements</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400..700&family=Fraunces:opsz,wght@9..144,400..900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <style>
 :root{--ink:#1E2A28;--ink2:#43524F;--ink3:#6E7E7A;--paper:#fff;--canvas:#F5F7F5;--line:#E3E8E5;--line2:#EDF1EE;--dec:#2F6F62;--prev:#9BAAA5;--solde:#DFE5E2;--risque:#B0523C;--risquesoft:#F6E7E2;--vig:#B5852A;--vigsoft:#F8EEDB;--oksoft:#E4EFEB;--infosoft:#E5EDF3;--radius:8px;--shadow:0 1px 2px rgba(30,42,40,.05),0 1px 12px rgba(30,42,40,.04)}
@@ -167,7 +167,7 @@ th.sortable{cursor:pointer}th.sortable:hover{color:var(--dec)}
 </div>
 
 <aside id="rail"><h3 id="rail-title">Projets du périmètre</h3><div class="rsub" id="rail-sub"></div><div id="rail-list"></div></aside>
-<button onclick="(history.length>1&&document.referrer)?history.back():location.href='/suivi'" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
+<button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -292,9 +292,7 @@ function renderTL(){
  const selPar=state.par.size===1?D.partenaires[Array.from(state.par)[0]]:null;
  let list=REVUES_FULL||REVUES;
  if(selPar){const f=list.filter(r=>(r.par||r.partenaire||'')===selPar);if(f.length)list=f;}
- const html=list.map(r=>'<li><div class="d">'+(r.d||'')+'<small>'+(r.m||'')+'</small></div><div><b>'+(r.par||r.partenaire||'')+' — '+(r.ty||r.type||'')+'</b><br><span class="code">'+(r.lieu||'')+'</span></div><span class="pill '+(r.cls||'inf')+'">'+(r.st||r.statut||'')+'</span></li>').join('')||'<li class="empty">Aucune revue.</li>';
- $('tl-revues').innerHTML=html;
- if($('tl-revues2'))$('tl-revues2').innerHTML=html;
+ $('tl-revues').innerHTML=list.map(r=>'<li><div class="d">'+(r.d||'')+'<small>'+(r.m||'')+'</small></div><div><b>'+(r.par||r.partenaire||'')+' — '+(r.ty||r.type||'')+'</b><br><span class="code">'+(r.lieu||'')+'</span></div><span class="pill '+(r.cls||'inf')+'">'+(r.st||r.statut||'')+'</span></li>').join('')||'<li class="empty">Aucune revue.</li>';
 }
 function renderRail(a){
  const rows=(D.projets||[]).filter(p=>state.sec.has(p.s)&&state.par.has(p.p)&&state.st.has(p.t)).sort((x,y)=>(x.fin||'9999-12-31')<(y.fin||'9999-12-31')?-1:1);
@@ -324,6 +322,9 @@ function renderRecos(){
  $('t-recos').innerHTML=act.map(r=>'<tr><td><div class="tt">'+r.txt+'</div></td><td>'+r.src+'</td><td class="tnum">'+(r.ech?r.ech.slice(8,10)+'/'+r.ech.slice(5,7)+'/'+r.ech.slice(0,4):'—')+'</td><td class="tnum">'+r.ret+' j</td><td>'+(r.ret>0?'<span class="pill ris">En retard</span>':'<span class="pill ok">À venir</span>')+'</td></tr>').join('')||'<tr><td colspan="5" class="empty">Aucune recommandation active.</td></tr>';
 }
 function renderRevues(){
+ let list=REVUES_FULL||REVUES;
+ if(state.par.size===1){const n=D.partenaires[Array.from(state.par)[0]];const f=list.filter(r=>(r.par||r.partenaire||'')===n);if(f.length)list=f;}
+ $('tl-revues2').innerHTML=list.map(r=>'<li><div class="d">'+(r.d||'')+'<small>'+(r.m||'')+'</small></div><div><b>'+(r.par||r.partenaire||'')+' — '+(r.ty||r.type||'')+'</b><br><span class="code">'+(r.lieu||'')+'</span></div><span class="pill '+(r.cls||'inf')+'">'+(r.st||r.statut||'')+'</span></li>').join('')||'<li class="empty">Aucune revue programmée.</li>';
  const mis=(D.projets||[]).filter(p=>state.sec.has(p.s)&&state.par.has(p.p)&&state.st.has(p.t)&&((p.fin&&p.fin<='2027-08-28')||(p.prev&&p.dec/p.prev*100<40))).sort((a,b)=>(b.prev-b.dec)-(a.prev-a.dec)).slice(0,6);
  $('mis-list').innerHTML=mis.map(p=>'<li><div class="d">'+(p.fin?p.fin.slice(8,10)+'/'+p.fin.slice(5,7):'—')+'<small>clôture</small></div><div><b>Mission de justification — '+p.nom+'</b><br><span class="code">'+D.partenaires[p.p]+' · '+D.secteurs[p.s]+'</span></div><b class="tnum">'+f2(p.prev-p.dec)+' Mds</b></li>').join('')||'<li class="empty">Aucune mission prioritaire.</li>';
 }
@@ -370,7 +371,6 @@ async function init(){
  state.sec=new Set(D.secteurs.map((_,i)=>i));state.par=new Set(D.partenaires.map((_,i)=>i));state.st=new Set(D.statuts.map((_,i)=>i));
  chips('f-sec','sec',D.secteurs);chips('f-st','st',D.statuts,true);chips('f-par','par',D.partenaires);
  render();
- setTimeout(()=>{const q=new URLSearchParams(location.search).get('v');if(q&&q!=='dash')switchView(q);},300);
  try{const r=await fetch('/api/suivi/dashboard',{headers:{'Authorization':'Bearer '+(localStorage.getItem('sgiad_token')||'')}});
   if(r.ok){const dd=await r.json();if(dd&&dd.recommandations){RECO_FULL=dd.recommandations;RECOS=dd.recommandations.filter(x=>!x.executee&&x.echeance).map(x=>{const e=new Date(String(x.echeance).slice(0,10));return {retard:Math.round((new Date()-e)/86400000)};}).filter(x=>x.retard>0);render();}}
  }catch(e){}
@@ -379,4 +379,7 @@ async function init(){
 init();
 </script>
 </body>
-</html>
+</html>"""
+
+open('modules/recap.html', 'w', encoding='utf-8').write(HTML)
+print('✅ modules/recap.html régénéré :', len(HTML), 'caractères')

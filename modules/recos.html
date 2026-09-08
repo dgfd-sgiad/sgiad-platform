@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SGIAD-Bénin — Recommandations et alertes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+
+
+
+
+
+
+
+
+
+
+
+
+:root{
+  --ink:#1E2A28; --ink-2:#43524F; --ink-3:#6E7E7A;
+  --paper:#FFFFFF; --canvas:#F5F7F5; --line:#E3E8E5; --line-2:#EDF1EE;
+  --dec:#2F6F62; --dec-soft:#DCE8E4; --prev:#9BAAA5; --solde:#DFE5E2;
+  --risque:#B0523C; --risque-soft:#F6E7E2;
+  --vig:#B5852A; --vig-soft:#F8EEDB;
+  --ok:#2F6F62; --ok-soft:#E4EFEB;
+  --info:#3B5872; --info-soft:#E5EDF3;
+  --radius:8px;
+  --shadow:0 1px 2px rgba(30,42,40,.05), 0 1px 12px rgba(30,42,40,.04);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--canvas); color:var(--ink);
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:14px; line-height:1.55; -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,h5{font-family:'Fraunces','Iowan Old Style',Georgia,serif; font-weight:600; letter-spacing:-.01em}
+.wrap{max-width:1240px; margin:0 auto; padding:0 24px}
+
+/* en-tete */
+.topbar{background:var(--paper); border-bottom:1px solid var(--line)}
+.topbar-in{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; padding:20px 0 0}
+.brand{display:flex; gap:12px; align-items:flex-start}
+.crest{width:34px; height:34px; border-radius:7px; background:var(--dec); color:#fff;
+  display:grid; place-items:center; flex:0 0 auto; margin-top:3px}
+.crest svg{width:19px; height:19px}
+.brand h1{margin:0; font-size:20px; line-height:1.25}
+.brand .sub{color:var(--ink-3); font-size:12.5px; margin-top:2px}
+.stamp{text-align:right; color:var(--ink-3); font-size:12.5px; padding-bottom:2px}
+.stamp b{display:block; color:var(--ink); font-size:13px; font-weight:600}
+.tabs{display:flex; gap:2px; margin-top:16px; overflow-x:auto}
+.tab{padding:9px 14px 11px; font-size:13px; color:var(--ink-3); white-space:nowrap;
+  border-bottom:2px solid transparent; cursor:default; display:flex; align-items:center; gap:7px}
+.tab svg{width:14px; height:14px; opacity:.75}
+.tab.on{color:var(--dec); border-bottom-color:var(--dec); font-weight:600}
+
+/* filtres */
+.filters{position:sticky; top:0; z-index:30; background:rgba(255,255,255,.94);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.filters-in{display:flex; align-items:center; gap:16px; padding:9px 0 8px; flex-wrap:wrap}
+.filters-in + .filters-in{border-top:1px dashed var(--line-2)}
+.fgroup{display:flex; align-items:center; gap:8px; min-width:0}
+.flabel{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.chips{display:flex; gap:5px; flex-wrap:wrap}
+.chip{font:inherit; font-size:12.5px; padding:4px 10px; border-radius:20px; cursor:pointer;
+  border:1px solid var(--line); background:var(--paper); color:var(--ink-2); transition:.14s}
+.chip:hover{border-color:var(--prev)}
+.chip.on{background:var(--dec); border-color:var(--dec); color:#fff}
+.chip.on.vig{background:var(--vig); border-color:var(--vig)}
+.chip.on.ris{background:var(--risque); border-color:var(--risque)}
+.chip.on.inf{background:var(--info); border-color:var(--info)}
+.chip.on.neu{background:var(--ink-2); border-color:var(--ink-2)}
+.selstat{margin-left:auto; display:flex; align-items:center; gap:12px; color:var(--ink-3); font-size:12.5px}
+.selstat b{color:var(--ink); font-weight:600}
+.reset{font:inherit; font-size:12.5px; border:1px solid var(--line); background:var(--paper);
+  color:var(--ink-2); padding:4px 11px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:6px}
+.reset svg{width:13px; height:13px}
+select.fsel{font:inherit; font-size:12.5px; padding:4px 26px 4px 10px; border:1px solid var(--line);
+  border-radius:6px; background:var(--paper) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236E7E7A' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 8px center;
+  color:var(--ink); appearance:none; -webkit-appearance:none; cursor:pointer; max-width:250px}
+.search{position:relative; display:flex; align-items:center}
+.search svg{position:absolute; left:9px; width:13px; height:13px; color:var(--ink-3)}
+.search input{font:inherit; font-size:12.5px; padding:5px 10px 5px 27px; border:1px solid var(--line);
+  border-radius:6px; width:210px; color:var(--ink); background:var(--paper)}
+.search input::placeholder{color:var(--ink-3)}
+
+/* bascule de vue */
+.viewbar{background:var(--paper); border-bottom:1px solid var(--line)}
+.viewbar-in{display:flex; align-items:center; gap:6px; padding:0}
+.vt{font:inherit; font-size:13px; padding:11px 15px; border:0; background:none; color:var(--ink-3);
+  cursor:pointer; border-bottom:2px solid transparent; display:flex; align-items:center; gap:7px}
+.vt svg{width:14px; height:14px}
+.vt.on{color:var(--ink); border-bottom-color:var(--dec); font-weight:600}
+.vt:hover{color:var(--ink-2)}
+.vsort{margin-left:auto; display:flex; align-items:center; gap:8px}
+
+/* bandeau de synthese */
+.head{padding:24px 0 4px}
+.kicker{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dec); font-weight:600}
+.head h2{font-size:24px; line-height:1.3; margin:8px 0 0; max-width:40ch}
+.head h2 em{font-style:normal; color:var(--risque); border-bottom:2px solid var(--risque-soft)}
+.head p{margin:10px 0 0; color:var(--ink-2); max-width:70ch; font-size:14px}
+.hgrid{display:grid; grid-template-columns:1.15fr .85fr; gap:34px; align-items:end}
+.figs{display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line);
+  border-radius:var(--radius); background:var(--paper); overflow:hidden; box-shadow:var(--shadow)}
+.fig{padding:13px 15px 14px; border-left:1px solid var(--line-2)}
+.fig:first-child{border-left:0}
+.fig .lb{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.fig .vl{font-family:'Fraunces',Georgia,serif; font-size:21px; font-weight:600; margin-top:4px;
+  letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.fig .vl small{font-size:11px; font-family:'Archivo',sans-serif; color:var(--ink-3); font-weight:500; margin-left:3px}
+.fig .dt{font-size:11.5px; color:var(--ink-3); margin-top:2px}
+
+/* sections */
+.section-head{display:flex; align-items:baseline; gap:10px; margin:30px 0 14px}
+.section-head h3{font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin:0; font-weight:600}
+.section-head span{height:1px; background:var(--line); flex:1}
+.insight{margin:0 0 16px; padding:12px 15px; background:var(--paper); border:1px solid var(--line);
+  border-radius:var(--radius); font-size:12.8px; color:var(--ink-2); display:flex; gap:9px; box-shadow:var(--shadow)}
+.insight svg{width:14px; height:14px; flex:0 0 auto; margin-top:2.5px; color:var(--dec)}
+.insight b{color:var(--ink); font-weight:600}
+
+/* bandeau d'alertes */
+.alerts{display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start}
+.abox{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden}
+.abox-h{padding:12px 16px 11px; border-bottom:1px solid var(--line-2); background:#FBFCFB;
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+.abox-h h4{margin:0; font-size:15.5px}
+.abox-h .ah{font-size:11.5px; color:var(--ink-3)}
+.al{list-style:none; margin:0; padding:0}
+.al li{display:flex; gap:11px; padding:11px 16px; border-bottom:1px solid var(--line-2); align-items:flex-start}
+.al li:last-child{border-bottom:0}
+.al .ic{width:24px; height:24px; border-radius:6px; display:grid; place-items:center; flex:0 0 auto; margin-top:1px}
+.al .ic svg{width:13px; height:13px}
+.al li.ris .ic{background:var(--risque-soft); color:#8E3E2B}
+.al li.vig .ic{background:var(--vig-soft); color:#8A6416}
+.al li.inf .ic{background:var(--info-soft); color:#2C4459}
+.al li.ok .ic{background:var(--ok-soft); color:#265A50}
+.al .ab{flex:1; min-width:0}
+.al .ab b{display:block; font-size:12.9px; font-weight:600}
+.al .ab span{display:block; font-size:11.7px; color:var(--ink-3); margin-top:1px}
+.al .an{font-family:'Fraunces',Georgia,serif; font-size:16px; font-weight:600;
+  font-variant-numeric:tabular-nums; flex:0 0 auto; text-align:right; min-width:52px}
+.al .an small{display:block; font-family:'Archivo',sans-serif; font-size:10px;
+  color:var(--ink-3); font-weight:500; letter-spacing:.03em; text-transform:uppercase}
+.al li.ris .an{color:var(--risque)} .al li.vig .an{color:var(--vig)}
+
+/* colonnes par niveau */
+.cols{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; align-items:start}
+.col{background:#FBFCFB; border:1px solid var(--line); border-radius:var(--radius); padding:13px 13px 6px}
+.col-h{padding:0 2px 11px; border-bottom:1px solid var(--line)}
+.col-h .ct{display:flex; align-items:center; gap:8px}
+.col-h h4{margin:0; font-size:15px}
+.col-h .cnt{font-family:'Fraunces',Georgia,serif; font-size:15px; font-weight:600; color:var(--ink-3)}
+.col-h .dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto}
+.col.ok .dot{background:var(--ok)} .col.vig .dot{background:var(--vig)}
+.col.ris .dot{background:var(--risque)} .col.inf .dot{background:var(--info)}
+.col-h .cs{font-size:11.8px; color:var(--ink-3); margin-top:5px; font-variant-numeric:tabular-nums}
+.mbar{height:5px; border-radius:3px; background:var(--solde); margin-top:8px; position:relative; overflow:hidden}
+.mbar i{position:absolute; inset:0 auto 0 0; border-radius:3px; background:var(--dec)}
+.col.vig .mbar i{background:var(--vig)} .col.ris .mbar i{background:var(--risque)}
+.col.inf .mbar i{background:var(--info)}
+.col-b{padding-top:11px; display:grid; gap:11px}
+
+/* groupes (echeance, responsable, theme) */
+.grp{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden}
+.grp-h{display:grid; grid-template-columns:1.5fr .8fr .9fr .8fr; gap:18px; align-items:start;
+  padding:13px 17px; border-bottom:1px solid var(--line-2); background:#FBFCFB}
+.grp-h h4{margin:0; font-size:15.5px}
+.grp-h .gm{font-size:11.5px; color:var(--ink-3); margin-top:1px}
+.gstat{font-size:11px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.gval{font-family:'Fraunces',Georgia,serif; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; margin-top:1px}
+.gval small{font-family:'Archivo',sans-serif; font-size:11px; color:var(--ink-3); font-weight:500; margin-left:3px}
+.gsplit{position:relative; height:8px; border-radius:4px; background:var(--solde); overflow:hidden; margin-top:6px}
+.gsplit i{position:absolute; inset:0 auto 0 0; background:var(--dec)}
+.gsplit-lg{font-size:10.5px; color:var(--ink-3); margin-top:4px; display:flex; justify-content:space-between}
+.grp-b{padding:14px 17px 17px; display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+.mix{display:flex; gap:4px; margin-top:6px}
+.mix span{height:6px; border-radius:2px}
+.mix .a{background:var(--risque)} .mix .b{background:var(--vig)}
+.mix .c{background:var(--info)} .mix .d{background:var(--prev)} .mix .e{background:var(--ok)}
+
+/* carte recommandation */
+.rc{background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--info);
+  border-radius:var(--radius); padding:12px 14px 11px; box-shadow:var(--shadow); cursor:pointer;
+  transition:.14s; display:flex; flex-direction:column}
+.rc:hover{border-color:var(--prev); box-shadow:0 2px 4px rgba(30,42,40,.07), 0 2px 16px rgba(30,42,40,.06)}
+.rc.ris{border-left-color:var(--risque)} .rc.vig{border-left-color:var(--vig)}
+.rc.neu{border-left-color:var(--prev)} .rc.ok{border-left-color:var(--ok)}
+.rc-h{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.pc-code{font-size:10.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.pill{font-size:10.5px; padding:2px 8px; border-radius:20px; font-weight:600; white-space:nowrap}
+.pill.ok{background:var(--ok-soft); color:#265A50}
+.pill.vig{background:var(--vig-soft); color:#8A6416}
+.pill.ris{background:var(--risque-soft); color:#8E3E2B}
+.pill.inf{background:var(--info-soft); color:#2C4459}
+.pill.neu{background:var(--line-2); color:var(--ink-2)}
+.rc h5{margin:7px 0 0; font-size:13.6px; line-height:1.38}
+.rc-meta{font-size:11.5px; color:var(--ink-3); margin-top:3px}
+.rc-meta b{color:var(--ink-2); font-weight:600}
+.rbar{margin-top:11px}
+.rbar .pb{position:relative; height:6px; border-radius:3px; background:var(--solde); overflow:hidden}
+.rbar .pb i{position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:var(--risque)}
+.rc.vig .rbar .pb i{background:var(--vig)} .rc.inf .rbar .pb i{background:var(--info)}
+.rc.neu .rbar .pb i{background:var(--prev)} .rc.ok .rbar .pb i{background:var(--ok)}
+.rbar .pl{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-3); margin-top:5px}
+.rbar .pl b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+.rc-f{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:10px 0 0;
+  padding:9px 0 0; border-top:1px solid var(--line-2)}
+.rc-f div{min-width:0}
+.rc-f dt{font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.rc-f dd{margin:1px 0 0; font-family:'Fraunces',Georgia,serif; font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums}
+.rc-f dd small{font-family:'Archivo',sans-serif; font-size:10px; color:var(--ink-3); font-weight:500; margin-left:2px}
+.tags{display:flex; gap:5px; flex-wrap:wrap; margin-top:9px}
+.tag{font-size:10.5px; padding:2px 7px; border-radius:4px; background:var(--line-2);
+  color:var(--ink-2); font-weight:500; display:flex; align-items:center; gap:4px}
+.tag svg{width:10px; height:10px}
+.tag.r{background:var(--risque-soft); color:#8E3E2B}
+.pc-ft{display:flex; gap:12px; flex-wrap:wrap; margin-top:auto; padding-top:8px;
+  border-top:1px solid var(--line-2); font-size:11px; color:var(--ink-3)}
+.pc-ft span{display:flex; align-items:center; gap:4px}
+.pc-ft svg{width:11px; height:11px}
+.pc-ft b{color:var(--ink-2); font-weight:600}
+.rc .pc-ft{margin-top:9px}
+
+/* registre */
+.tbox{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden}
+table{width:100%; border-collapse:collapse; font-size:12.5px}
+th{text-align:left; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
+  font-weight:600; padding:10px 12px; border-bottom:1px solid var(--line); white-space:nowrap; background:#FBFCFB}
+td{padding:10px 12px; border-bottom:1px solid var(--line-2); vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.cl{cursor:pointer}
+tbody tr.cl:hover{background:#FBFCFB}
+.tnum{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+.td-lb{font-weight:500; color:var(--ink)}
+.td-sub{font-size:11px; color:var(--ink-3); margin-top:2px}
+.retn{font-variant-numeric:tabular-nums; font-weight:600}
+.retn.r{color:var(--risque)} .retn.v{color:var(--vig)} .retn.n{color:var(--ink-3); font-weight:500}
+.card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px 18px 15px; box-shadow:var(--shadow); min-width:0}
+.card h4{margin:0 0 2px; font-size:15.5px}
+.card .ch{font-size:11.5px; color:var(--ink-3); margin-bottom:10px}
+.chart{width:100%; height:230px}
+
+/* fiche recommandation */
+.back{font:inherit; font-size:12.5px; border:1px solid var(--line); background:var(--paper);
+  color:var(--ink-2); padding:5px 12px; border-radius:6px; cursor:pointer; display:inline-flex;
+  align-items:center; gap:6px; margin:22px 0 0}
+.back svg{width:13px; height:13px}
+.fh{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:20px 22px; margin-top:14px}
+.fh-t{display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap}
+.fh-t h2{margin:7px 0 0; font-size:21px; line-height:1.3; max-width:40ch}
+.fh-t .fm{font-size:12.5px; color:var(--ink-3); margin-top:6px}
+.fh-t .fm b{color:var(--ink-2); font-weight:600}
+.fh-t .fr{text-align:right; font-size:11.5px; color:var(--ink-3)}
+.fh-t .fr .rt{font-family:'Fraunces',Georgia,serif; font-size:27px; font-weight:600; color:var(--risque);
+  display:block; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.fh-g{display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--line);
+  border-radius:6px; margin-top:16px; overflow:hidden}
+.fh-g div{padding:11px 14px; border-left:1px solid var(--line-2)}
+.fh-g div:first-child{border-left:0}
+.fh-g dt{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:600}
+.fh-g dd{margin:3px 0 0; font-family:'Fraunces',Georgia,serif; font-size:17px; font-weight:600; font-variant-numeric:tabular-nums}
+.fh-g dd small{font-family:'Archivo',sans-serif; font-size:11px; color:var(--ink-3); font-weight:500; margin-left:3px}
+.f2{display:grid; grid-template-columns:1.15fr .85fr; gap:16px; margin-top:16px; align-items:start}
+.jl{list-style:none; margin:6px 0 0; padding:0 0 0 3px}
+.jl li{display:flex; gap:12px; padding:0 0 14px; position:relative}
+.jl li:before{content:''; position:absolute; left:5px; top:14px; bottom:0; width:1px; background:var(--line)}
+.jl li:last-child{padding-bottom:0}
+.jl li:last-child:before{display:none}
+.jl .mk{width:11px; height:11px; border-radius:50%; flex:0 0 auto; margin-top:4px;
+  background:var(--paper); border:2px solid var(--prev); z-index:1}
+.jl li.fait .mk{background:var(--ok); border-color:var(--ok)}
+.jl li.retard .mk{background:var(--risque); border-color:var(--risque)}
+.jl li.attente .mk{background:var(--vig); border-color:var(--vig)}
+.jl .jb{flex:1; min-width:0}
+.jl .jb b{font-size:12.8px; font-weight:600; display:block}
+.jl .jb span{font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; display:block}
+.jl li.retard .jb span{color:var(--risque)}
+.chk{list-style:none; margin:4px 0 0; padding:0}
+.chk li{display:flex; gap:9px; padding:8px 0; border-bottom:1px solid var(--line-2); font-size:12.5px}
+.chk li:last-child{border-bottom:0}
+.chk .bx{width:14px; height:14px; border-radius:3px; border:1.5px solid var(--prev);
+  flex:0 0 auto; margin-top:2px; display:grid; place-items:center; color:#fff}
+.chk .bx svg{width:10px; height:10px}
+.chk li.ok .bx{background:var(--ok); border-color:var(--ok)}
+.chk li span.st{margin-left:auto; font-size:11px; color:var(--ink-3); white-space:nowrap}
+.ctx{display:grid; gap:9px; margin-top:4px}
+.ctx .cl{display:flex; justify-content:space-between; font-size:12.3px; gap:10px;
+  padding-bottom:8px; border-bottom:1px solid var(--line-2)}
+.ctx .cl:last-child{border-bottom:0; padding-bottom:0}
+.ctx .cl span{color:var(--ink-3)}
+.ctx .cl b{font-variant-numeric:tabular-nums}
+.pb2{position:relative; height:6px; border-radius:3px; background:var(--solde); overflow:hidden; margin:2px 0 0}
+.pb2 i{position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:var(--risque)}
+.olist{list-style:none; margin:4px 0 0; padding:0}
+.olist li{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-2);
+  align-items:flex-start; cursor:pointer}
+.olist li:last-child{border-bottom:0}
+.olist li:hover .ob b{color:var(--dec)}
+.olist .ob{flex:1; min-width:0; font-size:12.4px}
+.olist .ob b{font-weight:500; display:block}
+.olist .ob span{display:block; font-size:11px; color:var(--ink-3); margin-top:2px; font-variant-numeric:tabular-nums}
+
+.empty{padding:44px 10px; text-align:center; color:var(--ink-3); font-size:13px;
+  background:var(--paper); border:1px solid var(--line); border-radius:var(--radius)}
+.note{margin:28px 0 44px; padding:15px 18px; border:1px solid var(--line); border-radius:var(--radius);
+  background:#FBFCFB; color:var(--ink-3); font-size:11.8px; line-height:1.6}
+.note b{color:var(--ink-2); font-weight:600}
+.note-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:8px}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+.hide{display:none}
+@media (max-width:1080px){
+  .hgrid{grid-template-columns:1fr; gap:20px} .cols{grid-template-columns:1fr}
+  .alerts{grid-template-columns:1fr} .grp-b{grid-template-columns:repeat(2,1fr)}
+  .f2{grid-template-columns:1fr} .grp-h{grid-template-columns:1fr 1fr; row-gap:12px}
+  .figs{grid-template-columns:1fr 1fr} .fh-g{grid-template-columns:1fr 1fr}
+  .note-grid{grid-template-columns:1fr}
+}
+@media (max-width:660px){
+  .wrap{padding:0 15px} .grp-b{grid-template-columns:1fr} .figs{grid-template-columns:1fr}
+  .head h2{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<svg class="sr" aria-hidden="true"><defs>
+<g id="i-shield"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></g>
+<g id="i-gauge"><path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l4-3"/></g>
+<g id="i-layers"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></g>
+<g id="i-list"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></g>
+<g id="i-cal"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></g>
+<g id="i-alert"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></g>
+<g id="i-clock"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></g>
+<g id="i-info"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></g>
+<g id="i-rotate"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></g>
+<g id="i-grid"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></g>
+<g id="i-tag"><path d="M20.6 13.4 12 22l-9-9V4h9l8.6 8.6a2 2 0 0 1 0 2.8z"/><path d="M7 7h.01"/></g>
+<g id="i-back"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></g>
+<g id="i-file"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></g>
+<g id="i-pin"><path d="M12 22s7-5.8 7-12a7 7 0 1 0-14 0c0 6.2 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></g>
+<g id="i-target"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></g>
+<g id="i-check"><path d="M20 6 9 17l-5-5"/></g>
+<g id="i-send"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></g>
+<g id="i-bell"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></g>
+<g id="i-table"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></g>
+</defs></svg>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="topbar-in">
+      <div class="brand">
+        <div class="crest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-shield"/></svg></div>
+        <div>
+          <h1>SGIAD-Bénin — Suivi des projets &amp; revues</h1>
+          <div class="sub">Système de gestion de l’information sur l’aide au développement · Direction générale du financement du développement</div>
+        </div>
+      </div>
+      <div class="stamp"><b>Situation au 28 août 2026</b>Exercice 2026 · données consolidées</div>
+    </div>
+    <nav class="tabs" aria-label="Navigation principale">
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-gauge"/></svg>Tableau de bord</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-layers"/></svg>Projets</div>
+      <div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-list"/></svg>Recommandations</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cal"/></svg>Revues &amp; missions</div>
+      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg>Partenaires</div>
+    </nav>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="wrap filters-in">
+    <div class="fgroup"><span class="flabel">Exercice</span>
+      <select class="fsel"><option>2026 (en cours)</option><option>2025</option><option>2024</option></select></div>
+    <div class="fgroup"><span class="flabel">Niveau d’attention</span><div class="chips" id="f-st"></div></div>
+    <div class="selstat">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><use href="#i-search"/></svg>
+        <input id="f-q" type="search" placeholder="Recommandation, projet, référence…"></div>
+      <button class="reset" id="reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-rotate"/></svg>Réinitialiser</button>
+    </div>
+  </div>
+  <div class="wrap filters-in">
+    <div class="fgroup"><span class="flabel">Thème</span><select class="fsel" id="f-th"></select></div>
+    <div class="fgroup"><span class="flabel">Responsable</span><select class="fsel" id="f-re"></select></div>
+    <div class="fgroup"><span class="flabel">Origine</span><select class="fsel" id="f-or"></select></div>
+  </div>
+  <div class="wrap filters-in">
+    <div class="fgroup"><span class="flabel">Partenaire</span><div class="chips" id="f-par"></div></div>
+    <div class="selstat"><span id="selinfo"></span></div>
+  </div>
+</div>
+
+<div class="viewbar">
+  <div class="wrap viewbar-in">
+    <button class="vt on" data-v="alertes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg>Alertes &amp; priorités</button>
+    <button class="vt" data-v="echeance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-clock"/></svg>Par échéance</button>
+    <button class="vt" data-v="resp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-users"/></svg>Par responsable</button>
+    <button class="vt" data-v="registre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-table"/></svg>Registre complet</button>
+    <div class="vsort"><span class="flabel">Trier par</span>
+      <select class="fsel" id="f-sort">
+        <option value="ret">Dépassement décroissant</option>
+        <option value="ech">Échéance la plus proche</option>
+        <option value="exp">Solde exposé décroissant</option>
+        <option value="anc">Ancienneté de la recommandation</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="main">
+  <section class="head" id="synth">
+    <div class="hgrid">
+      <div>
+        <div class="kicker">Recommandations de revue et alertes · exercice 2026</div>
+        <h2 id="h-title"></h2>
+        <p id="h-sub"></p>
+      </div>
+      <div class="figs" id="figs"></div>
+    </div>
+  </section>
+
+  <div id="vues">
+    <div class="section-head"><h3 id="sec-lb"></h3><span></span></div>
+    <div id="pre"></div>
+    <div class="insight" id="ins"></div>
+    <div id="body"></div>
+  </div>
+
+  <div id="fiche" class="hide"></div>
+
+  <div class="note">
+    <b>Note de lecture et de méthode.</b> Une recommandation est une action de suivi formulée en revue ou en mission de supervision, portée par un responsable identifié et assortie d’une échéance. Le niveau d’attention est calculé automatiquement à partir de l’écart entre l’échéance et la date de situation&nbsp;: <b>critique</b> au-delà de 60 jours de dépassement, <b>en retard</b> de 1 à 60 jours, <b>à échoir</b> dans les 30 jours à venir. Le solde exposé estime la part du solde à décaisser de l’opération dont le déblocage dépend de l’action attendue&nbsp;: il ne s’additionne pas d’une recommandation à l’autre sur un même projet.
+    <div class="note-grid">
+      <div><b>Sources.</b> Procès-verbaux de revues et de missions, rapports d’audit, comités de suivi trimestriels, situation d’exécution des projets.</div>
+      <div><b>Taux de mise en œuvre.</b> Rapport entre les recommandations soldées et validées en revue et le total des recommandations émises sur la période de référence.</div>
+      <div><b>Périmètre.</b> Échantillon de démonstration adossé aux 16 opérations de l’onglet Projets&nbsp;; montants en milliards de francs CFA.</div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+/* correctif expert : garantit le rendu de "Nature des blocages" (#c-th) */
+(function(){
+  if (typeof chartThemes !== 'function') { console.warn('[fix] chartThemes absent'); return; }
+  var _ct = chartThemes;
+  function kwTheme(r){
+    var t = (r.lb||r.txt||'') + ' ' + (r.nom||'');
+    if (/passation|mach\u00e9|marche|ami|appel d.offres|commission/i.test(t)) return 0;
+    if (/contrepartie|budget|fonds propres/i.test(t)) return 1;
+    if (/justificatif|drf|rapport|pi\u00e8ce|piece/i.test(t)) return 2;
+    if (/non.objection|ano/i.test(t)) return 3;
+    if (/foncier|terrain|parcelle|indemnis|relogement/i.test(t)) return 4;
+    if (/audit|contr\u00f4le|controle/i.test(t)) return 5;
+    return 6;
+  }
+  chartThemes = function(rows){
+    if (rows && rows.length && rows.every(function(r){ return r.th == null; })) {
+      rows = rows.map(function(r){ var c = {}; for (var k in r) c[k] = r[k]; c.th = kwTheme(r); return c; });
+    }
+    var n = 0;
+    (function tryIt(){
+      var el = document.getElementById('c-th');
+      if (el) { _ct(rows); }
+      else if (n++ < 12) { setTimeout(tryIt, 60); }
+    })();
+  };
+  function ensure(){
+    var el = document.getElementById('c-th');
+    if (el && window.echarts && !echarts.getInstanceByDom(el)) {
+      var rows = (window.D && D.recos ? D.recos : []).filter(function(r){
+        return state.sec.has(r.s) && state.par.has(r.p) && state.st.has(r.st);
+      });
+      chartThemes(rows);
+    }
+  }
+  if (typeof render === 'function') {
+    var _r = render;
+    render = function(){ var o = _r.apply(this, arguments); setTimeout(ensure, 90); return o; };
+  }
+  document.addEventListener('click', function(){ setTimeout(ensure, 150); }, true);
+  addEventListener('load', function(){ setTimeout(ensure, 150); });
+})();
+</script>
+<script>
+const D = {"statuts":["Critique","En retard","À échoir","En cours","Mise en œuvre"],"scls":["ris","vig","inf","neu","ok"],"sdef":["Échéance dépassée de plus de 60 jours","Échéance dépassée de 1 à 60 jours","Échéance dans moins de 30 jours","Échéance au-delà de 30 jours","Action soldée et validée en revue"],"themes":["Passation de marchés","Contrepartie de l’État","Justificatifs et DRF","Avis de non-objection","Maîtrise foncière","Audit et contrôle","Suivi et reporting"],"mkeys":["passation","contrepartie","justificatifs","non-objection","foncier","audit","suivi"],"resp":["Cellule de passation des marchés","Direction générale du budget","Service financier de l’agence d’exécution","Chargé de projet du partenaire","Comité d’indemnisation et des affaires foncières","Inspection générale des finances","SGIAD — cellule de suivi des projets"],"origines":["Revue à mi-parcours","Mission de supervision","Revue de portefeuille","Audit financier","Comité de suivi trimestriel"],"secteurs":["Infrastructures","Énergie","Eau & assainissement","Agriculture","Santé","Gouvernance","Education"],"partenaires":["AFD","BAD","Banque mondiale","BID","Union européenne","Autres (28)"],"pstatuts":["En cours","À surveiller","En difficulté"],"recos":[{"id":"R-2026-0143","code":"P-2026-BM-021","nom":"Amélioration de l’accès à l’eau potable en milieu rural","pi":0,"par":"Banque mondiale","p":2,"s":2,"pt":0,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":1,"emis":"01/05/2026","emisl":"1 mai 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":1.58,"agence":"Agence nationale d’alimentation en eau potable en milieu rural","revue":"15/09/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0146","code":"P-2026-BM-021","nom":"Amélioration de l’accès à l’eau potable en milieu rural","pi":0,"par":"Banque mondiale","p":2,"s":2,"pt":0,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence nationale d’alimentation en eau potable en milieu rural","revue":"15/09/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"11/02/2026"},{"id":"R-2026-0149","code":"P-2026-BM-021","nom":"Amélioration de l’accès à l’eau potable en milieu rural","pi":0,"par":"Banque mondiale","p":2,"s":2,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence nationale d’alimentation en eau potable en milieu rural","revue":"15/09/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"16/04/2026"},{"id":"R-2026-0152","code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","pi":1,"par":"AFD","p":0,"s":4,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":1,"emis":"17/05/2026","emisl":"17 mai 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":0.65,"agence":"Agence de construction des infrastructures de santé","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0155","code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","pi":1,"par":"AFD","p":0,"s":4,"pt":0,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":3,"emis":"14/08/2026","emisl":"14 août 2026","ech":"14/10/2026","echl":"14 octobre 2026","ret":0,"rest":47,"rel":0,"exp":0.65,"agence":"Agence de construction des infrastructures de santé","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0158","code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","pi":1,"par":"AFD","p":0,"s":4,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"05/03/2026"},{"id":"R-2026-0161","code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","pi":1,"par":"AFD","p":0,"s":4,"pt":0,"lb":"Désigner le point focal de suivi auprès du ministère sectoriel","th":6,"resp":6,"or":4,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"18/03/2026"},{"id":"R-2026-0164","code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","pi":1,"par":"AFD","p":0,"s":4,"pt":0,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"07/06/2026"},{"id":"R-2026-0167","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Actualiser le plan de passation avec le nouveau calendrier","th":0,"resp":0,"or":2,"st":1,"emis":"01/06/2026","emisl":"1 juin 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":2.33,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0170","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Recruter le bureau de contrôle et de surveillance des travaux","th":0,"resp":0,"or":3,"st":3,"emis":"01/07/2026","emisl":"1 juillet 2026","ech":"29/10/2026","echl":"29 octobre 2026","ret":0,"rest":62,"rel":0,"exp":2.33,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0173","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Désigner le point focal de suivi auprès du ministère sectoriel","th":6,"resp":6,"or":4,"st":3,"emis":"30/06/2026","emisl":"30 juin 2026","ech":"30/09/2026","echl":"30 septembre 2026","ret":0,"rest":33,"rel":0,"exp":0.31,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0176","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Transmettre le rapport d’évaluation des offres au partenaire","th":0,"resp":0,"or":4,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"04/02/2026"},{"id":"R-2026-0179","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Publier l’avis d’appel d’offres du lot restant","th":0,"resp":0,"or":0,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"03/05/2026"},{"id":"R-2026-0182","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Réactiver la commission de passation et statuer sur l’attribution","th":0,"resp":0,"or":1,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"29/04/2026"},{"id":"R-2026-0185","code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","pi":2,"par":"BAD","p":1,"s":3,"pt":0,"lb":"Actualiser le plan de passation avec le nouveau calendrier","th":0,"resp":0,"or":2,"st":4,"emis":"23/02/2026","emisl":"23 février 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction du génie rural — MAEP","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"27/06/2026"},{"id":"R-2026-0188","code":"P-0340-BAD-2019","nom":"Programme d’assainissement pluvial de Cotonou","pi":3,"par":"BAD","p":1,"s":2,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":1,"emis":"03/04/2026","emisl":"3 avril 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":0.79,"agence":"Société nationale des eaux du Bénin","revue":"12/11/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0191","code":"P-0340-BAD-2019","nom":"Programme d’assainissement pluvial de Cotonou","pi":3,"par":"BAD","p":1,"s":2,"pt":0,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Société nationale des eaux du Bénin","revue":"12/11/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"22/03/2026"},{"id":"R-2026-0194","code":"P-0340-BAD-2019","nom":"Programme d’assainissement pluvial de Cotonou","pi":3,"par":"BAD","p":1,"s":2,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Société nationale des eaux du Bénin","revue":"12/11/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"25/03/2026"},{"id":"R-2026-0197","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Réconcilier les écritures du compte spécial avec la comptabilité","th":2,"resp":2,"or":4,"st":0,"emis":"26/03/2026","emisl":"26 mars 2026","ech":"26/06/2026","echl":"26 juin 2026","ret":63,"rest":0,"rel":3,"exp":0.83,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":null},{"id":"R-2026-0200","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Obtenir la libération du premier appel de fonds de l’État","th":1,"resp":1,"or":0,"st":1,"emis":"03/05/2026","emisl":"3 mai 2026","ech":"18/07/2026","echl":"18 juillet 2026","ret":41,"rest":0,"rel":2,"exp":1.06,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":null},{"id":"R-2026-0203","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":1,"emis":"10/06/2026","emisl":"10 juin 2026","ech":"10/08/2026","echl":"10 août 2026","ret":18,"rest":0,"rel":1,"exp":0.2,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0206","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Ouvrir le compte de contrepartie dédié au projet","th":1,"resp":1,"or":2,"st":2,"emis":"23/05/2026","emisl":"23 mai 2026","ech":"20/09/2026","echl":"20 septembre 2026","ret":0,"rest":23,"rel":1,"exp":1.06,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":null},{"id":"R-2026-0209","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Produire l’état détaillé des paiements aux entreprises","th":2,"resp":2,"or":1,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"11/02/2026"},{"id":"R-2026-0212","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Ouvrir le compte de contrepartie dédié au projet","th":1,"resp":1,"or":2,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":"16/04/2026"},{"id":"R-2026-0215","code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","pi":4,"par":"BID","p":3,"s":1,"pt":1,"lb":"Apurer les pièces rejetées par le partenaire","th":2,"resp":2,"or":3,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence béninoise d’électrification rurale","revue":"03/12/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"22/04/2026"},{"id":"R-2026-0218","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Recruter l’auditeur pour les deux exercices à venir","th":5,"resp":5,"or":0,"st":0,"emis":"11/04/2026","emisl":"11 avril 2026","ech":"26/06/2026","echl":"26 juin 2026","ret":63,"rest":0,"rel":3,"exp":0.62,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["Rapport d’audit signé","Lettre de direction et plan d’actions"],"cloture":null},{"id":"R-2026-0221","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Produire l’état détaillé des paiements aux entreprises","th":2,"resp":2,"or":1,"st":1,"emis":"18/05/2026","emisl":"18 mai 2026","ech":"18/07/2026","echl":"18 juillet 2026","ret":41,"rest":0,"rel":2,"exp":1.11,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":null},{"id":"R-2026-0224","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":1,"emis":"12/04/2026","emisl":"12 avril 2026","ech":"10/08/2026","echl":"10 août 2026","ret":18,"rest":0,"rel":1,"exp":0.27,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0227","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Mettre en œuvre les réserves de l’auditeur externe","th":5,"resp":5,"or":2,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["Rapport d’audit signé","Lettre de direction et plan d’actions"],"cloture":"05/03/2026"},{"id":"R-2026-0230","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Apurer les pièces rejetées par le partenaire","th":2,"resp":2,"or":3,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"18/03/2026"},{"id":"R-2026-0233","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Transmettre le rapport d’audit financier de l’exercice précédent","th":5,"resp":5,"or":4,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["Rapport d’audit signé","Lettre de direction et plan d’actions"],"cloture":"07/06/2026"},{"id":"R-2026-0236","code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","pi":5,"par":"AFD","p":0,"s":5,"pt":1,"lb":"Transmettre les demandes de remboursement de fonds en attente","th":2,"resp":2,"or":0,"st":4,"emis":"23/02/2026","emisl":"23 février 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction générale du budget","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"05/06/2026"},{"id":"R-2026-0239","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Réactiver la commission de passation et statuer sur l’attribution","th":0,"resp":0,"or":1,"st":0,"emis":"24/03/2026","emisl":"24 mars 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":96,"rest":0,"rel":4,"exp":1.25,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0242","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Ouvrir le compte de contrepartie dédié au projet","th":1,"resp":1,"or":2,"st":0,"emis":"18/02/2026","emisl":"18 février 2026","ech":"18/06/2026","echl":"18 juin 2026","ret":71,"rest":0,"rel":3,"exp":0.89,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":null},{"id":"R-2026-0245","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":1,"emis":"04/04/2026","emisl":"4 avril 2026","ech":"05/07/2026","echl":"5 juillet 2026","ret":54,"rest":0,"rel":2,"exp":0.17,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0248","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Obtenir la libération du premier appel de fonds de l’État","th":1,"resp":1,"or":4,"st":1,"emis":"11/05/2026","emisl":"11 mai 2026","ech":"26/07/2026","echl":"26 juillet 2026","ret":33,"rest":0,"rel":2,"exp":0.89,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":null},{"id":"R-2026-0251","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Publier l’avis d’appel d’offres du lot restant","th":0,"resp":0,"or":0,"st":1,"emis":"16/06/2026","emisl":"16 juin 2026","ech":"16/08/2026","echl":"16 août 2026","ret":12,"rest":0,"rel":1,"exp":1.25,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0254","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Recruter le bureau de contrôle et de surveillance des travaux","th":0,"resp":0,"or":3,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"04/02/2026"},{"id":"R-2026-0257","code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","pi":6,"par":"Autres (28)","p":5,"s":6,"pt":2,"lb":"Obtenir la libération du premier appel de fonds de l’État","th":1,"resp":1,"or":4,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence de construction des infrastructures scolaires","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":"03/05/2026"},{"id":"R-2026-0260","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Actualiser le plan de passation avec le nouveau calendrier","th":0,"resp":0,"or":2,"st":0,"emis":"24/01/2026","emisl":"24 janvier 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":96,"rest":0,"rel":4,"exp":2.28,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0263","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Transmettre le plan de libération des emprises restantes","th":4,"resp":4,"or":3,"st":0,"emis":"18/03/2026","emisl":"18 mars 2026","ech":"18/06/2026","echl":"18 juin 2026","ret":71,"rest":0,"rel":3,"exp":1.93,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0266","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Obtenir la libération du premier appel de fonds de l’État","th":1,"resp":1,"or":4,"st":1,"emis":"20/04/2026","emisl":"20 avril 2026","ech":"05/07/2026","echl":"5 juillet 2026","ret":54,"rest":0,"rel":2,"exp":1.62,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":null},{"id":"R-2026-0269","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Publier l’avis d’appel d’offres du lot restant","th":0,"resp":0,"or":0,"st":1,"emis":"26/05/2026","emisl":"26 mai 2026","ech":"26/07/2026","echl":"26 juillet 2026","ret":33,"rest":0,"rel":2,"exp":2.28,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0272","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Sécuriser les titres fonciers des sites retenus","th":4,"resp":4,"or":1,"st":1,"emis":"18/04/2026","emisl":"18 avril 2026","ech":"16/08/2026","echl":"16 août 2026","ret":12,"rest":0,"rel":1,"exp":1.93,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0275","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":2,"emis":"08/06/2026","emisl":"8 juin 2026","ech":"08/09/2026","echl":"8 septembre 2026","ret":0,"rest":11,"rel":1,"exp":0.3,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0278","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Transmettre le rapport d’évaluation des offres au partenaire","th":0,"resp":0,"or":4,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"22/03/2026"},{"id":"R-2026-0281","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Faire valider le rapport de recensement des occupants","th":4,"resp":4,"or":0,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":"25/03/2026"},{"id":"R-2026-0284","code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","pi":7,"par":"Autres (28)","p":5,"s":0,"pt":2,"lb":"Ouvrir le compte de contrepartie dédié au projet","th":1,"resp":1,"or":1,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence des grands travaux et de l’aménagement urbain","revue":"03/12/2026","pieces":["Ligne budgétaire ouverte au budget de l’exercice","Ordre de virement du Trésor","Attestation d’inscription budgétaire"],"cloture":"21/05/2026"},{"id":"R-2026-0287","code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","pi":8,"par":"AFD","p":0,"s":1,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":1,"emis":"01/05/2026","emisl":"1 mai 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":0.99,"agence":"Société béninoise d’énergie électrique","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0290","code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","pi":8,"par":"AFD","p":0,"s":1,"pt":0,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Société béninoise d’énergie électrique","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"11/02/2026"},{"id":"R-2026-0293","code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","pi":8,"par":"AFD","p":0,"s":1,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Société béninoise d’énergie électrique","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"16/04/2026"},{"id":"R-2026-0296","code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","pi":8,"par":"AFD","p":0,"s":1,"pt":0,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Société béninoise d’énergie électrique","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"22/04/2026"},{"id":"R-2026-0299","code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","pi":8,"par":"AFD","p":0,"s":1,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":4,"emis":"23/02/2026","emisl":"23 février 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Société béninoise d’énergie électrique","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"14/07/2026"},{"id":"R-2026-0302","code":"P-2025-BM-047","nom":"Programme de cantines scolaires durables","pi":9,"par":"Banque mondiale","p":2,"s":6,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction de l’alimentation scolaire — MEMP","revue":"15/09/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"05/03/2026"},{"id":"R-2026-0305","code":"P-2025-BM-047","nom":"Programme de cantines scolaires durables","pi":9,"par":"Banque mondiale","p":2,"s":6,"pt":0,"lb":"Consolider le plan de trésorerie jusqu’à la clôture","th":6,"resp":6,"or":2,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction de l’alimentation scolaire — MEMP","revue":"15/09/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"18/03/2026"},{"id":"R-2026-0308","code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","pi":10,"par":"BID","p":3,"s":0,"pt":0,"lb":"Faire valider le rapport de recensement des occupants","th":4,"resp":4,"or":0,"st":1,"emis":"01/06/2026","emisl":"1 juin 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":2.55,"agence":"Agence des travaux routiers","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0311","code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","pi":10,"par":"BID","p":3,"s":0,"pt":0,"lb":"Sécuriser les titres fonciers des sites retenus","th":4,"resp":4,"or":1,"st":2,"emis":"18/05/2026","emisl":"18 mai 2026","ech":"15/09/2026","echl":"15 septembre 2026","ret":0,"rest":18,"rel":1,"exp":2.55,"agence":"Agence des travaux routiers","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0314","code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","pi":10,"par":"BID","p":3,"s":0,"pt":0,"lb":"Transmettre le plan de libération des emprises restantes","th":4,"resp":4,"or":2,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence des travaux routiers","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":"04/02/2026"},{"id":"R-2026-0317","code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","pi":10,"par":"BID","p":3,"s":0,"pt":0,"lb":"Finaliser l’indemnisation des personnes affectées","th":4,"resp":4,"or":3,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence des travaux routiers","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":"03/05/2026"},{"id":"R-2026-0320","code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","pi":10,"par":"BID","p":3,"s":0,"pt":0,"lb":"Faire valider le rapport de recensement des occupants","th":4,"resp":4,"or":4,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence des travaux routiers","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":"29/04/2026"},{"id":"R-2026-0323","code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","pi":11,"par":"Union européenne","p":4,"s":5,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":1,"emis":"03/04/2026","emisl":"3 avril 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":0.44,"agence":"Direction générale des collectivités locales","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0326","code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","pi":11,"par":"Union européenne","p":4,"s":5,"pt":0,"lb":"Renseigner la situation mensuelle dans le SGIAD","th":6,"resp":6,"or":3,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction générale des collectivités locales","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"22/03/2026"},{"id":"R-2026-0329","code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","pi":11,"par":"Union européenne","p":4,"s":5,"pt":0,"lb":"Désigner le point focal de suivi auprès du ministère sectoriel","th":6,"resp":6,"or":4,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction générale des collectivités locales","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"25/03/2026"},{"id":"R-2026-0332","code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","pi":11,"par":"Union européenne","p":4,"s":5,"pt":0,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Direction générale des collectivités locales","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"21/05/2026"},{"id":"R-2026-0335","code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","pi":11,"par":"Union européenne","p":4,"s":5,"pt":0,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":4,"emis":"23/02/2026","emisl":"23 février 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Direction générale des collectivités locales","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":"29/05/2026"},{"id":"R-2026-0338","code":"P-2023-AFD-022","nom":"Périmètres irrigués de la vallée de l’Ouémé","pi":12,"par":"AFD","p":0,"s":3,"pt":0,"lb":"Actualiser le plan de passation avec le nouveau calendrier","th":0,"resp":0,"or":2,"st":1,"emis":"01/05/2026","emisl":"1 mai 2026","ech":"01/08/2026","echl":"1 août 2026","ret":27,"rest":0,"rel":1,"exp":2.7,"agence":"Société nationale d’irrigation","revue":"08/10/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0341","code":"P-2023-AFD-022","nom":"Périmètres irrigués de la vallée de l’Ouémé","pi":12,"par":"AFD","p":0,"s":3,"pt":0,"lb":"Recruter le bureau de contrôle et de surveillance des travaux","th":0,"resp":0,"or":3,"st":2,"emis":"06/07/2026","emisl":"6 juillet 2026","ech":"20/09/2026","echl":"20 septembre 2026","ret":0,"rest":23,"rel":1,"exp":2.7,"agence":"Société nationale d’irrigation","revue":"08/10/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0344","code":"P-2023-AFD-022","nom":"Périmètres irrigués de la vallée de l’Ouémé","pi":12,"par":"AFD","p":0,"s":3,"pt":0,"lb":"Transmettre le rapport d’évaluation des offres au partenaire","th":0,"resp":0,"or":4,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Société nationale d’irrigation","revue":"08/10/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"11/02/2026"},{"id":"R-2026-0347","code":"P-2023-AFD-022","nom":"Périmètres irrigués de la vallée de l’Ouémé","pi":12,"par":"AFD","p":0,"s":3,"pt":0,"lb":"Publier l’avis d’appel d’offres du lot restant","th":0,"resp":0,"or":0,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Société nationale d’irrigation","revue":"08/10/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"16/04/2026"},{"id":"R-2026-0350","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Apurer les pièces rejetées par le partenaire","th":2,"resp":2,"or":3,"st":0,"emis":"11/04/2026","emisl":"11 avril 2026","ech":"26/06/2026","echl":"26 juin 2026","ret":63,"rest":0,"rel":3,"exp":0.87,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":null},{"id":"R-2026-0353","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Transmettre le rapport d’évaluation des offres au partenaire","th":0,"resp":0,"or":4,"st":1,"emis":"18/05/2026","emisl":"18 mai 2026","ech":"18/07/2026","echl":"18 juillet 2026","ret":41,"rest":0,"rel":2,"exp":1.57,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0356","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Mettre à jour le cadre de résultats du projet","th":6,"resp":6,"or":0,"st":1,"emis":"12/04/2026","emisl":"12 avril 2026","ech":"10/08/2026","echl":"10 août 2026","ret":18,"rest":0,"rel":1,"exp":0.21,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0359","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Réactiver la commission de passation et statuer sur l’attribution","th":0,"resp":0,"or":1,"st":3,"emis":"30/06/2026","emisl":"30 juin 2026","ech":"30/09/2026","echl":"30 septembre 2026","ret":0,"rest":33,"rel":0,"exp":1.57,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0362","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Transmettre les demandes de remboursement de fonds en attente","th":2,"resp":2,"or":0,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"05/03/2026"},{"id":"R-2026-0365","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Réactiver la commission de passation et statuer sur l’attribution","th":0,"resp":0,"or":1,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"18/03/2026"},{"id":"R-2026-0368","code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","pi":13,"par":"BAD","p":1,"s":4,"pt":1,"lb":"Justifier l’avance de trésorerie du compte désigné","th":2,"resp":2,"or":2,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence de construction des infrastructures de santé","revue":"12/11/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"07/06/2026"},{"id":"R-2026-0371","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Obtenir la non-objection sur l’avenant au contrat principal","th":3,"resp":3,"or":4,"st":0,"emis":"26/04/2026","emisl":"26 avril 2026","ech":"26/06/2026","echl":"26 juin 2026","ret":63,"rest":0,"rel":3,"exp":0.52,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["Dossier complet transmis au partenaire","Accusé de réception du guichet"],"cloture":null},{"id":"R-2026-0374","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Transmettre les demandes de remboursement de fonds en attente","th":2,"resp":2,"or":0,"st":1,"emis":"20/03/2026","emisl":"20 mars 2026","ech":"18/07/2026","echl":"18 juillet 2026","ret":41,"rest":0,"rel":2,"exp":0.65,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":null},{"id":"R-2026-0377","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Transmettre le rapport d’avancement semestriel","th":6,"resp":6,"or":1,"st":1,"emis":"10/05/2026","emisl":"10 mai 2026","ech":"10/08/2026","echl":"10 août 2026","ret":18,"rest":0,"rel":1,"exp":0.16,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["Rapport d’avancement","Cadre de résultats renseigné","Plan de trésorerie actualisé"],"cloture":null},{"id":"R-2026-0380","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Compléter le dossier soumis à non-objection","th":3,"resp":3,"or":1,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["Dossier complet transmis au partenaire","Accusé de réception du guichet"],"cloture":"04/02/2026"},{"id":"R-2026-0383","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Justifier l’avance de trésorerie du compte désigné","th":2,"resp":2,"or":2,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"03/05/2026"},{"id":"R-2026-0386","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Relancer le partenaire sur l’avis de non-objection du dossier d’appel d’offres","th":3,"resp":3,"or":3,"st":4,"emis":"17/01/2026","emisl":"17 janvier 2026","ech":"17/04/2026","echl":"17 avril 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["Dossier complet transmis au partenaire","Accusé de réception du guichet"],"cloture":"29/04/2026"},{"id":"R-2026-0389","code":"P-2021-UE-005","nom":"Système d’information de l’état civil","pi":14,"par":"Union européenne","p":4,"s":5,"pt":1,"lb":"Réconcilier les écritures du compte spécial avec la comptabilité","th":2,"resp":2,"or":4,"st":4,"emis":"23/02/2026","emisl":"23 février 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Agence nationale d’identification des personnes","revue":"08/10/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":"27/06/2026"},{"id":"R-2026-0392","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Sécuriser les titres fonciers des sites retenus","th":4,"resp":4,"or":0,"st":0,"emis":"24/01/2026","emisl":"24 janvier 2026","ech":"24/05/2026","echl":"24 mai 2026","ret":96,"rest":0,"rel":4,"exp":1.8,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0395","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Réactiver la commission de passation et statuer sur l’attribution","th":0,"resp":0,"or":1,"st":0,"emis":"18/03/2026","emisl":"18 mars 2026","ech":"18/06/2026","echl":"18 juin 2026","ret":71,"rest":0,"rel":3,"exp":2.13,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0398","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Justifier l’avance de trésorerie du compte désigné","th":2,"resp":2,"or":2,"st":1,"emis":"20/04/2026","emisl":"20 avril 2026","ech":"05/07/2026","echl":"5 juillet 2026","ret":54,"rest":0,"rel":2,"exp":1.18,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["État des dépenses certifié par l’agence","Pièces justificatives numérisées","Relevé du compte désigné"],"cloture":null},{"id":"R-2026-0401","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Faire valider le rapport de recensement des occupants","th":4,"resp":4,"or":3,"st":1,"emis":"26/05/2026","emisl":"26 mai 2026","ech":"26/07/2026","echl":"26 juillet 2026","ret":33,"rest":0,"rel":2,"exp":1.8,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":null},{"id":"R-2026-0404","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Transmettre le rapport d’évaluation des offres au partenaire","th":0,"resp":0,"or":4,"st":1,"emis":"18/04/2026","emisl":"18 avril 2026","ech":"16/08/2026","echl":"16 août 2026","ret":12,"rest":0,"rel":1,"exp":2.13,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":null},{"id":"R-2026-0407","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Finaliser l’indemnisation des personnes affectées","th":4,"resp":4,"or":2,"st":4,"emis":"01/11/2025","emisl":"1 novembre 2025","ech":"30/01/2026","echl":"30 janvier 2026","ret":0,"rest":0,"rel":0,"exp":0.0,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de libération des emprises","État des indemnisations versées","Rapport de recensement validé"],"cloture":"22/03/2026"},{"id":"R-2026-0410","code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","pi":15,"par":"BID","p":3,"s":2,"pt":2,"lb":"Recruter le bureau de contrôle et de surveillance des travaux","th":0,"resp":0,"or":3,"st":4,"emis":"13/12/2025","emisl":"13 décembre 2025","ech":"13/03/2026","echl":"13 mars 2026","ret":0,"rest":0,"rel":1,"exp":0.0,"agence":"Société nationale des eaux du Bénin","revue":"03/12/2026","pieces":["Plan de passation actualisé et signé","Procès-verbal de la commission","Rapport d’évaluation des offres"],"cloture":"25/03/2026"}],"projets":[{"code":"P-2026-BM-021","nom":"Amélioration de l’accès à l’eau potable en milieu rural","par":"Banque mondiale","s":2,"p":2,"t":0,"prev":30.0,"dec":13.5,"taux":45.0,"duree":17.6,"motifs":[],"agence":"Agence nationale d’alimentation en eau potable en milieu rural","cloture":"déc. 2028","dlt":"30/06/2029","revue":"15/09/2026"},{"code":"P-2024-AFD-015","nom":"Construction de l’hôpital départemental de Dassa","par":"AFD","s":4,"p":0,"t":0,"prev":25.0,"dec":11.5,"taux":46.0,"duree":48.8,"motifs":[],"agence":"Agence de construction des infrastructures de santé","cloture":"juin 2028","dlt":"31/12/2028","revue":"08/10/2026"},{"code":"P-2023-BAD-009","nom":"Projet d’appui au secteur agricole (PASA 2)","par":"BAD","s":3,"p":1,"t":0,"prev":18.0,"dec":8.3,"taux":46.11,"duree":84.8,"motifs":["passation"],"agence":"Direction du génie rural — MAEP","cloture":"mars 2027","dlt":"30/09/2027","revue":"12/11/2026"},{"code":"P-0340-BAD-2019","nom":"Programme d’assainissement pluvial de Cotonou","par":"BAD","s":2,"p":1,"t":0,"prev":19.6,"dec":11.4,"taux":58.16,"duree":86.7,"motifs":[],"agence":"Société nationale des eaux du Bénin","cloture":"sept. 2027","dlt":"31/03/2028","revue":"12/11/2026"},{"code":"P-0224-BID-2021","nom":"Électrification rurale décentralisée","par":"BID","s":1,"p":3,"t":1,"prev":16.8,"dec":8.5,"taux":50.6,"duree":94.2,"motifs":["justificatifs","contrepartie"],"agence":"Agence béninoise d’électrification rurale","cloture":"déc. 2026","dlt":"30/06/2027","revue":"03/12/2026"},{"code":"P-0348-AFD-2020","nom":"Réforme de la gestion des finances publiques","par":"AFD","s":5,"p":0,"t":1,"prev":11.2,"dec":2.9,"taux":25.89,"duree":91.0,"motifs":["audit","justificatifs"],"agence":"Direction générale du budget","cloture":"mars 2027","dlt":"30/09/2027","revue":"08/10/2026"},{"code":"P-0403-BOAD-2022","nom":"Modernisation des lycées techniques","par":"Autres (28)","s":6,"p":5,"t":2,"prev":14.5,"dec":5.8,"taux":40.0,"duree":92.6,"motifs":["passation","contrepartie"],"agence":"Agence de construction des infrastructures scolaires","cloture":"déc. 2026","dlt":"30/06/2027","revue":"03/12/2026"},{"code":"P-0412-BOAD-2020","nom":"Aménagement du corridor Nord-Est (phase 2)","par":"Autres (28)","s":0,"p":5,"t":2,"prev":22.4,"dec":3.4,"taux":15.18,"duree":87.2,"motifs":["passation","foncier","contrepartie"],"agence":"Agence des grands travaux et de l’aménagement urbain","cloture":"juin 2027","dlt":"31/12/2027","revue":"03/12/2026"},{"code":"P-2022-AFD-031","nom":"Extension du réseau de transport électrique Nord","par":"AFD","s":1,"p":0,"t":0,"prev":27.4,"dec":17.1,"taux":62.41,"duree":62.7,"motifs":[],"agence":"Société béninoise d’énergie électrique","cloture":"mars 2029","dlt":"30/09/2029","revue":"08/10/2026"},{"code":"P-2025-BM-047","nom":"Programme de cantines scolaires durables","par":"Banque mondiale","s":6,"p":2,"t":0,"prev":12.6,"dec":7.1,"taux":56.35,"duree":35.8,"motifs":[],"agence":"Direction de l’alimentation scolaire — MEMP","cloture":"juin 2029","dlt":"31/12/2029","revue":"15/09/2026"},{"code":"P-2021-BID-014","nom":"Réhabilitation de la route Djougou–Péhunco","par":"BID","s":0,"p":3,"t":0,"prev":21.3,"dec":12.9,"taux":60.56,"duree":78.9,"motifs":["foncier"],"agence":"Agence des travaux routiers","cloture":"déc. 2027","dlt":"30/06/2028","revue":"03/12/2026"},{"code":"P-2024-UE-008","nom":"Appui à la décentralisation et aux communes","par":"Union européenne","s":5,"p":4,"t":0,"prev":9.8,"dec":5.2,"taux":53.06,"duree":54.5,"motifs":[],"agence":"Direction générale des collectivités locales","cloture":"sept. 2028","dlt":"31/03/2029","revue":"08/10/2026"},{"code":"P-2023-AFD-022","nom":"Périmètres irrigués de la vallée de l’Ouémé","par":"AFD","s":3,"p":0,"t":0,"prev":16.9,"dec":9.4,"taux":55.62,"duree":60.7,"motifs":["passation"],"agence":"Société nationale d’irrigation","cloture":"juin 2028","dlt":"31/12/2028","revue":"08/10/2026"},{"code":"P-2022-BAD-018","nom":"Centres de santé de zone — lot Nord","par":"BAD","s":4,"p":1,"t":1,"prev":13.7,"dec":5.0,"taux":36.5,"duree":88.3,"motifs":["justificatifs","passation"],"agence":"Agence de construction des infrastructures de santé","cloture":"mars 2027","dlt":"30/09/2027","revue":"12/11/2026"},{"code":"P-2021-UE-005","nom":"Système d’information de l’état civil","par":"Union européenne","s":5,"p":4,"t":1,"prev":7.4,"dec":2.5,"taux":33.78,"duree":93.4,"motifs":["non-objection","justificatifs"],"agence":"Agence nationale d’identification des personnes","cloture":"déc. 2026","dlt":"30/06/2027","revue":"08/10/2026"},{"code":"P-2020-BID-011","nom":"Station de traitement des eaux de Parakou","par":"BID","s":2,"p":3,"t":2,"prev":18.2,"dec":3.4,"taux":18.68,"duree":98.7,"motifs":["foncier","passation","justificatifs"],"agence":"Société nationale des eaux du Bénin","cloture":"sept. 2026","dlt":"31/03/2027","revue":"03/12/2026"}],"situation":"28 août 2026","exercice":2026,"prorata":65.8,"total":{"n":188,"recos":122,"retard30":38,"partenaires":4}};
+const SVG = (id, w) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (w||1.9) + '" stroke-linecap="round" stroke-linejoin="round"><use href="#' + id + '"/></svg>';
+const NB0 = new Intl.NumberFormat('fr-FR', {maximumFractionDigits:0});
+const f1 = v => new Intl.NumberFormat('fr-FR', {minimumFractionDigits:1, maximumFractionDigits:1}).format(v);
+const f2 = v => new Intl.NumberFormat('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}).format(v);
+const pc = v => f1(v) + '\u202f%';
+const CLS = D.scls;                       /* ris, vig, inf, neu, ok */
+const COL = {ris:'#B0523C', vig:'#B5852A', inf:'#3B5872', neu:'#9BAAA5', ok:'#2F6F62'};
+const jour = n => NB0.format(n) + (n > 1 ? ' jours' : ' jour');
+const dnum = s => { const p = s.split('/'); return +p[2]*10000 + (+p[1])*100 + (+p[0]); };
+const BUCK = ['Dépassement de plus de 90 jours', 'Dépassement de 60 à 90 jours',
+  'Dépassement de 30 à 60 jours', 'Dépassement de moins de 30 jours',
+  'Échéance sous 30 jours', 'Échéance au-delà de 30 jours', 'Action soldée'];
+const BSHORT = ['+90 j', '60–90 j', '30–60 j', '≤1–30 j', 'Sous 30 j', '+30 j', 'Soldée'];
+const BCLS = ['ris','ris','vig','vig','inf','neu','ok'];
+const bucket = r => r.st === 4 ? 6 : r.ret > 90 ? 0 : r.ret > 60 ? 1 : r.ret > 30 ? 2 : r.ret > 0 ? 3 : r.rest <= 30 ? 4 : 5;
+
+const state = {
+  st: new Set([0,1,2,3]),
+  par: new Set(D.partenaires.map((_,i)=>i)),
+  th: '', re: '', or: '', q: '', sort: 'ret', view: 'alertes', fiche: null
+};
+
+/* ---------- filtres ---------- */
+function chips(host, key, labels, cls, init){
+  const el = document.getElementById(host);
+  el.innerHTML = '';
+  labels.forEach((lb,i)=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (init.has(i) ? ' on' : '') + (cls ? ' ' + cls[i] : '');
+    b.textContent = lb;
+    b.dataset.k = key; b.dataset.i = i;
+    b.onclick = () => {
+      const s = state[key];
+      if (s.has(i)) { if (s.size > 1) s.delete(i); } else s.add(i);
+      b.classList.toggle('on', s.has(i));
+      render();
+    };
+    el.appendChild(b);
+  });
+}
+chips('f-st','st',D.statuts,CLS,state.st);
+chips('f-par','par',D.partenaires,null,state.par);
+
+function fill(id, none, labels, key){
+  const s = document.getElementById(id);
+  s.innerHTML = '<option value="">' + none + '</option>' +
+    labels.map((lb,i)=>'<option value="'+i+'">'+lb+'</option>').join('');
+  s.onchange = e => { state[key] = e.target.value; state.fiche = null; render(); };
+}
+fill('f-th','Tous les thèmes',D.themes,'th');
+fill('f-re','Tous les responsables',D.resp,'re');
+fill('f-or','Toutes les origines',D.origines,'or');
+document.getElementById('f-sort').onchange = e => { state.sort = e.target.value; render(); };
+document.getElementById('f-q').oninput = e => { state.q = e.target.value.toLowerCase(); render(); };
+document.getElementById('reset').onclick = () => {
+  state.st = new Set([0,1,2,3]);
+  state.par = new Set(D.partenaires.map((_,i)=>i));
+  state.th=''; state.re=''; state.or=''; state.q=''; state.fiche=null;
+  ['f-th','f-re','f-or'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('f-q').value='';
+  document.querySelectorAll('.chip').forEach(c=>{
+    const k = c.dataset.k, i = +c.dataset.i;
+    c.classList.toggle('on', state[k].has(i));
+  });
+  render();
+};
+document.querySelectorAll('.vt').forEach(b=>{
+  b.onclick = () => {
+    state.view = b.dataset.v; state.fiche = null;
+    document.querySelectorAll('.vt').forEach(x=>x.classList.toggle('on', x===b));
+    render();
+  };
+});
+
+function filtered(){
+  return D.recos.filter(r =>
+    state.st.has(r.st) && state.par.has(r.p) &&
+    (state.th === '' || r.th === +state.th) &&
+    (state.re === '' || r.resp === +state.re) &&
+    (state.or === '' || r['or'] === +state.or) &&
+    (!state.q || (r.id + ' ' + r.lb + ' ' + r.nom + ' ' + r.code + ' ' + r.par + ' ' + r.agence).toLowerCase().indexOf(state.q) >= 0)
+  ).sort((a,b)=>{
+    if (state.sort === 'ret') return b.ret - a.ret || dnum(a.ech) - dnum(b.ech);
+    if (state.sort === 'ech') return dnum(a.ech) - dnum(b.ech);
+    if (state.sort === 'exp') return b.exp - a.exp;
+    return dnum(a.emis) - dnum(b.emis);
+  });
+}
+const agg = rows => {
+  const ouv = rows.filter(r=>r.st !== 4), ret = rows.filter(r=>r.st <= 1);
+  return {
+    n: rows.length, ouv: ouv.length, ret: ret.length,
+    crit: rows.filter(r=>r.st === 0).length,
+    ech: rows.filter(r=>r.st === 2).length,
+    solde: rows.filter(r=>r.st === 4).length,
+    exp: ouv.reduce((s,r)=>s+r.exp,0),
+    expRet: ret.reduce((s,r)=>s+r.exp,0),
+    moy: ret.length ? ret.reduce((s,r)=>s+r.ret,0)/ret.length : 0,
+    max: rows.reduce((m,r)=>Math.max(m,r.ret),0),
+    rel: ouv.reduce((s,r)=>s+r.rel,0),
+    proj: new Set(rows.map(r=>r.code)).size,
+    mo: rows.length ? rows.filter(r=>r.st === 4).length / rows.length * 100 : 0
+  };
+};
+
+/* ---------- carte recommandation ---------- */
+function rcard(r){
+  const c = CLS[r.st];
+  const w = r.ret ? Math.min(100, r.ret / 120 * 100) : r.st === 4 ? 100 : Math.max(6, 100 - r.rest);
+  const lg = r.st === 4
+    ? '<span><b>Soldée</b> le ' + r.cloture + '</span><span>délai tenu</span>'
+    : r.ret
+      ? '<span><b>' + jour(r.ret) + '</b> de dépassement</span><span>échéance ' + r.ech + '</span>'
+      : '<span>Échéance dans <b>' + jour(r.rest) + '</b></span><span>' + r.ech + '</span>';
+  return '<article class="rc ' + c + '" data-id="' + r.id + '" tabindex="0">' +
+    '<div class="rc-h"><span class="pill ' + c + '">' + D.statuts[r.st] + '</span>' +
+      '<span class="pc-code">' + r.id + '</span></div>' +
+    '<h5>' + r.lb + '</h5>' +
+    '<div class="rc-meta"><b>' + r.nom + '</b><br>' + r.par + ' · ' + D.secteurs[r.s] + '</div>' +
+    '<div class="rbar"><div class="pb"><i style="width:' + w + '%"></i></div>' +
+      '<div class="pl">' + lg + '</div></div>' +
+    '<dl class="rc-f">' +
+      '<div><dt>Émise le</dt><dd>' + r.emis + '</dd></div>' +
+      '<div><dt>Relances</dt><dd>' + r.rel + '</dd></div>' +
+      '<div><dt>Solde exposé</dt><dd>' + (r.exp ? f2(r.exp) : '—') + (r.exp ? '<small>Mds</small>' : '') + '</dd></div>' +
+    '</dl>' +
+    '<div class="tags"><span class="tag' + (r.st <= 1 ? ' r' : '') + '">' + SVG('i-tag',1.8) + D.themes[r.th] + '</span>' +
+      '<span class="tag">' + SVG('i-users',1.8) + D.resp[r.resp] + '</span></div>' +
+    '<div class="pc-ft">' +
+      '<span>' + SVG('i-file',1.9) + D.origines[r['or']] + '</span>' +
+      '<span>' + SVG('i-cal',1.9) + 'Prochaine revue <b>' + r.revue + '</b></span>' +
+    '</div></article>';
+}
+function bindCards(){
+  document.querySelectorAll('.rc').forEach(el=>{
+    el.onclick = () => { state.fiche = el.dataset.id; render(); };
+    el.onkeydown = e => { if (e.key === 'Enter') { state.fiche = el.dataset.id; render(); } };
+  });
+  document.querySelectorAll('tr.cl, .olist li').forEach(el=>{
+    el.onclick = () => { state.fiche = el.dataset.id; render(); };
+  });
+}
+
+/* ---------- vue alertes ---------- */
+function alertes(rows){
+  const a = agg(rows);
+  const codes = {};
+  rows.filter(r=>r.st <= 1).forEach(r=>{ codes[r.code] = (codes[r.code]||0) + 1; });
+  const cumul = Object.keys(codes).filter(k=>codes[k] >= 3);
+  const projRows = D.projets.filter(p=>rows.some(r=>r.code === p.code));
+  const tirage = projRows.filter(p=>p.taux < D.prorata && p.duree > 80);
+  const revues = new Set(rows.filter(r=>r.st <= 2 && dnum(r.revue) <= 20261130).map(r=>r.code));
+  const conf = rows.filter(r=>r.st <= 1 && r.rel >= 3);
+  const items = [
+    {c:'ris', ic:'i-alert', t:a.crit + ' recommandation(s) critiques au-delà de 60 jours',
+     d:'Elles concernent ' + new Set(rows.filter(r=>r.st===0).map(r=>r.code)).size + ' opération(s) et bloquent ' +
+       f1(rows.filter(r=>r.st===0).reduce((s,r)=>s+r.exp,0)) + ' Mds de solde à décaisser.',
+     v:a.crit, u:'à arbitrer'},
+    {c:'ris', ic:'i-layers', t:cumul.length + ' opération(s) cumulent au moins 3 actions en retard',
+     d:cumul.length ? 'Situation de blocage systémique&nbsp;: ' + cumul.map(k=>k).join(', ') + '.' :
+       'Aucune opération ne concentre plus de deux actions en retard dans ce périmètre.',
+     v:cumul.length, u:'projets'},
+    {c:'vig', ic:'i-clock', t:tirage.length + ' opération(s) en fin de cycle à rythme insuffisant',
+     d:'Plus de 80 % de la durée consommée pour un taux inférieur à ' + pc(D.prorata) +
+       '&nbsp;: la date limite de tirage devient l’échéance critique.',
+     v:tirage.length, u:'projets'},
+    {c:'vig', ic:'i-send', t:conf.length + ' action(s) relancées au moins trois fois sans effet',
+     d:'À remonter en comité de suivi&nbsp;: la relance technique a atteint sa limite, une décision hiérarchique est requise.',
+     v:conf.length, u:'relances'},
+    {c:'inf', ic:'i-cal', t:revues.size + ' opération(s) en revue avant le 30 novembre',
+     d:'Actions à solder ou à reprogrammer avant la prochaine mission de supervision.',
+     v:revues.size, u:'revues'},
+    {c:'inf', ic:'i-target', t:a.ech + ' échéance(s) à moins de 30 jours',
+     d:'Fenêtre utile pour éviter un basculement en retard sur la prochaine situation mensuelle.',
+     v:a.ech, u:'à échoir'}
+  ];
+  const th = D.themes.map((lb,i)=>({lb, i, rows: rows.filter(r=>r.th === i)}))
+    .filter(g=>g.rows.length)
+    .sort((x,y)=>y.rows.filter(r=>r.st<=1).length - x.rows.filter(r=>r.st<=1).length);
+  return '<div class="alerts">' +
+    '<div class="abox"><div class="abox-h"><h4>Alertes du portefeuille</h4>' +
+      '<span class="ah">Règles automatiques · situation au ' + D.situation + '</span></div>' +
+      '<ul class="al">' + items.map(it =>
+        '<li class="' + it.c + '"><span class="ic">' + SVG(it.ic,1.9) + '</span>' +
+        '<span class="ab"><b>' + it.t + '</b><span>' + it.d + '</span></span>' +
+        '<span class="an">' + NB0.format(it.v) + '<small>' + it.u + '</small></span></li>').join('') +
+      '</ul></div>' +
+    '<div class="abox"><div class="abox-h"><h4>Nature des blocages</h4>' +
+      '<span class="ah">' + a.ouv + ' action(s) ouvertes</span></div>' +
+      '<div style="padding:14px 16px 16px"><div class="chart" id="c-th" style="height:' +
+      Math.max(190, th.length * 30 + 46) + 'px"></div></div></div>' +
+    '</div>';
+}
+function colonnes(rows){
+  const groupes = [{k:'ris', st:[0], lb:'Critiques', sub:'Dépassement de plus de 60 jours — arbitrage requis'},
+                   {k:'vig', st:[1], lb:'En retard', sub:'Dépassement de 1 à 60 jours — relance à formaliser'},
+                   {k:'inf', st:[2,3], lb:'À échoir', sub:'Échéance à venir — suivi courant'}]
+    .filter(g=>g.st.some(s=>state.st.has(s)));
+  const tot = agg(rows);
+  if (!groupes.length) return '<div class="empty">Aucun niveau d’attention sélectionné.</div>';
+  return '<div class="cols">' + groupes.map(g=>{
+    const rs = rows.filter(r=>g.st.indexOf(r.st) >= 0), a = agg(rs);
+    return '<div class="col ' + g.k + '">' +
+      '<div class="col-h"><div class="ct"><span class="dot"></span><h4>' + g.lb + '</h4>' +
+        '<span class="cnt">' + a.n + '</span></div>' +
+        '<div class="cs">' + a.proj + ' opération(s) · ' + f1(a.exp) + ' Mds exposés · ' + a.rel + ' relance(s)</div>' +
+        '<div class="mbar"><i style="width:' + (tot.n ? a.n/tot.n*100 : 0) + '%"></i></div>' +
+        '<div class="cs" style="margin-top:5px">' + pc(tot.n ? a.n/tot.n*100 : 0) +
+        ' du périmètre — ' + g.sub + '</div>' +
+      '</div><div class="col-b">' +
+        (a.n ? rs.map(rcard).join('') : '<div class="empty" style="padding:26px 8px; box-shadow:none">Aucune action à ce niveau</div>') +
+      '</div></div>';
+  }).join('') + '</div>';
+}
+
+/* ---------- vues groupées ---------- */
+function groupView(rows, groups, meta){
+  if (!groups.length) return '<div class="empty">Aucune recommandation ne correspond à cette combinaison de filtres.</div>';
+  return groups.map(g=>{
+    const a = agg(g.rows);
+    const mix = [0,1,2,3,4].map(s=>g.rows.filter(r=>r.st === s).length);
+    return '<div class="grp"><div class="grp-h">' +
+      '<div><h4>' + g.lb + '</h4><div class="gm">' + meta(g, a) + '</div>' +
+        '<div class="mix">' + mix.map((v,s)=>v ? '<span class="' + 'abcde'[s] + '" style="flex:' + v +
+          '" title="' + v + ' ' + D.statuts[s] + '"></span>' : '').join('') + '</div></div>' +
+      '<div><div class="gstat">Actions</div><div class="gval">' + a.n +
+        '<small>dont ' + a.ret + ' en retard</small></div></div>' +
+      '<div><div class="gstat">Solde exposé</div><div class="gval">' + f1(a.exp) +
+        '<small>Mds FCFA</small></div>' +
+        '<div class="gsplit"><i style="width:' + (a.n ? a.ret/a.n*100 : 0) + '%"></i></div>' +
+        '<div class="gsplit-lg"><span>' + pc(a.n ? a.ret/a.n*100 : 0) + ' en retard</span>' +
+        '<span>' + (a.moy ? NB0.format(a.moy) + ' j en moyenne' : 'délais tenus') + '</span></div></div>' +
+      '<div><div class="gstat">Mise en œuvre</div><div class="gval">' + pc(a.mo) +
+        '<small>' + a.solde + ' soldée(s)</small></div></div>' +
+      '</div><div class="grp-b">' + g.rows.map(rcard).join('') + '</div></div>';
+  }).join('');
+}
+
+/* ---------- fiche recommandation ---------- */
+function fiche(id){
+  const r = D.recos.find(x=>x.id === id) || D.recos[0];
+  const p = D.projets.find(x=>x.code === r.code);
+  const c = CLS[r.st], solde = p.prev - p.dec;
+  const autres = D.recos.filter(x=>x.code === r.code && x.id !== r.id)
+    .sort((x,y)=>y.ret - x.ret || x.st - y.st).slice(0,6);
+  const anc = Math.round((dnum(r.ech) - dnum(r.emis)) / 100 * 30.4 / 30.4);
+  const tl = [
+    ['fait', r.emisl, 'Recommandation formulée en ' + D.origines[r['or']].toLowerCase(),
+     'Consignée au procès-verbal et notifiée au responsable désigné'],
+    ['fait', r.emisl.replace(/^\d+/, m => Math.min(28, +m + 12)), 'Notification à l’agence d’exécution',
+     r.agence]
+  ];
+  if (r.rel) tl.push(['attente', 'Dernière relance', r.rel + ' relance(s) adressée(s) au responsable',
+    'Courrier de rappel du SGIAD, sans réponse formelle à ce jour']);
+  if (r.st === 4){
+    tl.push(['fait', r.echl, 'Échéance contractuelle', 'Délai initial de mise en œuvre']);
+    tl.push(['fait', r.cloture, 'Action soldée et validée', 'Clôture prononcée en revue au vu des pièces transmises']);
+  } else {
+    tl.push([r.ret ? 'retard' : 'prevu', r.echl, 'Échéance de mise en œuvre',
+      r.ret ? 'Dépassée de ' + jour(r.ret) + ' à la date de situation'
+            : 'À tenir dans ' + jour(r.rest)]);
+    tl.push(['prevu', r.revue, 'Prochaine revue de suivi',
+      'Point d’étape où la mise en œuvre sera examinée']);
+  }
+  const html =
+    '<button class="back" id="back">' + SVG('i-back') + 'Retour à la liste des recommandations</button>' +
+    '<div class="fh"><div class="fh-t"><div>' +
+      '<div style="display:flex; gap:9px; align-items:center; flex-wrap:wrap">' +
+        '<span class="pill ' + c + '">' + D.statuts[r.st] + '</span>' +
+        '<span class="pc-code">' + r.id + '</span>' +
+        '<span class="pc-code">· ' + D.origines[r['or']] + '</span></div>' +
+      '<h2>' + r.lb + '</h2>' +
+      '<div class="fm">Opération <b>' + r.nom + '</b> (' + r.code + ')<br>' +
+        r.par + ' · ' + D.secteurs[r.s] + ' · ' + r.agence + '</div></div>' +
+      '<div class="fr">' + (r.st === 4 ? 'Délai de mise en œuvre' : r.ret ? 'Dépassement d’échéance' : 'Échéance dans') +
+        '<span class="rt" style="color:' + (r.st === 4 ? COL.ok : r.ret ? COL[c] : COL.inf) + '">' +
+        NB0.format(r.st === 4 ? 0 + Math.abs(dnum(r.cloture) - dnum(r.ech)) % 100 : r.ret || r.rest) + ' j</span>' +
+        (r.st === 4 ? 'action soldée le ' + r.cloture : 'échéance fixée au ' + r.ech) + '</div></div>' +
+      '<dl class="fh-g">' +
+        '<div><dt>Thème de blocage</dt><dd style="font-size:14px">' + D.themes[r.th] + '<small></small></dd></div>' +
+        '<div><dt>Responsable de l’action</dt><dd style="font-size:14px">' + D.resp[r.resp] + '</dd></div>' +
+        '<div><dt>Solde exposé</dt><dd>' + (r.exp ? f2(r.exp) : '—') + '<small>Mds FCFA</small></dd></div>' +
+        '<div><dt>Relances adressées</dt><dd>' + r.rel + '<small>depuis l’émission</small></dd></div>' +
+      '</dl>' +
+      '<div class="pc-ft" style="border-top:0; padding-top:12px; gap:18px">' +
+        '<span>' + SVG('i-file') + 'Émise le <b>' + r.emis + '</b></span>' +
+        '<span>' + SVG('i-clock') + 'Échéance <b>' + r.ech + '</b></span>' +
+        '<span>' + SVG('i-cal') + 'Prochaine revue <b>' + r.revue + '</b></span>' +
+        '<span>' + SVG('i-pin') + 'Date limite de tirage du projet <b>' + p.dlt + '</b></span>' +
+      '</div></div>' +
+    '<div class="f2"><div class="card"><h4>Chronologie du suivi</h4>' +
+      '<div class="ch">De la formulation en revue à la situation du ' + D.situation + '</div>' +
+      '<ul class="jl">' + tl.map(t =>
+        '<li class="' + t[0] + '"><span class="mk"></span><div class="jb"><b>' + t[2] + '</b>' +
+        '<span>' + t[1] + '</span><span>' + t[3] + '</span></div></li>').join('') + '</ul></div>' +
+      '<div class="card"><h4>Pièces attendues</h4>' +
+      '<div class="ch">Éléments à produire pour solder l’action en revue</div>' +
+      '<ul class="chk">' + r.pieces.map((pi,i)=>{
+        const ok = r.st === 4 || (r.st > 1 && i === 0);
+        return '<li class="' + (ok ? 'ok' : '') + '"><span class="bx">' + (ok ? SVG('i-check',3) : '') + '</span>' +
+          '<span>' + pi + '</span><span class="st">' + (ok ? 'Reçue' : 'En attente') + '</span></li>';
+      }).join('') + '</ul>' +
+      '<div class="insight" style="box-shadow:none; border:0; border-top:1px solid var(--line-2); border-radius:0; margin:12px 0 0; padding:11px 0 0">' +
+      SVG('i-info') + '<span>' + (r.st === 4
+        ? 'Action soldée&nbsp;: les pièces ont été examinées et la clôture prononcée en revue.'
+        : 'Le solde de l’action suppose la transmission de <b>' + r.pieces.length +
+          ' pièce(s)</b> au SGIAD, puis leur validation lors de la revue du ' + r.revue + '.') +
+      '</span></div></div></div>' +
+    '<div class="f2" style="grid-template-columns:.85fr 1.15fr">' +
+      '<div class="card"><h4>Contexte de l’opération</h4>' +
+      '<div class="ch">' + D.pstatuts[p.t] + ' · situation au ' + D.situation + '</div>' +
+      '<div class="ctx">' +
+        '<div class="cl"><span>Prévision ' + D.exercice + '</span><b>' + f2(p.prev) + ' Mds</b></div>' +
+        '<div class="cl"><span>Décaissé</span><b>' + f2(p.dec) + ' Mds</b></div>' +
+        '<div class="cl"><span>Solde à décaisser</span><b>' + f2(solde) + ' Mds</b></div>' +
+        '<div class="cl"><span>Taux de réalisation</span><b>' + pc(p.taux) + '</b></div>' +
+        '<div class="cl"><span>Durée consommée</span><b>' + NB0.format(p.duree) + '\u202f%</b></div>' +
+      '</div>' +
+      '<div class="pb2" style="margin-top:10px"><i style="width:' + Math.min(100,p.taux) + '%; background:' +
+        ['#2F6F62','#B5852A','#B0523C'][p.t] + '"></i></div>' +
+      '<div style="font-size:11px; color:var(--ink-3); margin-top:4px; display:flex; justify-content:space-between">' +
+        '<span>' + pc(p.taux) + ' décaissé</span><span>calendrier ' + pc(D.prorata) + '</span></div>' +
+      '<div class="tags" style="margin-top:11px">' + (p.motifs.length
+        ? p.motifs.map(m=>'<span class="tag r">' + SVG('i-tag',1.8) + D.themes[D.mkeys.indexOf(m)] + '</span>').join('')
+        : '<span class="tag">' + SVG('i-tag',1.8) + 'Aucun blocage signalé</span>') + '</div></div>' +
+      '<div class="card"><h4>Autres recommandations de l’opération</h4>' +
+      '<div class="ch">' + autres.length + ' action(s) suivies en parallèle sur ce financement</div>' +
+      (autres.length ? '<ul class="olist">' + autres.map(x =>
+        '<li data-id="' + x.id + '"><span class="pill ' + CLS[x.st] + '">' + D.statuts[x.st] + '</span>' +
+        '<span class="ob"><b>' + x.lb + '</b><span>' + D.themes[x.th] + ' · échéance ' + x.ech +
+        (x.ret ? ' · ' + jour(x.ret) + ' de dépassement' : x.st === 4 ? ' · soldée le ' + x.cloture : '') +
+        '</span></span></li>').join('') + '</ul>'
+        : '<div class="empty" style="box-shadow:none; border:0; padding:24px 0">Aucune autre action en cours</div>') +
+      '</div></div>';
+  document.getElementById('fiche').innerHTML = html;
+  document.getElementById('back').onclick = () => { state.fiche = null; render(); };
+  bindCards();
+}
+
+/* ---------- graphiques ---------- */
+let charts = [];
+function dispose(){ charts.forEach(c=>c.dispose()); charts = []; }
+const BASE = {
+  animation:false,
+  tooltip:{trigger:'axis', axisPointer:{type:'shadow'}, backgroundColor:'#fff',
+    borderColor:'#E3E8E5', borderWidth:1,
+    textStyle:{color:'#1E2A28', fontSize:12, fontFamily:'Archivo'}},
+  legend:{show:true, top:0, right:2, itemWidth:11, itemHeight:8, icon:'roundRect',
+    textStyle:{color:'#43524F', fontSize:11.5, fontFamily:'Archivo'}}
+};
+function chartThemes(rows){
+  const el = document.getElementById('c-th');
+  if (!el) return;
+  const th = D.themes.map((lb,i)=>({lb, rows: rows.filter(r=>r.th === i)}))
+    .filter(g=>g.rows.length)
+    .sort((x,y)=>x.rows.filter(r=>r.st<=1).length - y.rows.filter(r=>r.st<=1).length);
+  const ch = echarts.init(el, null, {renderer:'svg'});
+  charts.push(ch);
+  const serie = (name, sts, color) => ({
+    name, type:'bar', stack:'t', barWidth:14,
+    itemStyle:{color}, emphasis:{focus:'series'},
+    data: th.map(g=>g.rows.filter(r=>sts.indexOf(r.st) >= 0).length)
+  });
+  ch.setOption(Object.assign({}, BASE, {
+    grid:{left:2, right:34, top:30, bottom:2, containLabel:true},
+    xAxis:{type:'value', splitLine:{lineStyle:{color:'#EDF1EE'}}, minInterval:1,
+      axisLabel:{color:'#6E7E7A', fontSize:11, fontFamily:'Archivo'}},
+    yAxis:{type:'category', data:th.map(g=>g.lb), axisTick:{show:false},
+      axisLine:{lineStyle:{color:'#E3E8E5'}},
+      axisLabel:{color:'#43524F', fontSize:11.5, fontFamily:'Archivo'}},
+    series:[serie('Critiques',[0],COL.ris), serie('En retard',[1],COL.vig),
+            serie('À échoir / en cours',[2,3],COL.inf), serie('Soldées',[4],'#C3CFCA')]
+  }));
+}
+function chartEch(rows){
+  const el = document.getElementById('c-ech');
+  if (!el) return;
+  const cnt = BUCK.map((_,i)=>rows.filter(r=>bucket(r) === i).length);
+  const exp = BUCK.map((_,i)=>+rows.filter(r=>bucket(r) === i).reduce((s,r)=>s+r.exp,0).toFixed(2));
+  const ch = echarts.init(el, null, {renderer:'svg'});
+  charts.push(ch);
+  ch.setOption(Object.assign({}, BASE, {
+    grid:{left:2, right:6, top:32, bottom:2, containLabel:true},
+    tooltip:{trigger:'axis', backgroundColor:'#fff', borderColor:'#E3E8E5', borderWidth:1,
+      textStyle:{color:'#1E2A28', fontSize:12, fontFamily:'Archivo'}},
+    xAxis:{type:'category', data:BSHORT, axisTick:{show:false},
+      axisLine:{lineStyle:{color:'#E3E8E5'}},
+      axisLabel:{color:'#6E7E7A', fontSize:11, fontFamily:'Archivo'}},
+    yAxis:[{type:'value', name:'actions', nameTextStyle:{color:'#6E7E7A', fontSize:10.5, fontFamily:'Archivo'},
+      minInterval:1, splitLine:{lineStyle:{color:'#EDF1EE'}},
+      axisLabel:{color:'#6E7E7A', fontSize:11, fontFamily:'Archivo'}},
+      {type:'value', name:'Mds', nameTextStyle:{color:'#6E7E7A', fontSize:10.5, fontFamily:'Archivo'},
+      splitLine:{show:false}, axisLabel:{color:'#6E7E7A', fontSize:11, fontFamily:'Archivo', formatter:v=>f1(v)}}],
+    series:[
+      {name:'Nombre d’actions', type:'bar', barWidth:26, data:cnt.map((v,i)=>({value:v,
+        itemStyle:{color:COL[BCLS[i]], opacity:i === 6 ? .45 : 1}}))},
+      {name:'Solde exposé', type:'line', yAxisIndex:1, data:exp, symbol:'circle', symbolSize:6,
+       itemStyle:{color:'#1E2A28'}, lineStyle:{color:'#1E2A28', width:1.4, type:'dashed'}}
+    ]
+  }));
+}
+
+/* ---------- rendu ---------- */
+function render(){
+  dispose();
+  const rows = filtered(), a = agg(rows);
+  document.getElementById('selinfo').innerHTML =
+    '<b>' + rows.length + '</b> recommandation(s) affichée(s) sur ' + D.recos.length +
+    ' de l’échantillon · <b>' + a.proj + '</b> opération(s) concernée(s)';
+
+  const figs = [
+    {lb:'Actions ouvertes', vl:NB0.format(a.ouv), u:'',
+     dt:'sur ' + NB0.format(D.total.recos) + ' recommandations du portefeuille'},
+    {lb:'Dont échéance dépassée', vl:NB0.format(a.ret), u:'',
+     dt:a.crit + ' au-delà de 60 jours · ' + (a.moy ? NB0.format(a.moy) + ' j de retard moyen' : 'délais tenus')},
+    {lb:'Solde exposé', vl:f1(a.expRet), u:'Mds',
+     dt:'part du solde conditionnée par les actions en retard'},
+    {lb:'Taux de mise en œuvre', vl:pc(a.mo), u:'',
+     dt:a.solde + ' action(s) soldée(s) et validée(s) en revue'}
+  ];
+  document.getElementById('figs').innerHTML = figs.map(f =>
+    '<div class="fig"><div class="lb">' + f.lb + '</div><div class="vl">' + f.vl +
+    (f.u ? '<small>' + f.u + '</small>' : '') + '</div><div class="dt">' + f.dt + '</div></div>').join('');
+
+  const vieux = rows.filter(r=>r.ret > 60);
+  document.getElementById('h-title').innerHTML = rows.length
+    ? NB0.format(a.ret) + ' recommandations ont dépassé leur échéance, dont <em>' +
+      a.crit + ' depuis plus de 60 jours</em>'
+    : 'Aucune recommandation dans ce périmètre';
+  document.getElementById('h-sub').innerHTML = rows.length
+    ? 'Ces actions conditionnent <b>' + f1(a.expRet) + ' Mds</b> de solde à décaisser sur ' +
+      new Set(rows.filter(r=>r.st<=1).map(r=>r.code)).size + ' opérations. ' +
+      'Le retard moyen atteint <b>' + (a.moy ? NB0.format(a.moy) + ' jours' : '0 jour') +
+      '</b> et le dossier le plus ancien attend depuis <b>' + jour(a.max) + '</b>. ' +
+      'Les recommandations relancées plus de deux fois relèvent désormais d’une décision en comité de suivi plutôt que d’un rappel technique. ' +
+      'Cliquez une action pour ouvrir sa fiche de suivi.'
+    : 'Ajustez les filtres pour retrouver des recommandations.';
+
+  if (state.fiche){
+    document.getElementById('vues').classList.add('hide');
+    document.getElementById('synth').classList.add('hide');
+    document.getElementById('fiche').classList.remove('hide');
+    fiche(state.fiche);
+    return;
+  }
+  document.getElementById('vues').classList.remove('hide');
+  document.getElementById('synth').classList.remove('hide');
+  document.getElementById('fiche').classList.add('hide');
+
+  document.getElementById('sec-lb').textContent = {
+    alertes:'Alertes automatiques et actions prioritaires',
+    echeance:'Répartition par échéance et ancienneté',
+    resp:'Répartition par responsable de l’action',
+    registre:'Registre complet des recommandations'}[state.view];
+
+  let pre = '', body = '', ins = '';
+  if (state.view === 'alertes'){
+    pre = alertes(rows);
+    body = colonnes(rows);
+    const p1 = rows.filter(r=>r.st === 0), t1 = {};
+    rows.filter(r=>r.st <= 1).forEach(r=>{ t1[r.th] = (t1[r.th]||0)+1; });
+    const top = Object.keys(t1).sort((x,y)=>t1[y]-t1[x])[0];
+    ins = rows.length
+      ? 'Les trois colonnes ordonnent les actions par niveau d’attention décroissant. <b>' +
+        D.themes[+top] + '</b> concentre à lui seul ' + t1[top] + ' des ' + a.ret +
+        ' actions en retard&nbsp;: c’est le point de passage à traiter en priorité, avant les relances individuelles. ' +
+        'Les ' + p1.length + ' actions critiques représentent ' + pc(a.n ? p1.length/a.n*100 : 0) +
+        ' du périmètre mais ' + pc(a.exp ? p1.reduce((s,r)=>s+r.exp,0)/a.exp*100 : 0) + ' du solde exposé.'
+      : '';
+  } else if (state.view === 'echeance'){
+    pre = '<div class="card" style="margin-bottom:16px"><h4>Délai par rapport à l’échéance</h4>' +
+      '<div class="ch">Nombre d’actions par tranche de dépassement et solde exposé correspondant</div>' +
+      '<div class="chart" id="c-ech"></div></div>';
+    const groups = BUCK.map((lb,i)=>({lb, i, rows: rows.filter(r=>bucket(r) === i)})).filter(g=>g.rows.length);
+    body = groupView(rows, groups, (g,ag) => {
+      const anc = g.rows.reduce((s,r)=>s+r.rel,0);
+      return (g.i <= 3 ? 'Actions à rattraper' : g.i <= 4 ? 'Fenêtre de traitement ouverte' :
+              g.i === 5 ? 'Suivi courant' : 'Historique de mise en œuvre') +
+        ' · ' + ag.proj + ' opération(s) · ' + anc + ' relance(s) cumulée(s)';
+    });
+    const v90 = rows.filter(r=>r.ret > 90);
+    ins = rows.length
+      ? 'Le classement par ancienneté sépare ce qui relève du rappel de ce qui relève de l’arbitrage. <b>' +
+        v90.length + ' action(s)</b> dépassent 90 jours de retard, soit plus d’un cycle de revue complet&nbsp;: ' +
+        'leur reconduction mécanique d’une revue à l’autre est le premier signal d’un pilotage à reprendre. ' +
+        'Les actions à échoir sous 30 jours (' + a.ech + ') constituent la fenêtre utile avant la prochaine situation mensuelle.'
+      : '';
+  } else if (state.view === 'resp'){
+    const groups = D.resp.map((lb,i)=>({lb, i, rows: rows.filter(r=>r.resp === i)}))
+      .filter(g=>g.rows.length)
+      .sort((x,y)=>{ const ax=agg(x.rows), ay=agg(y.rows); return ay.ret - ax.ret || ay.exp - ax.exp; });
+    body = groupView(rows, groups, (g,ag) =>
+      'Entité responsable de la mise en œuvre · ' + ag.proj + ' opération(s) · ' +
+      ag.rel + ' relance(s) adressée(s)');
+    const gs = D.resp.map((lb,i)=>({lb, a:agg(rows.filter(r=>r.resp === i))})).filter(g=>g.a.n);
+    const worst = gs.slice().sort((x,y)=>y.a.ret - x.a.ret)[0];
+    const best = gs.slice().sort((x,y)=>y.a.mo - x.a.mo)[0];
+    ins = gs.length
+      ? 'Les blocs sont classés du nombre d’actions en retard le plus élevé au plus faible. <b>' + worst.lb +
+        '</b> porte ' + worst.a.ret + ' action(s) en retard pour ' + f1(worst.a.exp) + ' Mds exposés, quand <b>' +
+        best.lb + '</b> affiche le meilleur taux de mise en œuvre (' + pc(best.a.mo) + '). ' +
+        'Cette vue sert à caler les lettres de rappel et les ordres du jour de comité par interlocuteur, non à comparer des volumes.'
+      : '';
+  } else {
+    const head = ['Référence','Recommandation et opération','Thème','Responsable','Émise le','Échéance','Écart','Solde exposé','Niveau'];
+    body = rows.length
+      ? '<div class="tbox"><table><thead><tr>' +
+        head.map((h,i)=>'<th' + (i >= 6 && i <= 7 ? ' class="tnum"' : '') + '>' + h + '</th>').join('') +
+        '</tr></thead><tbody>' + rows.map(r=>{
+          const cl = r.st === 0 ? 'r' : r.st === 1 ? 'v' : 'n';
+          const ec = r.st === 4 ? 'soldée' : r.ret ? '+' + NB0.format(r.ret) + ' j' : '−' + NB0.format(r.rest) + ' j';
+          return '<tr class="cl" data-id="' + r.id + '"><td class="pc-code">' + r.id + '</td>' +
+            '<td><div class="td-lb">' + r.lb + '</div><div class="td-sub">' + r.nom + ' · ' + r.par + '</div></td>' +
+            '<td>' + D.themes[r.th] + '</td><td>' + D.resp[r.resp] + '</td>' +
+            '<td class="tnum">' + r.emis + '</td><td class="tnum">' + r.ech + '</td>' +
+            '<td class="tnum"><span class="retn ' + cl + '">' + ec + '</span></td>' +
+            '<td class="tnum">' + (r.exp ? f2(r.exp) : '—') + '</td>' +
+            '<td><span class="pill ' + CLS[r.st] + '">' + D.statuts[r.st] + '</span></td></tr>';
+        }).join('') + '</tbody></table></div>'
+      : '<div class="empty">Aucune recommandation ne correspond à cette combinaison de filtres.</div>';
+    ins = rows.length
+      ? 'Registre exhaustif du périmètre filtré, trié selon le critère choisi dans la barre de vue. ' +
+        'L’écart est compté en jours par rapport à la date de situation du ' + D.situation +
+        '&nbsp;: une valeur positive signale un dépassement, une valeur négative un délai restant. ' +
+        'Cliquez une ligne pour ouvrir la fiche de suivi correspondante.'
+      : '';
+  }
+  document.getElementById('pre').innerHTML = pre;
+  document.getElementById('body').innerHTML = body;
+  document.getElementById('ins').innerHTML = SVG('i-info') + '<span>' + ins + '</span>';
+  if (state.view === 'alertes') chartThemes(rows);
+  if (state.view === 'echeance') chartEch(rows);
+  bindCards();
+}
+render();
+window.addEventListener('resize', () => charts.forEach(c=>c.resize()));
+</script>
+<script>
+/* onglet Projets -> page dédiée */
+document.querySelectorAll('nav .tab, nav.tabs .tab, #tabs .tab').forEach(function(t){
+  var v = (t.textContent || '').trim();
+  if (v.indexOf('Projets') >= 0) {
+    t.style.cursor = 'pointer';
+    t.addEventListener('click', function(e){
+      e.preventDefault(); e.stopImmediatePropagation();
+      window.location.href = '/modules/projets.html';
+    }, true);
+  }
+});
+</script>
+<script>
+/* nav recos v5 */
+document.querySelectorAll('nav.tabs .tab, nav .tab').forEach(function(t){
+  var v=(t.textContent||'').trim(); var url=null;
+  if(v.indexOf('Tableau de bord')===0) url='/modules/recap.html';
+  else if(v.indexOf('Projets')===0) url='/modules/projets.html';
+  else if(v.indexOf('Revues')===0) url='/modules/recap.html?v=revues';
+  else if(v.indexOf('Partenaires')===0) url='/modules/recap.html?v=partenaires';
+  if(url){t.style.cursor='pointer';t.style.opacity='1';t.title='';t.addEventListener('click',function(){location.href=url;},true);}
+});
+</script>
+<button onclick="(history.length>1&&document.referrer)?history.back():location.href='/modules/recap.html'" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
+</body>
+</html>
+

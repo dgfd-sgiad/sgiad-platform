@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+# -*- coding: utf-8 -*-
+import shutil, re, os
+
+p = 'modules/recap.html'
+if os.path.exists(p):
+    shutil.copy(p, p + '.bak')
+
+HTML = r"""<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -167,7 +174,7 @@ th.sortable{cursor:pointer}th.sortable:hover{color:var(--dec)}
 </div>
 
 <aside id="rail"><h3 id="rail-title">Projets du périmètre</h3><div class="rsub" id="rail-sub"></div><div id="rail-list"></div></aside>
-<button onclick="(history.length>1&&document.referrer)?history.back():location.href='/suivi'" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
+<button onclick="history.back()" title="Retour immédiat" style="position:fixed;bottom:20px;left:20px;z-index:99999;background:#0a2540;color:#fff;border:none;padding:10px 16px;border-radius:30px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.3)">↩️ Retour immédiat</button>
 
 <script>
 const $=id=>document.getElementById(id);
@@ -379,4 +386,30 @@ async function init(){
 init();
 </script>
 </body>
-</html>
+</html>"""
+
+open(p, 'w', encoding='utf-8').write(HTML)
+print('recap.html regenere:', len(HTML), ' caracteres')
+
+# --- Rewiring des onglets recos.html vers les vraies vues ---
+rp = 'modules/recos.html'
+if os.path.exists(rp):
+    s = open(rp, encoding='utf-8').read()
+    s = re.sub(r'<script>\s*/\* nav recos[\s\S]*?</script>\n?', '', s)
+    s = re.sub(r'<script>\s*/\* navigation croisee[\s\S]*?</script>\n?', '', s)
+    NAV = """<script>
+/* nav recos v5 */
+document.querySelectorAll('nav.tabs .tab, nav .tab').forEach(function(t){
+  var v=(t.textContent||'').trim(); var url=null;
+  if(v.indexOf('Tableau de bord')===0) url='/modules/recap.html';
+  else if(v.indexOf('Projets')===0) url='/modules/projets.html';
+  else if(v.indexOf('Revues')===0) url='/modules/recap.html?v=revues';
+  else if(v.indexOf('Partenaires')===0) url='/modules/recap.html?v=partenaires';
+  if(url){t.style.cursor='pointer';t.style.opacity='1';t.title='';t.addEventListener('click',function(){location.href=url;},true);}
+});
+</script>"""
+    s = s.replace('</body>', NAV + '\n</body>', 1)
+    open(rp, 'w', encoding='utf-8').write(s)
+    print('recos.html : onglets reactives vers recap')
+
+print('\nTermine')
